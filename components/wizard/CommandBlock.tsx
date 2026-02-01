@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { Copy, Check } from 'lucide-react';
 
 interface CommandBlockProps {
   command: string;
@@ -20,13 +21,24 @@ export default function CommandBlock({ command }: CommandBlockProps) {
       <div className="flex items-center justify-between mb-2">
         <h4 className="font-medium">Terminal Command</h4>
         <button
-          onClick={handleCopy}
-          className="px-3 py-1 bg-surface hover:bg-gray-700 rounded text-sm border border-border"
-        >
-          {copied ? 'Copied!' : 'Copy'}
+           onClick={handleCopy}
+           className="px-3 py-1 bg-surface hover:bg-gray-700 text-sm border border-border flex items-center gap-1"
+           style={{ borderRadius: '3px' }}
+         >
+          {copied ? (
+            <>
+              <Check size={16} />
+              Copied!
+            </>
+          ) : (
+            <>
+              <Copy size={16} />
+              Copy
+            </>
+          )}
         </button>
       </div>
-      <div className="bg-background text-accent p-4 rounded font-mono text-sm overflow-x-auto border border-border">
+      <div className="p-4 font-mono text-sm overflow-x-auto border border-border" style={{ backgroundColor: '#111', color: '#999', borderRadius: '3px' }}>
         {command}
       </div>
     </div>

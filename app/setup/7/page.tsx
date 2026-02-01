@@ -51,11 +51,11 @@ export default function Phase7Page() {
     setStepFailed(false);
   };
 
-  const handleSkip = () => {
-    setTimeout(() => {
-      router.push('/setup/8');
-    }, 500);
-  };
+   const handleSkip = () => {
+     setTimeout(() => {
+       router.push('/setup/8');
+     }, 500);
+   };
 
    if (isSkipped) {
      return (
@@ -76,14 +76,15 @@ export default function Phase7Page() {
 
            <div className="flex-1 px-4 pb-4">
              <div className="bg-surface p-8 border border-border" style={{ borderRadius: "3px" }}>
-            <div className="text-center py-12">
-              <div className="text-6xl mb-4">⊘</div>
-              <h1 className="text-2xl font-bold text-gray-300 mb-4">Phase 7: Faust Installation</h1>
-              <p className="text-gray-400 mb-8">
-                Skipping - You chose not to install Faust in Phase 0.
-              </p>
-              <div className="inline-block px-4 py-2 bg-blue-600 text-white rounded border border-border">
-                Redirecting to next phase...
+               <div className="text-center py-12">
+                 <div className="text-6xl mb-4">⊘</div>
+                 <h1 className="text-2xl font-bold text-gray-300 mb-4">Phase 7: Faust Installation</h1>
+                 <p className="text-gray-400 mb-8">
+                   Skipping - You chose not to install Faust in Phase 0.
+                 </p>
+                 <div className="inline-block px-4 py-2 bg-blue-600 text-white rounded border border-border">
+                   Redirecting to next phase...
+                 </div>
                </div>
              </div>
            </div>
@@ -110,38 +111,38 @@ export default function Phase7Page() {
 
          <div className="flex-1 px-4 pb-4">
            <div className="bg-surface p-8 border border-border" style={{ borderRadius: "3px" }}>
-          <h1 className="text-2xl font-bold mb-2">Phase 7: Faust Installation</h1>
-          <p className="text-gray-400 mb-6">
-            Install Faust DSP compiler.
-          </p>
+             <h1 className="text-2xl font-bold mb-2">Phase 7: Faust Installation</h1>
+             <p className="text-gray-400 mb-6">
+               Install Faust DSP compiler.
+             </p>
 
-          <div className="mb-6">
-            <h2 className="text-lg font-semibold mb-3">What we're doing:</h2>
-            <p className="text-gray-300 mb-4">{explanation}</p>
-          </div>
+             <div className="mb-6">
+               <h2 className="text-lg font-semibold mb-3">What we're doing:</h2>
+               <p className="text-gray-300 mb-4">{explanation}</p>
+             </div>
 
-          <div className="mb-6 p-4 bg-green-900/30 border border-accent rounded">
-            <h3 className="font-medium text-accent mb-2">Optional</h3>
-            <p className="text-gray-300">
-              Faust is a functional programming language for signal processing. It enables HISE to compile Faust scripts at runtime for dynamic DSP algorithms. You can skip this if you don't need Faust support.
-            </p>
-          </div>
+             <div className="mb-6 p-4 bg-green-900/30 border border-accent rounded">
+               <h3 className="font-medium text-accent mb-2">Optional</h3>
+               <p className="text-gray-300">
+                 Faust is a functional programming language for signal processing. It enables HISE to compile Faust scripts at runtime for dynamic DSP algorithms. You can skip this if you don't need Faust support.
+               </p>
+             </div>
 
-          <CommandBlock command={command} />
+             <CommandBlock command={command} />
 
-          <div className="mb-6 p-4 bg-blue-900/30 border border-blue-700 rounded">
-            <h3 className="font-medium text-blue-300 mb-2">Instructions:</h3>
-            <ol className="list-decimal list-inside space-y-1 text-gray-300">
-              <li>Copy command above using the "Copy" button</li>
-              <li>Open your terminal (Command Prompt or PowerShell)</li>
-              <li>Paste and run the command to download and run the Faust installer</li>
-              <li>During installation, use the default path: C:\Program Files\Faust\</li>
-              <li>Wait for installation to complete</li>
-              <li>Return here and click "Success" or "Skip" if you prefer not to install Faust</li>
-            </ol>
-          </div>
+             <div className="mb-6 p-4 bg-blue-900/30 border border-blue-700 rounded">
+               <h3 className="font-medium text-blue-300 mb-2">Instructions:</h3>
+               <ol className="list-decimal list-inside space-y-1 text-gray-300">
+                 <li>Copy command above using the "Copy" button</li>
+                 <li>Open your terminal (Command Prompt or PowerShell)</li>
+                 <li>Paste and run the command to download and run the Faust installer</li>
+                 <li>During installation, use the default path: C:\Program Files\Faust\</li>
+                 <li>Wait for installation to complete</li>
+                 <li>Return here and click "Success" or "Skip" if you prefer not to install Faust</li>
+               </ol>
+             </div>
 
-           {!stepFailed ? (
+             {!stepFailed ? (
              <div className="flex gap-4">
                <button
                  onClick={handleSuccess}

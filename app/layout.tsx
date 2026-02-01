@@ -14,7 +14,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="dark">
-      <body className="bg-background text-gray-100 min-h-screen font-sans">
+      <body className="min-h-screen">
         <WizardProvider>{children}</WizardProvider>
       </body>
     </html>

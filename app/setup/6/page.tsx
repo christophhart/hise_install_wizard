@@ -51,11 +51,11 @@ export default function Phase6Page() {
     setStepFailed(false);
   };
 
-  const handleSkip = () => {
-    setTimeout(() => {
-      router.push('/setup/7');
-    }, 500);
-  };
+   const handleSkip = () => {
+     setTimeout(() => {
+       router.push('/setup/7');
+     }, 500);
+   };
 
    if (isSkipped) {
      return (
@@ -76,14 +76,15 @@ export default function Phase6Page() {
 
            <div className="flex-1 px-4 pb-4">
              <div className="bg-surface p-8 border border-border" style={{ borderRadius: "3px" }}>
-            <div className="text-center py-12">
-              <div className="text-6xl mb-4">⊘</div>
-              <h1 className="text-2xl font-bold text-gray-300 mb-4">Phase 6: Intel IPP Installation</h1>
-              <p className="text-gray-400 mb-8">
-                Skipping - You chose not to install Intel IPP in Phase 0.
-              </p>
-              <div className="inline-block px-4 py-2 bg-blue-600 text-white rounded border border-border">
-                Redirecting to next phase...
+               <div className="text-center py-12">
+                 <div className="text-6xl mb-4">⊘</div>
+                 <h1 className="text-2xl font-bold text-gray-300 mb-4">Phase 6: Intel IPP Installation</h1>
+                 <p className="text-gray-400 mb-8">
+                   Skipping - You chose not to install Intel IPP in Phase 0.
+                 </p>
+                 <div className="inline-block px-4 py-2 bg-blue-600 text-white rounded border border-border">
+                   Redirecting to next phase...
+                 </div>
                </div>
              </div>
            </div>
@@ -110,46 +111,46 @@ export default function Phase6Page() {
 
          <div className="flex-1 px-4 pb-4">
            <div className="bg-surface p-8 border border-border" style={{ borderRadius: "3px" }}>
-          <h1 className="text-2xl font-bold mb-2">Phase 6: Intel IPP Installation</h1>
-          <p className="text-gray-400 mb-6">
-            Install Intel IPP oneAPI for performance optimization.
-          </p>
+             <h1 className="text-2xl font-bold mb-2">Phase 6: Intel IPP Installation</h1>
+             <p className="text-gray-400 mb-6">
+               Install Intel IPP oneAPI for performance optimization.
+             </p>
 
-          <div className="mb-6">
-            <h2 className="text-lg font-semibold mb-3">What we're doing:</h2>
-            <p className="text-gray-300 mb-4">{explanation}</p>
-          </div>
+             <div className="mb-6">
+               <h2 className="text-lg font-semibold mb-3">What we're doing:</h2>
+               <p className="text-gray-300 mb-4">{explanation}</p>
+             </div>
 
-          <div className="mb-6 p-4 bg-green-900/30 border border-accent rounded">
-            <h3 className="font-medium text-accent mb-2">Optional</h3>
-            <p className="text-gray-300">
-              Intel IPP provides optimized math functions that can significantly improve HISE performance. You can skip this phase if you prefer to build without IPP.
-            </p>
-          </div>
+             <div className="mb-6 p-4 bg-green-900/30 border border-accent rounded">
+               <h3 className="font-medium text-accent mb-2">Optional</h3>
+               <p className="text-gray-300">
+                 Intel IPP provides optimized math functions that can significantly improve HISE performance. You can skip this phase if you prefer to build without IPP.
+               </p>
+             </div>
 
-          <CommandBlock command={command} />
+             <CommandBlock command={command} />
 
-          <div className="mb-6 p-4 bg-blue-900/30 border border-blue-700 rounded">
-            <h3 className="font-medium text-blue-300 mb-2">Instructions:</h3>
-            <ol className="list-decimal list-inside space-y-1 text-gray-300">
-              <li>Download Intel IPP from link below</li>
-              <li>Run the installer with Visual Studio integration enabled</li>
-              <li>Wait for installation to complete (~5-10 minutes)</li>
-              <li>Return here and click "Success" or "Skip" if you prefer not to install IPP</li>
-            </ol>
-            <div className="mt-4">
-              <a
-                href="https://registrationcenter-download.intel.com/akdlm/IRC_NAS/9c651894-4548-491c-b69f-49e84b530c1d/intel-ipp-2022.3.1.10_offline.exe"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-400 hover:underline"
-              >
-                Download Intel IPP oneAPI 2022.3.1.10
-              </a>
-            </div>
-          </div>
+             <div className="mb-6 p-4 bg-blue-900/30 border border-blue-700 rounded">
+               <h3 className="font-medium text-blue-300 mb-2">Instructions:</h3>
+               <ol className="list-decimal list-inside space-y-1 text-gray-300">
+                 <li>Download Intel IPP from link below</li>
+                 <li>Run the installer with Visual Studio integration enabled</li>
+                 <li>Wait for installation to complete (~5-10 minutes)</li>
+                 <li>Return here and click "Success" or "Skip" if you prefer not to install IPP</li>
+               </ol>
+               <div className="mt-4">
+                 <a
+                   href="https://registrationcenter-download.intel.com/akdlm/IRC_NAS/9c651894-4548-491c-b69f-49e84b530c1d/intel-ipp-2022.3.1.10_offline.exe"
+                   target="_blank"
+                   rel="noopener noreferrer"
+                   className="text-blue-400 hover:underline"
+                 >
+                   Download Intel IPP oneAPI 2022.3.1.10
+                 </a>
+               </div>
+             </div>
 
-           {!stepFailed ? (
+             {!stepFailed ? (
              <div className="flex gap-4">
                <button
                  onClick={handleSuccess}

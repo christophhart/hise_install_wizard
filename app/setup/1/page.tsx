@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { CheckCircle, XCircle, SkipForward } from 'lucide-react';
 import PhaseStepper from '@/components/wizard/PhaseStepper';
 import CommandBlock from '@/components/wizard/CommandBlock';
 import ErrorAssistant from '@/components/wizard/ErrorAssistant';
@@ -37,52 +38,77 @@ export default function Phase1Page() {
   };
 
   return (
-    <div className="min-h-screen bg-background p-4">
-      <div className="max-w-4xl mx-auto">
-        <PhaseStepper currentPhase={1} />
+    <div className="min-h-screen flex flex-col bg-background">
+      <div className="px-4 py-3 flex items-center" style={{ backgroundColor: '#050505' }}>
+        <img
+          src="/images/logo_new.png"
+          alt="HISE Logo"
+          className="h-8 w-auto"
+        />
+        <span className="ml-3 text-lg font-semibold">HISE Install Wizard</span>
+      </div>
 
-        <div className="bg-surface p-8 rounded shadow-md border border-border">
-          <h1 className="text-2xl font-bold mb-2">Phase 1: Platform Detection</h1>
-          <p className="text-gray-400 mb-6">
-            Verify your system meets the requirements for HISE development.
-          </p>
+      <div className="flex-1 flex flex-col">
+        <div className="p-4">
+          <PhaseStepper currentPhase={1} />
+        </div>
 
-          <div className="mb-6">
-            <h2 className="text-lg font-semibold mb-3">What we're doing:</h2>
-            <p className="text-gray-300 mb-4">{explanation}</p>
-          </div>
+        <div className="flex-1 px-4 pb-4">
+          <div className="bg-surface p-8 rounded border border-border flex-1" style={{ borderRadius: '3px' }}>
+            <h1 className="text-2xl font-bold mb-2">Phase 1: Platform Detection</h1>
+            <p className="mb-6" style={{ color: '#999' }}>
+              Verify your system meets the requirements for HISE development.
+            </p>
 
-          <CommandBlock command={command} />
-
-          <div className="mb-6 p-4 bg-blue-900/30 border border-blue-700 rounded">
-            <h3 className="font-medium text-blue-300 mb-2">Instructions:</h3>
-            <ol className="list-decimal list-inside space-y-1 text-gray-300">
-              <li>Copy the command above using the "Copy" button</li>
-              <li>Open your terminal (Command Prompt or PowerShell)</li>
-              <li>Paste and run the command</li>
-              <li>Review the output to ensure no errors occurred</li>
-              <li>Click "Success" or "Failure" based on the result</li>
-            </ol>
-          </div>
-
-          {!stepFailed ? (
-            <div className="flex gap-4">
-              <button
-                onClick={handleSuccess}
-                className="flex-1 px-6 py-3 bg-accent hover:bg-green-400 text-background font-semibold rounded border border-border"
-              >
-                Success
-              </button>
-              <button
-                onClick={handleFailure}
-                className="flex-1 px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-semibold rounded border border-border"
-              >
-                Failure
-              </button>
+            <div className="mb-6">
+              <h2 className="text-lg font-semibold mb-3">What we're doing:</h2>
+              <p className="mb-4" style={{ color: '#999' }}>{explanation}</p>
             </div>
-          ) : (
-            <ErrorAssistant onRetry={handleRetry} />
-          )}
+
+            <div className="mb-6 p-4 border border-border" style={{ backgroundColor: '#111', borderRadius: '3px' }}>
+              <h3 className="font-medium mb-2" style={{ color: '#90FFB1' }}>Instructions:</h3>
+              <ol className="list-decimal list-inside space-y-1" style={{ color: '#999' }}>
+                <li>Copy the command above using the "Copy" button</li>
+                <li>Open your terminal (Command Prompt or PowerShell)</li>
+                <li>Paste and run the command</li>
+                <li>Review the output to ensure no errors occurred</li>
+                <li>Click "Success" or "Failure" based on the result</li>
+              </ol>
+            </div>
+
+            <CommandBlock command={command} />
+
+            {!stepFailed ? (
+              <div className="flex gap-4">
+                <button
+                  onClick={handleSuccess}
+                  className="flex-1 px-6 py-3 font-semibold border border-border flex items-center justify-center gap-2"
+                  style={{ backgroundColor: '#4E8E35', color: '#fff', borderRadius: '3px' }}
+                >
+                  <CheckCircle size={18} />
+                  Success
+                </button>
+                <button
+                  onClick={handleFailure}
+                  className="flex-1 px-6 py-3 font-semibold border border-border flex items-center justify-center gap-2"
+                  style={{ backgroundColor: '#BB3434', color: '#fff', borderRadius: '3px' }}
+                >
+                  <XCircle size={18} />
+                  Failure
+                </button>
+                <button
+                  onClick={() => router.push('/setup/2')}
+                  className="flex-1 px-6 py-3 font-semibold border border-border flex items-center justify-center gap-2"
+                  style={{ backgroundColor: '#333', color: '#999', borderRadius: '3px' }}
+                >
+                  <SkipForward size={18} />
+                  Skip
+                </button>
+              </div>
+            ) : (
+              <ErrorAssistant onRetry={handleRetry} />
+            )}
+          </div>
         </div>
       </div>
     </div>

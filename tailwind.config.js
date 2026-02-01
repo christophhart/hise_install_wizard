@@ -6,24 +6,29 @@ module.exports = {
     './app/**/*.{js,ts,jsx,tsx,mdx}',
   ],
   darkMode: 'class',
-  theme: {
-    extend: {
-      colors: {
-        accent: '#90FFB1',
-        background: '#222',
-        surface: '#2a2a2a',
-        border: '#555',
-      },
-      fontFamily: {
-        sans: ['Lato', 'sans-serif'],
-      },
-      borderRadius: {
-        DEFAULT: '0.5rem',
-      },
-      borderWidth: {
-        DEFAULT: '1px',
+    theme: {
+      extend: {
+        colors: {
+          accent: '#90FFB1',
+          error: '#BB3434',
+          success: '#4E8E35',
+          warning: '#FFBA00',
+          background: '#222',
+          surface: '#333',
+          border: '#444',
+          code: {
+            bg: '#111',
+            text: '#999',
+          },
+        },
+        fontFamily: {
+          sans: ['Lato', 'sans-serif'],
+          mono: ['Source Sans Pro', 'monospace'],
+        },
+        borderRadius: {
+          DEFAULT: '3px',
+        },
       },
     },
-  },
   plugins: [],
 }

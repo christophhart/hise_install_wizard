@@ -47,8 +47,8 @@ export default function ErrorAssistant({ onRetry }: ErrorAssistantProps) {
   };
 
   return (
-    <div className="mt-4 p-4 bg-yellow-900/30 border border-yellow-700 rounded">
-      <h4 className="font-medium text-yellow-300 mb-2">Error Detected</h4>
+    <div className="mt-4 p-4 border border-border rounded" style={{ backgroundColor: 'rgba(255, 186, 0, 0.1)' }}>
+      <h4 className="font-medium mb-2" style={{ color: '#FFBA00' }}>Error Detected</h4>
       
       {!showAnalysis ? (
         <>
@@ -62,7 +62,11 @@ export default function ErrorAssistant({ onRetry }: ErrorAssistantProps) {
             <button
               onClick={handleAnalyze}
               disabled={!errorOutput.trim()}
-              className="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded disabled:bg-gray-600 disabled:cursor-not-allowed"
+              className="px-4 py-2 text-white rounded border border-border disabled:cursor-not-allowed"
+              style={{ 
+                backgroundColor: '#FFBA00',
+                color: '#222'
+              }}
             >
               Analyze Error
             </button>
@@ -85,27 +89,28 @@ export default function ErrorAssistant({ onRetry }: ErrorAssistantProps) {
                 </p>
                 <p className="mb-2">
                   <strong>Severity:</strong>{' '}
-                  <span
-                    className={
-                      mockAnalysis.severity === 'high'
-                        ? 'text-red-400'
-                        : mockAnalysis.severity === 'medium'
-                        ? 'text-yellow-400'
-                        : 'text-green-400'
-                    }
-                  >
+                   <span
+                     style={{
+                       color:
+                         mockAnalysis.severity === 'high'
+                           ? '#BB3434'
+                           : mockAnalysis.severity === 'medium'
+                           ? '#FFBA00'
+                           : '#4E8E35'
+                     }}
+                   >
                     {mockAnalysis.severity.toUpperCase()}
                   </span>
                 </p>
                 <div className="mb-2">
                   <strong>Fix Commands:</strong>
-                  <ul className="list-disc list-inside ml-2 mt-1">
-                    {mockAnalysis.fixCommands.map((cmd, idx) => (
-                      <li key={idx} className="font-mono text-sm bg-gray-700 p-1 rounded">
-                        {cmd}
-                      </li>
-                    ))}
-                  </ul>
+                   <ul className="list-disc list-inside ml-2 mt-1">
+                     {mockAnalysis.fixCommands.map((cmd, idx) => (
+                       <li key={idx} className="font-mono text-sm p-1 rounded border border-border" style={{ backgroundColor: '#111', color: '#999' }}>
+                         {cmd}
+                       </li>
+                     ))}
+                   </ul>
                 </div>
               </>
             )}

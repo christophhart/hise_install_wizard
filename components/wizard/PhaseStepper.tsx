@@ -21,7 +21,7 @@ export default function PhaseStepper({ currentPhase }: PhaseStepperProps) {
   const progress = ((currentPhase + 1) / PHASES.length) * 100;
 
   return (
-    <div className="mb-8 p-4 bg-surface border border-border rounded">
+    <div className="mb-8 p-4 bg-surface border border-border" style={{ borderRadius: '3px' }}>
       <div className="flex items-center justify-between mb-3">
         <div>
           <div className="text-sm text-gray-400">Phase {currentPhase}</div>
@@ -31,10 +31,10 @@ export default function PhaseStepper({ currentPhase }: PhaseStepperProps) {
           {currentPhase + 1} / {PHASES.length}
         </div>
       </div>
-      <div className="w-full bg-gray-700 rounded-full h-2.5">
+      <div className="w-full h-2.5" style={{ backgroundColor: '#444', borderRadius: '3px', overflow: 'hidden' }}>
         <div
-          className="bg-accent h-2.5 rounded-full transition-all duration-300"
-          style={{ width: `${progress}%` }}
+          className="h-2.5 transition-all duration-300"
+          style={{ width: `${progress}%`, backgroundColor: '#90FFB1', borderRadius: '3px' }}
         ></div>
       </div>
       <div className="mt-2 text-sm text-gray-400">{activePhase?.description}</div>
