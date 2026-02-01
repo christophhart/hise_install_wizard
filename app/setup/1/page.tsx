@@ -48,13 +48,13 @@ export default function Phase1Page() {
         <span className="ml-3 text-lg font-semibold">HISE Install Wizard</span>
       </div>
 
-      <div className="flex-1 flex flex-col">
-        <div className="p-4">
+      <div className="flex-1 flex flex-col items-center w-full">
+        <div className="p-4 w-full" style={{ maxWidth: '900px' }}>
           <PhaseStepper currentPhase={1} />
         </div>
 
-        <div className="flex-1 px-4 pb-4">
-          <div className="bg-surface p-8 rounded border border-border flex-1" style={{ borderRadius: '3px' }}>
+        <div className="flex-1 px-4 pb-4 w-full" style={{ maxWidth: '900px' }}>
+          <div className="bg-surface p-8 rounded border border-border h-full" style={{ borderRadius: '3px' }}>
             <h1 className="text-2xl font-bold mb-2">Phase 1: Platform Detection</h1>
             <p className="mb-6" style={{ color: '#999' }}>
               Verify your system meets the requirements for HISE development.

@@ -22,7 +22,7 @@ export default function HomePage() {
       </div>
 
       <div className="flex-1 flex items-center justify-center p-4">
-        <div className="max-w-2xl w-full">
+         <div className="w-full" style={{ maxWidth: '900px' }}>
           <div className="text-center mb-8">
             <h1 className="text-4xl font-bold mb-4" style={{ color: '#90FFB1' }}>
               HISE Setup Wizard

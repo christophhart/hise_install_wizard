@@ -48,12 +48,12 @@ export default function Phase9Page() {
         <span className="ml-3 text-lg font-semibold">HISE Install Wizard</span>
       </div>
 
-      <div className="flex-1 flex flex-col">
-        <div className="p-4">
+      <div className="flex-1 flex flex-col items-center w-full">
+        <div className="p-4 w-full" style={{ maxWidth: '900px' }}>
           <PhaseStepper currentPhase={9} />
         </div>
 
-        <div className="flex-1 px-4 pb-4">
+        <div className="flex-1 px-4 pb-4 w-full" style={{ maxWidth: '900px' }}>
           <div className="bg-surface p-8 border border-border" style={{ borderRadius: "3px" }}>
           <h1 className="text-2xl font-bold mb-2">Phase 9: Add HISE to PATH</h1>
           <p className="text-gray-400 mb-6">
