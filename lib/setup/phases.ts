@@ -12,8 +12,8 @@ export interface PhaseCommand {
 }
 
 export const PHASES: Phase[] = [
-  { id: 0, name: 'System Detection & Preferences', description: 'Detect system state and gather user preferences', required: false },
-  { id: 1, name: 'Platform Detection', description: 'Detect OS, architecture, and disk space', required: true },
+  { id: 0, name: 'System State Detection', description: 'Detect system state and installed components', required: false },
+  { id: 1, name: 'User Configuration', description: 'Gather user preferences and configuration settings', required: false },
   { id: 2, name: 'Git Setup', description: 'Install Git, clone HISE repository, init JUCE submodule', required: true },
   { id: 3, name: 'Visual Studio 2026 Installation', description: 'Install Visual Studio 2026 Community with C++ workload', required: true },
   { id: 4, name: 'JUCE Submodule Verification', description: 'Verify JUCE is on juce6 branch', required: true },

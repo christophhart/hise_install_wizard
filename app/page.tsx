@@ -7,8 +7,8 @@ export default function HomePage() {
   const router = useRouter();
 
    const handleStartSetup = () => {
-     router.push('/setup/1');
-   };
+      router.push('/setup');
+    };
 
   return (
     <div className="min-h-screen flex flex-col bg-background">

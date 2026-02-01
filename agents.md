@@ -95,17 +95,19 @@ hise-install-wizard/
 
 | Phase | Name | Required | Description |
 |-------|------|----------|-------------|
-| 0 | System Detection & Preferences | - | Detect system state, completed phases, gather user preferences |
-| 1 | Platform Detection | ✓ | Detect OS, architecture, disk space |
+| 0 | System State Detection | - | Detect system state and installed components |
+| 1 | User Configuration | - | Gather user preferences and configuration settings |
 | 2 | Git Setup | ✓ | Install Git, clone HISE repository, init JUCE submodule |
-| 3 | SDK Installation | ✓ | Extract ASIO SDK 2.3 and VST3 SDK |
+| 3 | Visual Studio 2026 Installation | ✓ | Install Visual Studio 2026 Community with C++ workload |
 | 4 | JUCE Submodule Verification | ✓ | Verify JUCE is on juce6 branch |
-| 5 | Faust Installation | ○ | Optional: Install Faust DSP compiler |
-| 6 | HISE Compilation | ✓ | Compile HISE standalone application |
-| 7 | Add HISE to PATH | ✓ | Add HISE binary to system PATH |
-| 8 | Verify Build Configuration | ✓ | Run `HISE get_build_flags` to verify build |
-| 9 | Compile Test Project | ✓ | Compile demo project to verify setup |
-| 10 | Success Verification | ✓ | Final verification and completion |
+| 5 | SDK Installation | ✓ | Extract ASIO SDK 2.3 and VST3 SDK |
+| 6 | Intel IPP Installation | ○ | Optional: Install Intel IPP oneAPI for performance optimization |
+| 7 | Faust Installation | ○ | Optional: Install Faust DSP compiler |
+| 8 | HISE Compilation | ✓ | Compile HISE standalone application |
+| 9 | Add HISE to PATH | ✓ | Add HISE binary to system PATH |
+| 10 | Verify Build Configuration | ✓ | Run `HISE get_build_flags` to verify build |
+| 11 | Compile Test Project | ✓ | Compile demo project to verify setup |
+| 12 | Success Verification | ✓ | Final verification and completion |
 
 ---
 
@@ -116,7 +118,7 @@ hise-install-wizard/
 ```typescript
 async function detectAllPhases(): Promise<PhaseStatus[]> {
   const checks = await Promise.all([
-    checkPlatform(),           // Phase 1
+    checkPlatform(),           // Phase 0
     checkGitInstall(),         // Phase 2
     checkSDKsExtracted(),      // Phase 3
     checkJUCEInitialized(),    // Phase 4

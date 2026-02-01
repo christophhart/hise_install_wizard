@@ -172,32 +172,28 @@ if %errorLevel% neq 0 (
 
 ---
 
-## Phase 0: Initial System State Query & User Prompts
+## Phase 0: System State Detection
 
-**High-level log:** "Querying system state and gathering user preferences..."
+**High-level log:** "Detecting system state and installed components..."
 
-This phase checks the current system state to determine which steps can be skipped and gathers all user preferences upfront before proceeding with installation.
+This phase checks the current system state to determine which components are already installed and which steps can be skipped. This allows the setup wizard to automatically bypass completed steps.
 
 ### System State Checks
 
 The agent should query the system for the following:
 
-1. **Installation Location Selection**
-   - Detect current working directory
-   - Compare with default path `C:\HISE`
-   - If current directory equals default: proceed without prompting
-   - If current directory differs: prompt user:
-     ```
-     Current directory: {current_path}
-     Default HISE installation path: C:\HISE
+1. **Platform Detection**
+   - Verify Windows compatibility (Windows 7+ required)
+   - **Detect CPU architecture** (x64, arm64)
+   - Check disk space requirements (~2-5 GB)
 
-     Where would you like to install HISE?
-     1. Install here ({current_path})
-     2. Install in default location (C:\HISE)
-     3. Specify custom path
-     ```
+   **Architecture Detection Commands:**
+   - **Windows:** `echo %PROCESSOR_ARCHITECTURE%` (returns `AMD64` for x64, `ARM64` for ARM)
 
-3. **Component Auto-Detection**
+   **Normal Mode:**
+   - **Windows ARM64:** Display warning that native ARM64 is not supported, x64 build will be created (runs via Windows x64 emulation)
+
+2. **Component Auto-Detection**
    - **Visual Studio 2026:** Check installation at `C:\Program Files\Microsoft Visual Studio\18\Community\`
    - **Intel IPP:** Check installation at `C:\Program Files (x86)\Intel\oneAPI\ipp\latest`
    - **Faust:** Check installation at `C:\Program Files\Faust\lib\faust.dll`
@@ -206,7 +202,7 @@ The agent should query the system for the following:
    - **SDKs:** Check if `tools/SDK/ASIOSDK2.3/` and `tools/SDK/VST3 SDK/` directories exist
    - **JUCE Submodule:** Check if `JUCE/` directory exists and is on `juce6` branch
 
-4. **Display System State Summary**
+3. **Display System State Summary**
    - Show status of all detected components:
      - Visual Studio: Installed/Not installed
      - Intel IPP: Installed/Not installed
@@ -216,123 +212,89 @@ The agent should query the system for the following:
      - SDKs: Already extracted/Need extraction
      - JUCE Submodule: Initialized/Not initialized
 
-5. **User Prompts for Missing Components**
-
-**Visual Studio (REQUIRED - cannot skip):**
-    - If Visual Studio is NOT installed:
-      ```
-      [REQUIRED] Visual Studio 2026 is not installed.
-
-      Please download and install Visual Studio 2026 Community:
-      - Download from: https://visualstudio.microsoft.com/downloads/
-      - Select "Visual Studio Community 2026" (Web Installer)
-      - During installation, select "Desktop development with C++" workload
-      - IMPORTANT: Use the standard Community edition, NOT Preview/Insider editions
-
-      After installation is complete, press Enter to continue...
-      ```
-    - The agent **HALTS** and waits for user to press Enter
-    - After user confirms, verify installation again:
-      ```batch
-      if exist "C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\MsBuild.exe" (
-          echo Visual Studio 2026 installed successfully
-      ) else (
-          echo ERROR: Visual Studio installation not detected. Please try again.
-          exit /b 1
-      )
-      ```
-
-    **Intel IPP (Optional - automatic command-line installation):**
-    - **CRITICAL PRE-CHECK:** Install IPP only if Visual Studio 2026 is installed first
-    - If Intel IPP is NOT installed:
-      ```
-      REM Verify Visual Studio 2026 is installed before attempting IPP installation
-      if not exist "C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\MsBuild.exe" (
-          echo ERROR: Visual Studio 2026 not found. IPP cannot be installed without Visual Studio.
-          echo Please install Visual Studio 2026 first, then run this setup again.
-          exit /b 1
-      )
-
-      Install Intel IPP oneAPI for performance optimization? [Y/n]
-
-      If Y (Yes):
-        Verifying Visual Studio 2026 installation...
-        if not exist "C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\MsBuild.exe" (
-            echo ERROR: Visual Studio 2026 is required for IPP installation. Cannot proceed.
-            echo IPP installation skipped.
-            SET IPP_INSTALLED=0
-        ) else (
-            echo Visual Studio 2026 detected, proceeding with IPP installation...
-            Downloading Intel IPP oneAPI 2022.3.1.10 installer...
-            curl -L -o "%TEMP%\intel-ipp-installer.exe" "https://registrationcenter-download.intel.com/akdlm/IRC_NAS/9c651894-4548-491c-b69f-49e84b530c1d/intel-ipp-2022.3.1.10_offline.exe"
-            
-            Installing Intel IPP with Visual Studio 2026 integration...
-            "%TEMP%\intel-ipp-installer.exe" -s -a --silent --eula accept
-            if not %errorlevel%==0 (
-                echo ERROR: Intel IPP installation failed. Press Enter to continue without IPP...
-                pause
-                SET IPP_INSTALLED=0
-            ) else (
-                echo Intel IPP installed successfully
-                SET IPP_INSTALLED=1
-            )
-        )
-
-      If N (No): Build without IPP
-      ```
-      - **Y (Yes):** Download and run IPP installer automatically in silent mode with Visual Studio integration (only if VS2026 is present)
-      - **N (No):** Skip IPP installation, build without IPP
-    - **Auto-detection:** If IPP is already installed, skip the prompt and use it automatically
-    - After installation, verify IPP installation:
-      ```batch
-      if exist "C:\Program Files (x86)\Intel\oneAPI\ipp\latest" (
-          echo Intel IPP installed successfully
-          SET IPP_INSTALLED=1
-      ) else (
-          echo WARNING: Intel IPP installation not detected. Building without IPP...
-          SET IPP_INSTALLED=0
-      )
-      ```
-
-    **Faust (Optional):**
-    - If Faust is NOT installed:
-      ```
-      Install Faust DSP programming language? [Y/n]
-
-      Y (Yes) - Use "Release with Faust" build configuration
-      N (No) - Use Release build configuration (without Faust)
-      ```
-       - **Y (Yes):** Mark for automated installation in Phase 7
-      - **N (No):** Skip Faust installation, use Release configuration
-    - **Auto-detection:** If Faust is already installed at the expected location, skip the prompt and use it automatically
-
-**After Phase 0 Complete:**
-- Store all user preferences (installation path, component choices)
-- Store component installation status variables:
-  - `VS_INSTALLED` (0 or 1)
-  - `IPP_INSTALLED` (0 or 1)
-  - `FAUST_INSTALLED` (0 or 1)
-  - `FAUST_CHOICE` (1 for install, 0 for skip)
-- Proceed to Phase 1 with automated steps only (no more user prompts)
-
 ---
 
-## Phase 1: Platform Detection & System Requirements Check
+## Phase 1: User Configuration
 
-**High-level log:** "Detecting platform and checking system requirements..."
+**High-level log:** "Gathering user preferences and configuration settings..."
 
-### Step 1: Platform Detection
-- Verify Windows compatibility
-- **Detect CPU architecture**
-- Check disk space requirements (~2-5 GB)
+This phase collects user preferences for the setup process, including installation location and optional component selections (Intel IPP, Faust).
 
-**Architecture Detection Commands:**
-- **Windows:** `echo %PROCESSOR_ARCHITECTURE%` (returns `AMD64` for x64, `ARM64` for ARM)
+### User Configuration Options
 
-```
+1. **Installation Location Selection**
+   - Default path: `C:\HISE`
+   - Prompt user:
+     ```
+     Default HISE installation path: C:\HISE
 
-**Normal Mode:**
-- **Windows ARM64:** Display warning that native ARM64 is not supported, x64 build will be created (runs via Windows x64 emulation)
+     Where would you like to install HISE?
+     1. Use default location (C:\HISE)
+     2. Specify custom path
+     ```
+
+2. **Optional Component Selection**
+
+**Visual Studio (REQUIRED - cannot skip):**
+   - If Visual Studio is NOT installed from Phase 0 detection:
+     ```
+     [REQUIRED] Visual Studio 2026 is not installed.
+
+     Please download and install Visual Studio 2026 Community:
+     - Download from: https://visualstudio.microsoft.com/downloads/
+     - Select "Visual Studio Community 2026" (Web Installer)
+     - During installation, select "Desktop development with C++" workload
+     - IMPORTANT: Use the standard Community edition, NOT Preview/Insider editions
+
+     After installation is complete, press Enter to continue...
+     ```
+   - The agent **HALTS** and waits for user to press Enter
+   - After user confirms, verify installation again:
+     ```batch
+     if exist "C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\MsBuild.exe" (
+         echo Visual Studio 2026 installed successfully
+     ) else (
+         echo ERROR: Visual Studio installation not detected. Please try again.
+         exit /b 1
+     )
+     ```
+
+**Intel IPP (Optional - user selection):**
+   - Prompt user:
+     ```
+     Install Intel IPP oneAPI for performance optimization?
+
+     Intel IPP provides optimized signal processing functions that can improve HISE performance.
+
+     [Y] Yes, install Intel IPP
+     [N] No, build without IPP
+     ```
+   - Store user choice for Phase 6 execution
+   - If user selects "Yes" and IPP is not installed: Phase 6 will install it
+   - If user selects "Yes" and IPP is already installed: Phase 6 will be skipped
+   - If user selects "No": Phase 6 will be skipped
+
+**Faust (Optional - user selection):**
+   - Prompt user:
+     ```
+     Install Faust DSP programming language?
+
+     Faust allows real-time DSP compilation within HISE, enabling dynamic audio processing algorithms.
+
+     [Y] Yes, install Faust (builds "Release with Faust" configuration)
+     [N] No, skip Faust (builds standard Release configuration)
+     ```
+   - Store user choice for Phase 7 execution
+   - If user selects "Yes" and Faust is not installed: Phase 7 will install it
+   - If user selects "Yes" and Faust is already installed: Phase 7 will be skipped
+   - If user selects "No": Phase 7 will be skipped and standard Release build will be used
+
+**After Phase 1 Complete:**
+- Store all user preferences:
+  - Installation path (default `C:\HISE` or custom path)
+  - Intel IPP choice (true/false)
+  - Faust choice (true/false)
+- Proceed to Phase 2 with all preferences set (no more user prompts required)
 
 ---
 
@@ -443,7 +405,7 @@ unzip tools/SDK/sdk.zip -d tools/SDK/
 
 ### Step 6: Intel IPP Installation (Optional)
 
-**Note:** This step only executes if user selected "Yes" to Intel IPP in Phase 0 and Intel IPP is not already installed.
+**Note:** This step only executes if user selected "Yes" to Intel IPP in Phase 1 and Intel IPP is not already installed.
 
 > **Intel IPP Download URL:** https://registrationcenter-download.intel.com/akdlm/IRC_NAS/9c651894-4548-491c-b69f-49e84b530c1d/intel-ipp-2022.3.1.10_offline.exe
 > **Recommended Version:** 2022.3.1.10
@@ -503,7 +465,7 @@ set IPP_INSTALLED=0
 
 ### Step 7: Faust Installation (Optional)
 
-**Note:** This step only executes if user selected "Yes" to Faust in Phase 0 and Faust is not already installed.
+**Note:** This step only executes if user selected "Yes" to Faust in Phase 1 and Faust is not already installed.
 
 > **Faust Download URL:** https://github.com/grame-cncm/faust/releases
 > **Recommended Version:** 2.54.0 or later
@@ -664,10 +626,10 @@ setx PATH "%PATH%;{hisePath}\projects\standalone\Builds\VisualStudio2026\x64\Rel
 ### Step 10: Verify Build Configuration
 
 **Validate Build Flags:**
-This step executes `HISE get_build_flags` to verify that HISE was compiled with the configuration that matches the user's preferences from Phase 0:
+This step executes `HISE get_build_flags` to verify that HISE was compiled with the configuration that matches the user's preferences from Phase 1:
 - Release or Release with Faust build configuration (never Debug)
-- Faust support must match the user's Phase 0 Faust selection
-- IPP support must match the user's Phase 0 IPP selection (if applicable)
+- Faust support must match the user's Phase 1 Faust selection
+- IPP support must match the user's Phase 1 IPP selection (if applicable)
 
 **Validation Process:**
 1. Execute: `HISE get_build_flags`
@@ -675,10 +637,10 @@ This step executes `HISE get_build_flags` to verify that HISE was compiled with 
    - Build Configuration: {value}
    - Faust Support: {value}
    - IPP Support: {value}
-3. Validate against Phase 0 preferences:
+3. Validate against Phase 1 preferences:
    - Build Configuration must contain "Release" (and "Faust" if selected)
-   - Faust Support = "Enabled" if user selected "Yes" in Phase 0, "Disabled" otherwise
-   - IPP Support = "Enabled" if user selected "Yes" and installed IPP in Phase 0, "Disabled" otherwise
+   - Faust Support = "Enabled" if user selected "Yes" in Phase 1, "Disabled" otherwise
+   - IPP Support = "Enabled" if user selected "Yes" and installed IPP in Phase 1, "Disabled" otherwise
 
 ```
 
@@ -691,21 +653,21 @@ This step executes `HISE get_build_flags` to verify that HISE was compiled with 
    - Faust Support: {value}
    - IPP Support: {value}
 
-4. Validate against Phase 0 user preferences:
+4. Validate against Phase 1 user preferences:
    - Build Configuration must contain "Release"
-   - If user selected "Yes" to Faust in Phase 0: Faust Support must be "Enabled"
-   - If user selected "No" to Faust in Phase 0: Faust Support must be "Disabled"
-   - If user selected "Yes" to IPP in Phase 0 and installed it: IPP Support must be "Enabled"
-   - If user selected "No" to IPP in Phase 0: IPP Support must be "Disabled"
+   - If user selected "Yes" to Faust in Phase 1: Faust Support must be "Enabled"
+   - If user selected "No" to Faust in Phase 1: Faust Support must be "Disabled"
+   - If user selected "Yes" to IPP in Phase 1 and installed it: IPP Support must be "Enabled"
+   - If user selected "No" to IPP in Phase 1: IPP Support must be "Disabled"
 
 **If All Validations Pass:**
 ```
-Verifying HISE build configuration against your Phase 0 preferences...
+Verifying HISE build configuration against your Phase 1 preferences...
 
 Build Configuration Validation Results:
 [✓] Build Configuration: Release with Faust (matches your selection)
-[✓] Faust Support: Enabled (matches your Phase 0 choice)
-[✓] IPP Support: Enabled (matches your Phase 0 choice)
+[✓] Faust Support: Enabled (matches your Phase 1 choice)
+[✓] IPP Support: Enabled (matches your Phase 1 choice)
 
 Build configuration verified successfully!
 ```
@@ -717,7 +679,7 @@ Display validation error with options:
 ```
 [✗] BUILD CONFIGURATION VALIDATION FAILED
 
-Your Phase 0 Preferences:
+Your Phase 1 Preferences:
   - Faust: Yes (you selected to install Faust)
   - IPP: Yes (you selected to install IPP)
 
@@ -730,7 +692,7 @@ Actual Build Flags (from HISE get_build_flags output):
   - Faust Support: Disabled ✗
   - IPP Support: Enabled ✓
 
-PROBLEM: Faust support is disabled but you requested it in Phase 0.
+PROBLEM: Faust support is disabled but you requested it in Phase 1.
 This indicates Faust was not properly linked during compilation.
 
 OPTIONS:
@@ -738,7 +700,7 @@ OPTIONS:
     - Will run: Projucer --resave, then MSBuild, then re-verify build flags
 
 2. Reconfigure manually
-    - Verify your installation matches Phase 0 preferences
+    - Verify your installation matches Phase 1 preferences
     - Check Projucer project settings
     - Manually rebuild HISE using the build commands from Phase 8
     - Re-run this verification: HISE get_build_flags

@@ -2,113 +2,102 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { CheckCircle, XCircle, SkipForward } from 'lucide-react';
 import PhaseStepper from '@/components/wizard/PhaseStepper';
-import CommandBlock from '@/components/wizard/CommandBlock';
-import ErrorAssistant from '@/components/wizard/ErrorAssistant';
-import { MOCK_COMMANDS } from '@/lib/setup/phases';
+import { PHASES, PhaseStatus } from '@/lib/setup/phases';
 import { useWizard } from '@/contexts/WizardContext';
 
 export default function Phase1Page() {
   const router = useRouter();
-  const { setCurrentPhase, completePhase } = useWizard();
-  const [stepFailed, setStepFailed] = useState(false);
-
-  const phaseData = MOCK_COMMANDS.find(c => c.phase === 1);
-  const command = phaseData?.command || '';
-  const explanation = phaseData?.explanation || '';
+  const { setCurrentPhase, preferences, setPreferences } = useWizard();
+  const [installLocation, setInstallLocation] = useState(preferences.installLocation);
+  const [includeIntelIPP, setIncludeIntelIPP] = useState(preferences.includeIntelIPP);
+  const [includeFaust, setIncludeFaust] = useState(preferences.includeFaust);
 
   useEffect(() => {
     setCurrentPhase(1);
   }, [setCurrentPhase]);
 
-  const handleSuccess = () => {
-    completePhase(1);
-    setTimeout(() => {
-      router.push('/setup/2');
-    }, 500);
-  };
-
-  const handleFailure = () => {
-    setStepFailed(true);
-  };
-
-  const handleRetry = () => {
-    setStepFailed(false);
+  const handleContinue = () => {
+    setPreferences({ installLocation, includeIntelIPP, includeFaust });
+    router.push('/setup/2');
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
-      <div className="px-4 py-3 flex items-center" style={{ backgroundColor: '#050505' }}>
-        <img
-          src="/images/logo_new.png"
-          alt="HISE Logo"
-          className="h-8 w-auto"
-        />
-        <span className="ml-3 text-lg font-semibold">HISE Install Wizard</span>
-      </div>
+    <div className="min-h-screen bg-background p-4">
+      <div className="max-w-4xl mx-auto">
+        <PhaseStepper currentPhase={1} />
 
-      <div className="flex-1 flex flex-col items-center w-full">
-        <div className="p-4 w-full" style={{ maxWidth: '900px' }}>
-          <PhaseStepper currentPhase={1} />
-        </div>
+        <div className="bg-surface p-8 rounded shadow-md border border-border">
+          <h1 className="text-2xl font-bold mb-2">Phase 1: User Configuration</h1>
+          <p className="text-gray-400 mb-6">
+            Configure your HISE installation preferences and optional components.
+          </p>
 
-        <div className="flex-1 px-4 pb-4 w-full" style={{ maxWidth: '900px' }}>
-          <div className="bg-surface p-8 rounded border border-border h-full" style={{ borderRadius: '3px' }}>
-            <h1 className="text-2xl font-bold mb-2">Phase 1: Platform Detection</h1>
-            <p className="mb-6" style={{ color: '#999' }}>
-              Verify your system meets the requirements for HISE development.
-            </p>
-
-            <div className="mb-6">
-              <h2 className="text-lg font-semibold mb-3">What we're doing:</h2>
-              <p className="mb-4" style={{ color: '#999' }}>{explanation}</p>
+          <h2 className="text-xl font-semibold mb-4">Installation Settings</h2>
+          <div className="space-y-4 mb-6">
+            <div>
+              <label htmlFor="installLocation" className="block font-medium mb-2">
+                Installation Location
+              </label>
+              <input
+                id="installLocation"
+                type="text"
+                value={installLocation}
+                onChange={(e) => setInstallLocation(e.target.value)}
+                className="w-full p-3 border border-border rounded bg-gray-700 text-gray-100 placeholder-gray-400"
+                placeholder="e.g., C:\HISE"
+              />
+              <p className="text-sm text-gray-500 mt-1">
+                Default: C:\HISE
+              </p>
             </div>
-
-            <div className="mb-6 p-4 border border-border" style={{ backgroundColor: '#111', borderRadius: '3px' }}>
-              <h3 className="font-medium mb-2" style={{ color: '#90FFB1' }}>Instructions:</h3>
-              <ol className="list-decimal list-inside space-y-1" style={{ color: '#999' }}>
-                <li>Copy the command above using the "Copy" button</li>
-                <li>Open your terminal (Command Prompt or PowerShell)</li>
-                <li>Paste and run the command</li>
-                <li>Review the output to ensure no errors occurred</li>
-                <li>Click "Success" or "Failure" based on the result</li>
-              </ol>
-            </div>
-
-            <CommandBlock command={command} />
-
-            {!stepFailed ? (
-              <div className="flex gap-4">
-                <button
-                  onClick={handleSuccess}
-                  className="flex-1 px-6 py-3 font-semibold border border-border flex items-center justify-center gap-2"
-                  style={{ backgroundColor: '#4E8E35', color: '#fff', borderRadius: '3px' }}
-                >
-                  <CheckCircle size={18} />
-                  Success
-                </button>
-                <button
-                  onClick={handleFailure}
-                  className="flex-1 px-6 py-3 font-semibold border border-border flex items-center justify-center gap-2"
-                  style={{ backgroundColor: '#BB3434', color: '#fff', borderRadius: '3px' }}
-                >
-                  <XCircle size={18} />
-                  Failure
-                </button>
-                <button
-                  onClick={() => router.push('/setup/2')}
-                  className="flex-1 px-6 py-3 font-semibold border border-border flex items-center justify-center gap-2"
-                  style={{ backgroundColor: '#333', color: '#999', borderRadius: '3px' }}
-                >
-                  <SkipForward size={18} />
-                  Skip
-                </button>
-              </div>
-            ) : (
-              <ErrorAssistant onRetry={handleRetry} />
-            )}
           </div>
+
+          <h2 className="text-xl font-semibold mb-4">Optional Components</h2>
+          <div className="space-y-4 mb-6">
+            <div className="flex items-center gap-3">
+              <input
+                id="includeIntelIPP"
+                type="checkbox"
+                checked={includeIntelIPP}
+                onChange={(e) => setIncludeIntelIPP(e.target.checked)}
+                className="w-5 h-5 accent-accent"
+              />
+              <div>
+                <label htmlFor="includeIntelIPP" className="font-medium">
+                  Include Intel IPP
+                </label>
+                <p className="text-sm text-gray-500">
+                  Performance optimization library (optional but recommended)
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <input
+                id="includeFaust"
+                type="checkbox"
+                checked={includeFaust}
+                onChange={(e) => setIncludeFaust(e.target.checked)}
+                className="w-5 h-5 accent-accent"
+              />
+              <div>
+                <label htmlFor="includeFaust" className="font-medium">
+                  Include Faust
+                </label>
+                <p className="text-sm text-gray-500">
+                  DSP programming language support (optional)
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <button
+            onClick={handleContinue}
+            className="w-full px-6 py-3 bg-accent hover:bg-green-400 text-background font-semibold rounded border border-border"
+          >
+            Continue to Next Step
+          </button>
         </div>
       </div>
     </div>
