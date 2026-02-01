@@ -76,5 +76,5 @@ export const containerStyles = {
 
 export const fonts = {
   body: "'Lato', sans-serif",
-  mono: "'Source Sans Pro', monospace",
+  mono: "'Source Code Pro', monospace",
 } as const;

@@ -21,10 +21,10 @@ module.exports = {
             text: '#999',
           },
         },
-        fontFamily: {
-          sans: ['Lato', 'sans-serif'],
-          mono: ['Source Sans Pro', 'monospace'],
-        },
+         fontFamily: {
+           sans: ['Lato', 'sans-serif'],
+           mono: ['Source Code Pro', 'monospace'],
+         },
         borderRadius: {
           DEFAULT: '3px',
         },
