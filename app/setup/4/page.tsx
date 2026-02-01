@@ -8,23 +8,23 @@ import ErrorAssistant from '@/components/wizard/ErrorAssistant';
 import { MOCK_COMMANDS } from '@/lib/setup/phases';
 import { useWizard } from '@/contexts/WizardContext';
 
-export default function Phase2Page() {
+export default function Phase4Page() {
   const router = useRouter();
   const { setCurrentPhase, completePhase } = useWizard();
   const [stepFailed, setStepFailed] = useState(false);
 
-  const phaseData = MOCK_COMMANDS.find(c => c.phase === 2);
+  const phaseData = MOCK_COMMANDS.find(c => c.phase === 4);
   const command = phaseData?.command || '';
   const explanation = phaseData?.explanation || '';
 
   useEffect(() => {
-    setCurrentPhase(2);
+    setCurrentPhase(4);
   }, [setCurrentPhase]);
 
   const handleSuccess = () => {
-    completePhase(2);
+    completePhase(4);
     setTimeout(() => {
-      router.push('/setup/3');
+      router.push('/setup/5');
     }, 500);
   };
 
@@ -39,12 +39,12 @@ export default function Phase2Page() {
   return (
     <div className="min-h-screen bg-gray-900 p-4">
       <div className="max-w-4xl mx-auto">
-        <PhaseStepper currentPhase={2} />
+        <PhaseStepper currentPhase={4} />
 
         <div className="bg-gray-800 p-8 rounded-lg shadow-md border border-gray-700">
-          <h1 className="text-2xl font-bold mb-2">Phase 2: Git Setup</h1>
+          <h1 className="text-2xl font-bold mb-2">Phase 4: JUCE Submodule Verification</h1>
           <p className="text-gray-400 mb-6">
-            Install Git, clone the HISE repository, and initialize the JUCE submodule.
+            Verify JUCE is on juce6 branch.
           </p>
 
           <div className="mb-6">
@@ -60,7 +60,7 @@ export default function Phase2Page() {
               <li>Copy the command above using the "Copy" button</li>
               <li>Open your terminal (Command Prompt or PowerShell)</li>
               <li>Paste and run the command</li>
-              <li>Wait for the clone and submodule initialization to complete</li>
+              <li>Verify that the output shows "juce6" as the current branch</li>
               <li>Click "Success" or "Failure" based on the result</li>
             </ol>
           </div>
