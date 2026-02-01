@@ -31,7 +31,7 @@ Automates complete development environment setup for HISE (Hart Instrument Softw
 - Initializes and updates JUCE submodule
 - Uses **juce6 branch only** (stable version)
 
-### 3. IDE ### 4. IDE & Compiler Installation (REQUIRED - NO SKIP) Compiler Installation (REQUIRED - NO SKIP)
+### 3. Visual Studio 2026 Installation (REQUIRED - Cannot Skip)
 
 > **This step is mandatory.** HISE cannot be compiled without a C++ compiler. The agent must not offer an option to skip this step.
 
@@ -40,7 +40,7 @@ Automates complete development environment setup for HISE (Hart Instrument Softw
 - Verifies MSBuild availability before proceeding
 - **Cannot proceed without Visual Studio**
 
-### 5. SDK ### 4. SDK & Tool Installation Tool Installation
+### 4. SDK Installation
 
 **Required SDKs:**
 - Extracts and configures ASIO SDK 2.3 (low-latency audio)
@@ -302,7 +302,7 @@ The agent should query the system for the following:
       Y (Yes) - Use "Release with Faust" build configuration
       N (No) - Use Release build configuration (without Faust)
       ```
-      - **Y (Yes):** Mark for automated installation in Phase 5
+       - **Y (Yes):** Mark for automated installation in Phase 7
       - **N (No):** Skip Faust installation, use Release configuration
     - **Auto-detection:** If Faust is already installed at the expected location, skip the prompt and use it automatically
 
@@ -367,11 +367,60 @@ cd JUCE && git checkout juce6 && cd ..
 
 ---
 
-## Phase 3: SDK Installation (if needed)
+## Phase 3: Visual Studio 2026 Installation
+
+**High-level log:** "Installing Visual Studio 2026 Community..."
+
+### Step 3: Visual Studio 2026 Installation (REQUIRED - Cannot Skip)
+
+> **This step is mandatory.** HISE cannot be compiled without a C++ compiler. The agent must not offer an option to skip this step.
+
+- Detects Visual Studio installation (**VS2026 required**)
+- If not installed: **HALT** and direct user to install VS2026 Community with "Desktop development with C++" workload
+- Verifies MSBuild availability before proceeding
+- **Cannot proceed without Visual Studio**
+
+**Normal Mode (if Visual Studio not installed):**
+```batch
+REM Download Visual Studio 2026 Community from https://visualstudio.microsoft.com/downloads/
+REM Select "Visual Studio Community 2026" (Web Installer)
+REM During installation, select "Desktop development with C++" workload
+REM IMPORTANT: Use the standard Community edition, NOT Preview/Insider editions
+
+REM After installation is complete, verify:
+if exist "C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\MsBuild.exe" (
+    echo Visual Studio 2026 installed successfully
+) else (
+    echo ERROR: Visual Studio installation not detected. Please try again.
+    exit /b 1
+)
+```
+
+---
+
+## Phase 4: JUCE Submodule Verification
+
+**High-level log:** "Verifying JUCE submodule configuration..."
+
+### Step 4: JUCE Submodule Verification
+- Verify JUCE submodule is on **juce6 branch**
+- Validate JUCE structure is complete
+
+
+**Normal Mode (if JUCE not initialized):**
+```batch
+cd {hisePath}
+git submodule update --init
+cd JUCE && git checkout juce6 && cd ..
+```
+
+---
+
+## Phase 5: SDK Installation (if needed)
 
 **High-level log:** "Extracting and configuring required SDKs..."
 
-### Step 3: SDK Installation
+### Step 5: SDK Installation
 - Check if SDKs are already extracted
 - If not extracted: Extract tools/SDK/sdk.zip to tools/SDK/
 - Verify structure:
@@ -388,30 +437,71 @@ unzip tools/SDK/sdk.zip -d tools/SDK/
 
 ---
 
-## Phase 4: JUCE Submodule Verification
+## Phase 6: Intel IPP Installation (if user selected)
 
-**High-level log:** "Verifying JUCE submodule configuration..."
+**High-level log:** "Installing Intel IPP oneAPI for performance optimization..."
 
-### Step 4: JUCE Submodule Verification
-- Verify JUCE submodule is on **juce6 branch**
-- Validate JUCE structure is complete
+### Step 6: Intel IPP Installation (Optional)
 
+**Note:** This step only executes if user selected "Yes" to Intel IPP in Phase 0 and Intel IPP is not already installed.
+
+> **Intel IPP Download URL:** https://registrationcenter-download.intel.com/akdlm/IRC_NAS/9c651894-4548-491c-b69f-49e84b530c1d/intel-ipp-2022.3.1.10_offline.exe
+> **Recommended Version:** 2022.3.1.10
+
+**Windows Intel IPP Installation:**
+1. **Option A - Download using curl (automatic):**
+    ```batch
+    REM Verify Visual Studio 2026 is installed before attempting IPP installation
+    if not exist "C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\MsBuild.exe" (
+        echo ERROR: Visual Studio 2026 not found. IPP cannot be installed without Visual Studio.
+        echo Please install Visual Studio 2026 first, then run this setup again.
+        exit /b 1
+    )
+
+    echo Visual Studio 2026 detected, proceeding with IPP installation...
+    Downloading Intel IPP oneAPI 2022.3.1.10 installer...
+    curl -L -o "%TEMP%\intel-ipp-installer.exe" "https://registrationcenter-download.intel.com/akdlm/IRC_NAS/9c651894-4548-491c-b69f-49e84b530c1d/intel-ipp-2022.3.1.10_offline.exe"
+
+    Installing Intel IPP with Visual Studio 2026 integration...
+    "%TEMP%\intel-ipp-installer.exe" -s -a --silent --eula accept
+    if not %errorlevel%==0 (
+        echo ERROR: Intel IPP installation failed. Press Enter to continue without IPP...
+        pause
+        SET IPP_INSTALLED=0
+    ) else (
+        echo Intel IPP installed successfully
+        SET IPP_INSTALLED=1
+    )
+    ```
+2. **Option B - Manual download:**
+    - Direct user to download from the Intel IPP URL
+    - Instruct user to run the installer and ensure Visual Studio integration is selected
+3. **WAIT** for user to confirm installation is complete
+4. Verify installation by checking that this path exists:
+    ```batch
+    if exist "C:\Program Files (x86)\Intel\oneAPI\ipp\latest" (echo Intel IPP installed successfully) else (echo Intel IPP installation not found)
+    ```
+5. **If verification fails:** Re-prompt user to complete installation, do NOT proceed
+
+After successful Intel IPP verification, track the installation status:
+```batch
+REM Track Intel IPP installation status for Phase 10 validation
+set IPP_INSTALLED=1
 ```
 
-**Normal Mode (if JUCE not initialized):**
+If user selected "No" to Intel IPP installation or if installation failed:
 ```batch
-cd {hisePath}
-git submodule update --init
-cd JUCE && git checkout juce6 && cd ..
+REM Intel IPP was not installed - track for Phase 10 validation
+set IPP_INSTALLED=0
 ```
 
 ---
 
-## Phase 5: Faust Installation (if user selected)
+## Phase 7: Faust Installation (if user selected)
 
 **High-level log:** "Installing Faust DSP compiler..."
 
-### Step 5: Faust Installation (Optional)
+### Step 7: Faust Installation (Optional)
 
 **Note:** This step only executes if user selected "Yes" to Faust in Phase 0 and Faust is not already installed.
 
@@ -441,13 +531,13 @@ cd JUCE && git checkout juce6 && cd ..
 
 After successful Faust verification, track the installation status:
 ```batch
-REM Track Faust installation status for Phase 9 validation
+REM Track Faust installation status for Phase 10 validation
 set FAUST_INSTALLED=1
 ```
 
 If user selected "No" to Faust installation or if installation failed:
 ```batch
-REM Faust was not installed - track for Phase 9 validation
+REM Faust was not installed - track for Phase 10 validation
 set FAUST_INSTALLED=0
 ```
 
@@ -461,14 +551,14 @@ set FAUST_INSTALLED=0
 
 ---
 
-## Phase 6: Compile HISE Standalone Application
+## Phase 8: Compile HISE Standalone Application
 
 **High-level log:** "Compiling HISE Standalone application..."
 
-### Step 6: Compile HISE Standalone Application
+### Step 8: Compile HISE Standalone Application
 
 **Build Configuration Selection:**
-- If Faust was installed (Phase 5): Use `"Release with Faust"` configuration
+- If Faust was installed (Phase 7): Use `"Release with Faust"` configuration
 - If Faust was not installed: Use `Release` configuration
 
 > **IMPORTANT - Build Timeout:** HISE compilation can take **5-15 minutes** depending on the system.
@@ -539,11 +629,11 @@ if %HISE_SIZE% LSS 10485760 (
 
 ---
 
-## Phase 7: Add HISE to PATH
+## Phase 9: Add HISE to PATH
 
 **High-level log:** "Adding HISE to PATH environment variable..."
 
-### Step 7: Add HISE to PATH
+### Step 9: Add HISE to PATH
 
 **Path Selection:**
 - If Faust was installed: Use `"Release with Faust"` output directory
@@ -567,11 +657,11 @@ setx PATH "%PATH%;{hisePath}\projects\standalone\Builds\VisualStudio2026\x64\Rel
 
 ---
 
-## Phase 8: Verify Build Configuration
+## Phase 10: Verify Build Configuration
 
 **High-level log:** "Verifying HISE build configuration and validating compiled features against user preferences..."
 
-### Step 8: Verify Build Configuration
+### Step 10: Verify Build Configuration
 
 **Validate Build Flags:**
 This step executes `HISE get_build_flags` to verify that HISE was compiled with the configuration that matches the user's preferences from Phase 0:
@@ -619,7 +709,7 @@ Build Configuration Validation Results:
 
 Build configuration verified successfully!
 ```
-Then proceed to Phase 9.
+Then proceed to Phase 11.
 
 **If Any Validation Fails:**
 
@@ -650,11 +740,11 @@ OPTIONS:
 2. Reconfigure manually
     - Verify your installation matches Phase 0 preferences
     - Check Projucer project settings
-    - Manually rebuild HISE using the build commands from Phase 6
+    - Manually rebuild HISE using the build commands from Phase 8
     - Re-run this verification: HISE get_build_flags
 
 3. Skip validation and continue
-    - Proceed to Phase 9 without verification
+    - Proceed to Phase 11 without verification
 
 Select option (1/2/3):
 ```
@@ -665,7 +755,7 @@ Select option (1/2/3):
 - Execute: `"C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\MsBuild.exe" "projects\standalone\Builds\VisualStudio2026\HISE Standalone.sln" /p:Configuration={Release|"Release with Faust"} /p:PreferredToolArchitecture=x64 /verbosity:minimal`
 - If MSBuild fails: Display error and ask user to select option 2
 - Execute `HISE get_build_flags` again and validate
-- If validation passes: Display success message and proceed to Phase 9
+- If validation passes: Display success message and proceed to Phase 11
 - If validation still fails: Display error prompt again and loop back to OPTIONS
 
 **Option 2 (Reconfigure Manually):**
@@ -677,19 +767,19 @@ Please review and correct the following:
 For Faust issues:
   1. Verify Faust is installed: C:\Program Files\Faust\lib\faust.dll
   2. Check Projucer project settings include Faust paths
-  3. Manually rebuild HISE using the build commands from Phase 6
+  3. Manually rebuild HISE using the build commands from Phase 8
   4. Re-run this verification: HISE get_build_flags
 
 For IPP issues:
   1. Verify IPP is installed: C:\Program Files (x86)\Intel\oneAPI\ipp\latest
   2. Check Projucer project settings include IPP paths
-  3. Manually rebuild HISE using the build commands from Phase 6
+  3. Manually rebuild HISE using the build commands from Phase 8
   4. Re-run this verification: HISE get_build_flags
 
 For IPP issues:
   1. Verify IPP is installed: C:\Program Files (x86)\Intel\oneAPI\ipp\latest
   2. Check Projucer project settings include IPP paths
-  3. Manually rebuild HISE using the build commands from Phase 6
+  3. Manually rebuild HISE using the build commands from Phase 8
   4. Re-run this verification: HISE get_build_flags
 
 After rebuilding, restart this setup script.
@@ -700,17 +790,17 @@ Then exit the script.
 ```
 Skipping build configuration validation.
 WARNING: Build may be incomplete if validations failed!
-Proceeding to Phase 9...
+Proceeding to Phase 11...
 ```
-Then proceed to Phase 9.
+Then proceed to Phase 11.
 
 ---
 
-## Phase 9: Compile Test Project
+## Phase 11: Compile Test Project
 
 **High-level log:** "Compiling test project to verify complete setup..."
 
-### Step 9: Compile Test Project
+### Step 11: Compile Test Project
 
 **Test Project Location:** `extras\demo_project\`
 
@@ -729,11 +819,11 @@ HISE export_ci "XmlPresetBackups\Demo.xml" -t:standalone -a:x64
 
 ---
 
-## Phase 10: Success Verification
+## Phase 12: Success Verification
 
 **High-level log:** "Setup complete! HISE development environment is ready to use."
 
-### Step 10: Success Verification
+### Step 12: Success Verification
 
 **Successful completion criteria:**
 1. HISE compiled from `projects\standalone\HISE Standalone.jucer`
@@ -875,15 +965,18 @@ cd projects\standalone
 
 ### Completion Criteria
 Agent completes successfully when:
-1. Git is installed and repository cloned
-2. IDE/compiler is installed and functional (VS2026)
-3. JUCE submodule is initialized with **juce6 branch**
-4. Required SDKs are extracted and configured
-5. HISE compiles from `projects\standalone\HISE Standalone.jucer` without errors
-6. HISE binary is added to PATH environment variable
-7. `HISE --help` displays available CLI commands
-8. Test project from `extras\demo_project\` compiles successfully
-9. System is fully ready for HISE development
+1. Platform is detected and verified
+2. Visual Studio 2026 is installed and functional
+3. Git is installed and repository cloned
+4. JUCE submodule is initialized with **juce6 branch**
+5. Required SDKs are extracted and configured
+6. Intel IPP is installed (if user selected)
+7. Faust is installed (if user selected)
+8. HISE compiles from `projects\standalone\HISE Standalone.jucer` without errors
+9. HISE binary is added to PATH environment variable
+10. `HISE get_build_flags` displays correct build configuration
+11. Test project from `extras\demo_project\` compiles successfully
+12. System is fully ready for HISE development
 
 ---
 
