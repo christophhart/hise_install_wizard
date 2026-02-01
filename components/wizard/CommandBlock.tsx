@@ -21,12 +21,12 @@ export default function CommandBlock({ command }: CommandBlockProps) {
         <h4 className="font-medium">Terminal Command</h4>
         <button
           onClick={handleCopy}
-          className="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded text-sm"
+          className="px-3 py-1 bg-surface hover:bg-gray-700 rounded text-sm border border-border"
         >
           {copied ? 'Copied!' : 'Copy'}
         </button>
       </div>
-      <div className="bg-gray-900 text-green-400 p-4 rounded font-mono text-sm overflow-x-auto">
+      <div className="bg-background text-accent p-4 rounded font-mono text-sm overflow-x-auto border border-border">
         {command}
       </div>
     </div>

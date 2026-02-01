@@ -10,7 +10,7 @@ export default function HomePage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-900 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <div className="max-w-2xl w-full">
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold mb-4">HISE Setup Wizard</h1>
@@ -19,7 +19,7 @@ export default function HomePage() {
           </p>
         </div>
 
-        <div className="bg-gray-800 p-8 rounded-lg shadow-md mb-6 border border-gray-700">
+        <div className="bg-surface p-8 rounded shadow-md mb-6 border border-border">
           <h2 className="text-2xl font-semibold mb-4">What this wizard will do:</h2>
           <ul className="list-disc list-inside space-y-2 text-gray-300">
             <li>Detect your system configuration</li>
@@ -34,7 +34,7 @@ export default function HomePage() {
         <div className="text-center">
           <button
             onClick={handleStartSetup}
-            className="px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white text-lg font-semibold rounded-lg"
+            className="px-8 py-4 bg-accent hover:bg-green-400 text-background text-lg font-semibold rounded border border-border"
           >
             Start Setup
           </button>

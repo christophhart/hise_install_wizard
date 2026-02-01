@@ -37,11 +37,11 @@ export default function Phase11Page() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 p-4">
+    <div className="min-h-screen bg-background p-4">
       <div className="max-w-4xl mx-auto">
         <PhaseStepper currentPhase={11} />
 
-        <div className="bg-gray-800 p-8 rounded-lg shadow-md border border-gray-700">
+        <div className="bg-surface p-8 rounded shadow-md border border-border">
           <h1 className="text-2xl font-bold mb-2">Phase 11: Compile Test Project</h1>
           <p className="text-gray-400 mb-6">
             Compile demo project to verify setup.
@@ -52,14 +52,14 @@ export default function Phase11Page() {
             <p className="text-gray-300 mb-4">{explanation}</p>
           </div>
 
-          <CommandBlock command={command} />
-
-          <div className="mb-6 p-4 bg-green-900/30 border border-green-700 rounded">
-            <h3 className="font-medium text-green-300 mb-2">Final Test</h3>
+          <div className="mb-6 p-4 bg-green-900/30 border border-accent rounded">
+            <h3 className="font-medium text-accent mb-2">Final Test</h3>
             <p className="text-gray-300">
-              This is the final validation step. Successfully compiling the demo project confirms that your HISE development environment is fully configured and ready for use.
+              This is the final validation step. Successfully compiling demo project confirms that your HISE development environment is fully configured and ready for use.
             </p>
           </div>
+
+          <CommandBlock command={command} />
 
           <div className="mb-6 p-4 bg-blue-900/30 border border-blue-700 rounded">
             <h3 className="font-medium text-blue-300 mb-2">Instructions:</h3>
@@ -78,13 +78,13 @@ export default function Phase11Page() {
             <div className="flex gap-4">
               <button
                 onClick={handleSuccess}
-                className="flex-1 px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded"
+                className="flex-1 px-6 py-3 bg-accent hover:bg-green-400 text-background font-semibold rounded border border-border"
               >
                 Success
               </button>
               <button
                 onClick={handleFailure}
-                className="flex-1 px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-semibold rounded"
+                className="flex-1 px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-semibold rounded border border-border"
               >
                 Failure
               </button>

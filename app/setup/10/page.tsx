@@ -37,11 +37,11 @@ export default function Phase10Page() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 p-4">
+    <div className="min-h-screen bg-background p-4">
       <div className="max-w-4xl mx-auto">
         <PhaseStepper currentPhase={10} />
 
-        <div className="bg-gray-800 p-8 rounded-lg shadow-md border border-gray-700">
+        <div className="bg-surface p-8 rounded shadow-md border border-border">
           <h1 className="text-2xl font-bold mb-2">Phase 10: Verify Build Configuration</h1>
           <p className="text-gray-400 mb-6">
             Run HISE get_build_flags to verify build.
@@ -60,7 +60,7 @@ export default function Phase10Page() {
               <li>Copy command above using the "Copy" button</li>
               <li>Open your terminal (Command Prompt or PowerShell)</li>
               <li>Paste and run the command</li>
-              <li>Review the output to verify build configuration:</li>
+              <li>Review of output to verify build configuration:</li>
               <li className="ml-4">- Build Configuration should contain "Release"</li>
               <li className="ml-4">- Faust Support should match your Phase 0 selection</li>
               <li className="ml-4">- IPP Support should match your Phase 0 selection</li>
@@ -72,13 +72,13 @@ export default function Phase10Page() {
             <div className="flex gap-4">
               <button
                 onClick={handleSuccess}
-                className="flex-1 px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded"
+                className="flex-1 px-6 py-3 bg-accent hover:bg-green-400 text-background font-semibold rounded border border-border"
               >
                 Success
               </button>
               <button
                 onClick={handleFailure}
-                className="flex-1 px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-semibold rounded"
+                className="flex-1 px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-semibold rounded border border-border"
               >
                 Failure
               </button>

@@ -58,18 +58,18 @@ export default function Phase7Page() {
 
   if (isSkipped) {
     return (
-      <div className="min-h-screen bg-gray-900 p-4">
+      <div className="min-h-screen bg-background p-4">
         <div className="max-w-4xl mx-auto">
           <PhaseStepper currentPhase={7} />
 
-          <div className="bg-gray-800 p-8 rounded-lg shadow-md border border-gray-700">
+          <div className="bg-surface p-8 rounded shadow-md border border-border">
             <div className="text-center py-12">
               <div className="text-6xl mb-4">⊘</div>
               <h1 className="text-2xl font-bold text-gray-300 mb-4">Phase 7: Faust Installation</h1>
               <p className="text-gray-400 mb-8">
                 Skipping - You chose not to install Faust in Phase 0.
               </p>
-              <div className="inline-block px-4 py-2 bg-blue-600 text-white rounded">
+              <div className="inline-block px-4 py-2 bg-blue-600 text-white rounded border border-border">
                 Redirecting to next phase...
               </div>
             </div>
@@ -80,11 +80,11 @@ export default function Phase7Page() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 p-4">
+    <div className="min-h-screen bg-background p-4">
       <div className="max-w-4xl mx-auto">
         <PhaseStepper currentPhase={7} />
 
-        <div className="bg-gray-800 p-8 rounded-lg shadow-md border border-gray-700">
+        <div className="bg-surface p-8 rounded shadow-md border border-border">
           <h1 className="text-2xl font-bold mb-2">Phase 7: Faust Installation</h1>
           <p className="text-gray-400 mb-6">
             Install Faust DSP compiler.
@@ -95,8 +95,8 @@ export default function Phase7Page() {
             <p className="text-gray-300 mb-4">{explanation}</p>
           </div>
 
-          <div className="mb-6 p-4 bg-green-900/30 border border-green-700 rounded">
-            <h3 className="font-medium text-green-300 mb-2">Optional</h3>
+          <div className="mb-6 p-4 bg-green-900/30 border border-accent rounded">
+            <h3 className="font-medium text-accent mb-2">Optional</h3>
             <p className="text-gray-300">
               Faust is a functional programming language for signal processing. It enables HISE to compile Faust scripts at runtime for dynamic DSP algorithms. You can skip this if you don't need Faust support.
             </p>
@@ -120,19 +120,19 @@ export default function Phase7Page() {
             <div className="flex gap-4">
               <button
                 onClick={handleSuccess}
-                className="flex-1 px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded"
+                className="flex-1 px-6 py-3 bg-accent hover:bg-green-400 text-background font-semibold rounded border border-border"
               >
                 Success
               </button>
               <button
                 onClick={handleSkip}
-                className="flex-1 px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white font-semibold rounded"
+                className="flex-1 px-6 py-3 bg-surface hover:bg-gray-700 text-white font-semibold rounded border border-border"
               >
                 Skip
               </button>
               <button
                 onClick={handleFailure}
-                className="flex-1 px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-semibold rounded"
+                className="flex-1 px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-semibold rounded border border-border"
               >
                 Failure
               </button>

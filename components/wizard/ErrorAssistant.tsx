@@ -56,7 +56,7 @@ export default function ErrorAssistant({ onRetry }: ErrorAssistantProps) {
             value={errorOutput}
             onChange={(e) => setErrorOutput(e.target.value)}
             placeholder="Paste the error output from your terminal here..."
-            className="w-full p-3 border rounded mb-3 min-h-32 bg-gray-700 border-gray-600 text-gray-100 placeholder-gray-400"
+            className="w-full p-3 border border-border rounded mb-3 min-h-32 bg-surface text-gray-100 placeholder-gray-400"
           />
           <div className="flex gap-2">
             <button
@@ -68,7 +68,7 @@ export default function ErrorAssistant({ onRetry }: ErrorAssistantProps) {
             </button>
             <button
               onClick={onRetry}
-              className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded"
+              className="px-4 py-2 bg-surface hover:bg-gray-700 text-white rounded border border-border"
             >
               Retry
             </button>
@@ -76,7 +76,7 @@ export default function ErrorAssistant({ onRetry }: ErrorAssistantProps) {
         </>
       ) : (
         <div>
-          <div className="bg-gray-800 p-4 rounded border border-gray-700 mb-3">
+          <div className="bg-surface p-4 rounded border border-border mb-3">
             <h5 className="font-semibold mb-2">Error Analysis</h5>
             {mockAnalysis && (
               <>
@@ -113,13 +113,13 @@ export default function ErrorAssistant({ onRetry }: ErrorAssistantProps) {
           <div className="flex gap-2">
             <button
               onClick={handleCloseAnalysis}
-              className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded"
+              className="px-4 py-2 bg-surface hover:bg-gray-700 text-white rounded border border-border"
             >
               Close
             </button>
             <button
               onClick={onRetry}
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded"
+              className="px-4 py-2 bg-accent hover:bg-green-400 text-background rounded font-semibold"
             >
               Try Fix & Retry
             </button>

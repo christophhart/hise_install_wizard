@@ -37,11 +37,11 @@ export default function Phase3Page() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 p-4">
+    <div className="min-h-screen bg-background p-4">
       <div className="max-w-4xl mx-auto">
         <PhaseStepper currentPhase={3} />
 
-        <div className="bg-gray-800 p-8 rounded-lg shadow-md border border-gray-700">
+        <div className="bg-surface p-8 rounded shadow-md border border-border">
           <h1 className="text-2xl font-bold mb-2">Phase 3: Visual Studio 2026 Installation</h1>
           <p className="text-gray-400 mb-6">
             Install Visual Studio 2026 Community with C++ workload.
@@ -86,13 +86,13 @@ export default function Phase3Page() {
             <div className="flex gap-4">
               <button
                 onClick={handleSuccess}
-                className="flex-1 px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded"
+                className="flex-1 px-6 py-3 bg-accent hover:bg-green-400 text-background font-semibold rounded border border-border"
               >
                 Success
               </button>
               <button
                 onClick={handleFailure}
-                className="flex-1 px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-semibold rounded"
+                className="flex-1 px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-semibold rounded border border-border"
               >
                 Failure
               </button>
