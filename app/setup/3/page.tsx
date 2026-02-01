@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { CheckCircle, XCircle, SkipForward } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import PhaseStepper from '@/components/wizard/PhaseStepper';
 import CommandBlock from '@/components/wizard/CommandBlock';
@@ -37,11 +38,23 @@ export default function Phase3Page() {
   };
 
   return (
-    <div className="min-h-screen bg-background p-4">
-      <div className="max-w-4xl mx-auto">
-        <PhaseStepper currentPhase={3} />
+    <div className="min-h-screen flex flex-col bg-background">
+      <div className="px-4 py-3 flex items-center" style={{ backgroundColor: '#050505' }}>
+        <img
+          src="/images/logo_new.png"
+          alt="HISE Logo"
+          className="h-8 w-auto"
+        />
+        <span className="ml-3 text-lg font-semibold">HISE Install Wizard</span>
+      </div>
 
-        <div className="bg-surface p-8 rounded shadow-md border border-border">
+      <div className="flex-1 flex flex-col">
+        <div className="p-4">
+          <PhaseStepper currentPhase={3} />
+        </div>
+
+        <div className="flex-1 px-4 pb-4">
+          <div className="bg-surface p-8 rounded border border-border" style={{ borderRadius: '3px' }}>
           <h1 className="text-2xl font-bold mb-2">Phase 3: Visual Studio 2026 Installation</h1>
           <p className="text-gray-400 mb-6">
             Install Visual Studio 2026 Community with C++ workload.
@@ -82,24 +95,37 @@ export default function Phase3Page() {
             </div>
           </div>
 
-          {!stepFailed ? (
-            <div className="flex gap-4">
-              <button
-                onClick={handleSuccess}
-                className="flex-1 px-6 py-3 bg-accent hover:bg-green-400 text-background font-semibold rounded border border-border"
-              >
-                Success
-              </button>
-              <button
-                onClick={handleFailure}
-                className="flex-1 px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-semibold rounded border border-border"
-              >
-                Failure
-              </button>
-            </div>
+           {!stepFailed ? (
+             <div className="flex gap-4">
+               <button
+                 onClick={handleSuccess}
+                 className="flex-1 px-6 py-3 font-semibold border border-border flex items-center justify-center gap-2"
+                 style={{ backgroundColor: '#4E8E35', color: '#fff', borderRadius: '3px' }}
+               >
+                 <CheckCircle size={18} />
+                 Success
+               </button>
+               <button
+                 onClick={handleFailure}
+                 className="flex-1 px-6 py-3 font-semibold border border-border flex items-center justify-center gap-2"
+                 style={{ backgroundColor: '#BB3434', color: '#fff', borderRadius: '3px' }}
+               >
+                 <XCircle size={18} />
+                 Failure
+               </button>
+               <button
+                 onClick={() => router.push('/setup/4')}
+                 className="flex-1 px-6 py-3 font-semibold border border-border flex items-center justify-center gap-2"
+                 style={{ backgroundColor: '#333', color: '#999', borderRadius: '3px' }}
+               >
+                 <SkipForward size={18} />
+                 Skip
+               </button>
+             </div>
           ) : (
             <ErrorAssistant onRetry={handleRetry} />
-          )}
+           )}
+          </div>
         </div>
       </div>
     </div>

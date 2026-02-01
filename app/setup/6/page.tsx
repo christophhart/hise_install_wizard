@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { CheckCircle, XCircle, SkipForward } from 'lucide-react';
 import PhaseStepper from '@/components/wizard/PhaseStepper';
 import CommandBlock from '@/components/wizard/CommandBlock';
 import ErrorAssistant from '@/components/wizard/ErrorAssistant';
@@ -56,13 +57,25 @@ export default function Phase6Page() {
     }, 500);
   };
 
-  if (isSkipped) {
-    return (
-      <div className="min-h-screen bg-background p-4">
-        <div className="max-w-4xl mx-auto">
-          <PhaseStepper currentPhase={6} />
+   if (isSkipped) {
+     return (
+       <div className="min-h-screen flex flex-col bg-background">
+         <div className="px-4 py-3 flex items-center" style={{ backgroundColor: '#050505' }}>
+           <img
+             src="/images/logo_new.png"
+             alt="HISE Logo"
+             className="h-8 w-auto"
+           />
+           <span className="ml-3 text-lg font-semibold">HISE Install Wizard</span>
+         </div>
 
-          <div className="bg-surface p-8 rounded shadow-md border border-border">
+         <div className="flex-1 flex flex-col">
+           <div className="p-4">
+             <PhaseStepper currentPhase={6} />
+           </div>
+
+           <div className="flex-1 px-4 pb-4">
+             <div className="bg-surface p-8 border border-border" style={{ borderRadius: "3px" }}>
             <div className="text-center py-12">
               <div className="text-6xl mb-4">⊘</div>
               <h1 className="text-2xl font-bold text-gray-300 mb-4">Phase 6: Intel IPP Installation</h1>
@@ -71,20 +84,32 @@ export default function Phase6Page() {
               </p>
               <div className="inline-block px-4 py-2 bg-blue-600 text-white rounded border border-border">
                 Redirecting to next phase...
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+               </div>
+             </div>
+           </div>
+         </div>
+       </div>
+     );
+   }
 
-  return (
-    <div className="min-h-screen bg-background p-4">
-      <div className="max-w-4xl mx-auto">
-        <PhaseStepper currentPhase={6} />
+   return (
+     <div className="min-h-screen flex flex-col bg-background">
+       <div className="px-4 py-3 flex items-center" style={{ backgroundColor: '#050505' }}>
+         <img
+           src="/images/logo_new.png"
+           alt="HISE Logo"
+           className="h-8 w-auto"
+         />
+         <span className="ml-3 text-lg font-semibold">HISE Install Wizard</span>
+       </div>
 
-        <div className="bg-surface p-8 rounded shadow-md border border-border">
+       <div className="flex-1 flex flex-col">
+         <div className="p-4">
+           <PhaseStepper currentPhase={6} />
+         </div>
+
+         <div className="flex-1 px-4 pb-4">
+           <div className="bg-surface p-8 border border-border" style={{ borderRadius: "3px" }}>
           <h1 className="text-2xl font-bold mb-2">Phase 6: Intel IPP Installation</h1>
           <p className="text-gray-400 mb-6">
             Install Intel IPP oneAPI for performance optimization.
@@ -124,32 +149,36 @@ export default function Phase6Page() {
             </div>
           </div>
 
-          {!stepFailed ? (
-            <div className="flex gap-4">
-              <button
-                onClick={handleSuccess}
-                className="flex-1 px-6 py-3 bg-accent hover:bg-green-400 text-background font-semibold rounded border border-border"
-              >
-                Success
-              </button>
-              <button
-                onClick={handleSkip}
-                className="flex-1 px-6 py-3 bg-surface hover:bg-gray-700 text-white font-semibold rounded border border-border"
-              >
-                Skip
-              </button>
-              <button
-                onClick={handleFailure}
-                className="flex-1 px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-semibold rounded border border-border"
-              >
-                Failure
-              </button>
-            </div>
-          ) : (
-            <ErrorAssistant onRetry={handleRetry} />
-          )}
-        </div>
-      </div>
-    </div>
-  );
+           {!stepFailed ? (
+             <div className="flex gap-4">
+               <button
+                 onClick={handleSuccess}
+                 className="flex-1 px-6 py-3 bg-accent hover:bg-green-400 text-background font-semibold rounded border border-border flex items-center justify-center gap-2"
+               >
+                 <CheckCircle size={18} />
+                 Success
+               </button>
+               <button
+                 onClick={handleSkip}
+                 className="flex-1 px-6 py-3 bg-surface hover:bg-gray-700 text-white font-semibold rounded border border-border flex items-center justify-center gap-2"
+               >
+                 <SkipForward size={18} />
+                 Skip
+               </button>
+               <button
+                 onClick={handleFailure}
+                 className="flex-1 px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-semibold rounded border border-border flex items-center justify-center gap-2"
+               >
+                 <XCircle size={18} />
+                 Failure
+               </button>
+             </div>
+           ) : (
+             <ErrorAssistant onRetry={handleRetry} />
+            )}
+           </div>
+         </div>
+       </div>
+     </div>
+   );
 }

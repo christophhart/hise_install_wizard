@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { Home } from 'lucide-react';
 import PhaseStepper from '@/components/wizard/PhaseStepper';
 import { useWizard } from '@/contexts/WizardContext';
 
@@ -29,11 +30,23 @@ export default function Phase12Page() {
   const faustStatus = getPhaseStatus(7);
 
   return (
-    <div className="min-h-screen bg-background p-4">
-      <div className="max-w-4xl mx-auto">
-        <PhaseStepper currentPhase={12} />
+    <div className="min-h-screen flex flex-col bg-background">
+      <div className="px-4 py-3 flex items-center" style={{ backgroundColor: '#050505' }}>
+        <img
+          src="/images/logo_new.png"
+          alt="HISE Logo"
+          className="h-8 w-auto"
+        />
+        <span className="ml-3 text-lg font-semibold">HISE Install Wizard</span>
+      </div>
 
-        <div className="bg-surface p-8 rounded shadow-md border border-border">
+      <div className="flex-1 flex flex-col">
+        <div className="p-4">
+          <PhaseStepper currentPhase={12} />
+        </div>
+
+        <div className="flex-1 px-4 pb-4">
+          <div className="bg-surface p-8 border border-border" style={{ borderRadius: "3px" }}>
           <div className="text-center mb-8">
             <div className="text-6xl mb-4">✓</div>
             <h1 className="text-3xl font-bold text-accent mb-2">Setup Complete!</h1>
@@ -169,13 +182,15 @@ export default function Phase12Page() {
             </div>
           </div>
 
-          <div className="text-center">
-            <button
-              onClick={handleRestart}
-              className="px-8 py-3 bg-accent hover:bg-green-400 text-background font-semibold rounded border border-border"
-            >
-              Return to Home
-            </button>
+           <div className="text-center">
+             <button
+               onClick={handleRestart}
+               className="px-8 py-3 bg-accent hover:bg-green-400 text-background font-semibold rounded border border-border flex items-center justify-center gap-2 mx-auto"
+             >
+               <Home size={18} />
+               Return to Home
+             </button>
+            </div>
           </div>
         </div>
       </div>
