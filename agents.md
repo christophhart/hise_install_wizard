@@ -39,7 +39,8 @@ hise-install-wizard/
 │   │   └── generate/page.tsx           # Update script preview and download
 │   └── api/
 │       ├── generate-script/route.ts    # Setup script generation endpoint
-│       └── generate-update-script/route.ts  # Update script generation endpoint
+│       ├── generate-update-script/route.ts  # Update script generation endpoint
+│       └── check-ci-status/route.ts    # GitHub Actions CI status endpoint
 │
 ├── components/
 │   ├── wizard/
@@ -51,7 +52,8 @@ hise-install-wizard/
 │   │   ├── PhaseStepper.tsx            # 2-step progress indicator (setup/update modes)
 │   │   ├── ScriptPreview.tsx           # Clean code display with line numbers
 │   │   ├── SetupSummary.tsx            # Shows all phases with run/skip status
-│   │   └── HisePathDetector.tsx        # Detect existing HISE installation from PATH
+│   │   ├── HisePathDetector.tsx        # Detect existing HISE installation from PATH
+│   │   └── CIStatusAlert.tsx           # Warning when CI build is failing
 │   ├── ui/
 │   │   ├── Button.tsx
 │   │   ├── Card.tsx
@@ -78,6 +80,7 @@ hise-install-wizard/
 ├── lib/
 │   ├── content/
 │   │   └── explanations.ts             # Mode-aware content strings (EZ/Dev)
+│   ├── github.ts                       # GitHub API utilities for CI status checking
 │   └── scripts/
 │       ├── generator.ts                # Main script generator (setup + update)
 │       └── templates/
@@ -114,6 +117,7 @@ hise-install-wizard/
    - Section 2: Installation path (with regex validation)
    - Section 3: Component checklist with auto-detect feature and iOS-style toggles
 3. **Script Generation** (`/setup/generate`) - Shows:
+   - CI status alert (if latest commit is failing)
    - Installation folder display with HISE repository status
    - Setup summary (all phases with run/skip status)
    - Download button with unique timestamped filename
@@ -127,6 +131,7 @@ hise-install-wizard/
    - Section 1: Platform display (auto-detected)
    - Section 2: HISE path detection via script (detects path from PATH, Faust status, architecture)
 3. **Script Generation** (`/update/generate`) - Shows:
+   - CI status alert (if latest commit is failing)
    - HISE path display with Faust build status
    - Update summary (4 phases: validate, git pull, compile, verify)
    - Download button with unique timestamped filename
@@ -144,6 +149,31 @@ Two content modes available via toggle in header:
 - **Dev Mode**: Concise, technical information for experienced developers
 
 Content is managed in `lib/content/explanations.ts` with mode-aware strings.
+
+### CI Build Status Checking
+
+The wizard automatically checks the HISE repository's GitHub Actions CI status before generating scripts. This prevents users from pulling broken commits.
+
+**How it works:**
+1. On the generate page, the app fetches CI status from `/api/check-ci-status`
+2. The API checks GitHub Actions for the latest workflow runs on the `develop` branch
+3. If the latest commit is failing, the wizard finds the most recent passing commit
+4. A warning alert is displayed showing the failing vs. passing commit info
+5. The generated script will checkout the specific passing commit SHA instead of just pulling `develop`
+
+**CI Status Alert behavior:**
+- In **EZ Mode**: Shows full explanation, no override option (uses passing commit automatically)
+- In **Dev Mode**: Shows concise message with "Use latest commit anyway" checkbox for advanced users
+
+**Stale commit warning:** If the last passing commit is 30+ days old, an additional warning is shown suggesting users check the HISE forum for updates.
+
+**Caching:** CI status is cached server-side for 5 minutes to avoid GitHub API rate limits.
+
+**Files involved:**
+- `lib/github.ts` - GitHub API utilities and types
+- `app/api/check-ci-status/route.ts` - Server endpoint with caching
+- `components/wizard/CIStatusAlert.tsx` - Warning UI component
+- `lib/scripts/templates/common.ts` - Commit-aware git clone/update functions
 
 ### Component Checklist (ComponentChecklist.tsx)
 
@@ -208,6 +238,37 @@ Shows all setup phases with status indicators:
 
 ## API Routes
 
+### GET `/api/check-ci-status`
+Checks HISE repository CI build status. Results are cached server-side for 5 minutes.
+
+**Output:**
+```typescript
+{
+  status: 'ok' | 'error';
+  data?: {
+    latestCommit: {
+      sha: string;
+      shortSha: string;
+      message: string;
+      date: string;
+      conclusion: 'success' | 'failure' | 'pending' | 'unknown';
+    };
+    lastPassingCommit: {
+      sha: string;
+      shortSha: string;
+      message: string;
+      date: string;
+    } | null;
+    isLatestPassing: boolean;
+    isStale: boolean;        // true if passing commit is 30+ days old
+    daysBehind: number;
+    checkedAt: string;
+  };
+  warning?: string;          // e.g., "Using cached data"
+  message?: string;          // Error message if status is 'error'
+}
+```
+
 ### POST `/api/generate-script`
 **Input:**
 ```typescript
@@ -218,6 +279,7 @@ Shows all setup phases with status indicators:
   includeFaust: boolean;
   includeIPP: boolean;
   skipPhases: number[];  // Phase IDs to skip
+  targetCommit?: string; // If provided, checkout this specific commit
 }
 ```
 
@@ -238,6 +300,7 @@ Shows all setup phases with status indicators:
   architecture: 'x64' | 'arm64';
   hisePath: string;      // Detected HISE repository path
   hasFaust: boolean;     // Whether current build has Faust support
+  targetCommit?: string; // If provided, checkout this specific commit
 }
 ```
 
@@ -310,7 +373,8 @@ Common features:
 
 The `common.ts` file provides reusable script section generators:
 - `generateBashUtilities()` / `generatePowerShellUtilities()` - Color output functions
-- `generateGitPullSectionBash()` / `generateGitPullSectionPS()` - Git update logic
+- `generateGitCloneWithCommitBash()` / `generateGitCloneWithCommitPS()` - Git clone with optional commit checkout
+- `generateGitUpdateWithCommitBash()` / `generateGitUpdateWithCommitPS()` - Git update with optional commit checkout
 - `generateCompileSectionMacOS()` / `generateCompileSectionLinux()` / `generateCompileSectionWindows()` - Build commands
 - `generateVerifySectionBash()` / `generateVerifySectionPS()` - Build verification
 - `generateUpdateSuccessMessageBash()` / `generateUpdateSuccessMessagePS()` - Success output

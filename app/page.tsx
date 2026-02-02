@@ -5,13 +5,14 @@ import Button from '@/components/ui/Button';
 import { Card, CardContent } from '@/components/ui/Card';
 import { 
   Monitor, 
-  Apple, 
-  Terminal, 
   Download,
   Settings,
   CheckCircle2,
   RefreshCw,
-  PackagePlus
+  PackagePlus,
+  Shield,
+  SearchCheck,
+  LifeBuoy
 } from 'lucide-react';
 
 export default function HomePage() {
@@ -57,29 +58,65 @@ export default function HomePage() {
         </div>
       </div>
       
-      {/* Platforms */}
-      <div className="mb-16">
-        <h2 className="text-center text-lg font-medium text-gray-400 mb-6">
-          Supported Platforms
-        </h2>
-        <div className="flex justify-center gap-8">
-          <div className="flex flex-col items-center gap-2 text-gray-400 hover:text-accent transition-colors">
-            <Monitor className="w-10 h-10" />
-            <span>Windows</span>
-            <span className="text-xs text-gray-500">PowerShell</span>
+      {/* Features */}
+      <Card className="mb-16">
+        <CardContent className="pt-6">
+          <h2 className="text-xl font-bold mb-6 text-center">Features</h2>
+          <div className="space-y-4">
+            {/* Smart Version Selection */}
+            <div className="flex gap-4 items-start">
+              <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0">
+                <Shield className="w-5 h-5 text-accent" />
+              </div>
+              <div>
+                <h3 className="font-bold mb-1">Smart Version Selection</h3>
+                <p className="text-gray-400 text-sm">
+                  Automatically checks CI build status and uses the last known working commit if the latest is broken.
+                </p>
+              </div>
+            </div>
+            
+            {/* Auto-Detect Components */}
+            <div className="flex gap-4 items-start">
+              <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0">
+                <SearchCheck className="w-5 h-5 text-accent" />
+              </div>
+              <div>
+                <h3 className="font-bold mb-1">Auto-Detect Components</h3>
+                <p className="text-gray-400 text-sm">
+                  Detects already-installed tools like Git, compilers, and Faust, then skips unnecessary setup steps.
+                </p>
+              </div>
+            </div>
+            
+            {/* Cross-Platform Support */}
+            <div className="flex gap-4 items-start">
+              <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0">
+                <Monitor className="w-5 h-5 text-accent" />
+              </div>
+              <div>
+                <h3 className="font-bold mb-1">Cross-Platform Support</h3>
+                <p className="text-gray-400 text-sm">
+                  Native scripts for Windows (PowerShell), macOS (x64 & ARM64), and Linux (Bash). No extra tools needed.
+                </p>
+              </div>
+            </div>
+            
+            {/* Built-in Error Handling */}
+            <div className="flex gap-4 items-start">
+              <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0">
+                <LifeBuoy className="w-5 h-5 text-accent" />
+              </div>
+              <div>
+                <h3 className="font-bold mb-1">Built-in Error Handling</h3>
+                <p className="text-gray-400 text-sm">
+                  Scripts include error detection with colored output and links to troubleshooting resources.
+                </p>
+              </div>
+            </div>
           </div>
-          <div className="flex flex-col items-center gap-2 text-gray-400 hover:text-accent transition-colors">
-            <Apple className="w-10 h-10" />
-            <span>macOS</span>
-            <span className="text-xs text-gray-500">x64 / ARM64</span>
-          </div>
-          <div className="flex flex-col items-center gap-2 text-gray-400 hover:text-accent transition-colors">
-            <Terminal className="w-10 h-10" />
-            <span>Linux</span>
-            <span className="text-xs text-gray-500">Bash</span>
-          </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
       
       {/* How it works */}
       <Card className="mb-16">
