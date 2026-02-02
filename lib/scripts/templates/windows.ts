@@ -92,7 +92,8 @@ if (-not $gitPath) {
 if (-not (Test-Path "$HISE_PATH\\.git")) {
     Write-Step "Cloning HISE repository..."
     $parentPath = Split-Path $HISE_PATH -Parent
-    if ($parentPath -and $parentPath -ne "" -and $parentPath -notmatch '^[A-Za-z]:$') {
+    # Only create parent directory if it's not a drive root (e.g., C:\Dev but not C:)
+    if ($parentPath -and $parentPath.Length -gt 3) {
         New-Item -ItemType Directory -Force -Path $parentPath | Out-Null
     }
     git clone https://github.com/christophhart/HISE.git "$HISE_PATH"
