@@ -9,57 +9,23 @@ interface ScriptPreviewProps {
   className?: string;
 }
 
-// Simple syntax highlighter for bash/PowerShell
-function highlightLine(line: string, isPowerShell: boolean): React.ReactNode {
+// Minimal syntax highlighting - just comments for readability
+function highlightLine(line: string): React.ReactNode {
   // Skip empty lines
   if (!line.trim()) return line;
   
-  // Comments
-  if (line.trim().startsWith('#')) {
+  // Comments (both # and REM for batch)
+  if (line.trim().startsWith('#') || line.trim().toLowerCase().startsWith('rem ')) {
     return <span className="text-gray-500 italic">{line}</span>;
   }
   
-  // PowerShell specific
-  if (isPowerShell) {
-    // Variables like $HISE_PATH
-    let result = line;
-    const parts: React.ReactNode[] = [];
-    let lastIndex = 0;
-    
-    // Match PowerShell patterns
-    const patterns = [
-      { regex: /(\$[\w]+)/g, className: 'text-orange-400' }, // Variables
-      { regex: /(".*?")/g, className: 'text-green-400' }, // Strings
-      { regex: /\b(if|else|elseif|foreach|for|while|function|param|return|try|catch|finally)\b/g, className: 'text-purple-400' }, // Keywords
-      { regex: /\b(Write-Host|Write-Phase|Write-Step|Write-Success|Write-Warn|Write-Err|Test-Path|Get-Command|Get-Item|Set-Location|New-Item|Invoke-WebRequest|Start-Process|Expand-Archive)\b/g, className: 'text-blue-400' }, // Cmdlets
-      { regex: /(-\w+)/g, className: 'text-cyan-400' }, // Parameters
-    ];
-    
-    // Apply patterns sequentially (simple approach)
-    for (const { regex, className } of patterns) {
-      result = result.replace(regex, `<span class="${className}">$1</span>`);
-    }
-    
-    return <span dangerouslySetInnerHTML={{ __html: result }} />;
+  // Section headers (lines that are just ===== or -----)
+  if (/^[=\-]{10,}$/.test(line.trim())) {
+    return <span className="text-gray-600">{line}</span>;
   }
   
-  // Bash specific
-  let result = line;
-  
-  // Apply patterns
-  const patterns = [
-    { regex: /(\$[\w{}]+|\$\([^)]+\))/g, className: 'text-orange-400' }, // Variables
-    { regex: /(".*?"|'.*?')/g, className: 'text-green-400' }, // Strings
-    { regex: /\b(if|then|else|elif|fi|for|do|done|while|case|esac|function)\b/g, className: 'text-purple-400' }, // Keywords
-    { regex: /\b(echo|cd|mkdir|git|make|xcodebuild|sed|test|chmod|source|export|sudo|apt-get|unzip|curl)\b/g, className: 'text-blue-400' }, // Commands
-    { regex: /(--?[\w-]+)/g, className: 'text-cyan-400' }, // Flags
-  ];
-  
-  for (const { regex, className } of patterns) {
-    result = result.replace(regex, `<span class="${className}">$1</span>`);
-  }
-  
-  return <span dangerouslySetInnerHTML={{ __html: result }} />;
+  // Regular code - no highlighting, just clean text
+  return line;
 }
 
 export default function ScriptPreview({ script, filename, className = '' }: ScriptPreviewProps) {
@@ -76,9 +42,9 @@ export default function ScriptPreview({ script, filename, className = '' }: Scri
     return previewLines.map((line, i) => ({
       key: i,
       lineNum: i + 1,
-      content: highlightLine(line, isPowerShell),
+      content: highlightLine(line),
     }));
-  }, [previewLines, isPowerShell]);
+  }, [previewLines]);
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(script);

@@ -2,9 +2,11 @@
 
 ## Project Overview
 
-A web-based wizard application that helps HISE developers setup their computer to compile HISE and export audio plugins. The app guides users through a 10-phase setup process with LLM-powered command generation and error handling.
+A web-based wizard application that generates platform-specific setup scripts for HISE (Hart Instrument Software Environment). Users configure their preferences and the app outputs customized bash/PowerShell scripts they can download and run.
 
-**Current Focus:** Windows platform (macOS/Linux to follow)
+**Platforms Supported:** Windows, macOS, Linux
+
+**Current Status:** UI complete, ready for script testing on VMs
 
 ---
 
@@ -14,13 +16,10 @@ A web-based wizard application that helps HISE developers setup their computer t
 |-------|------------|---------|
 | **Frontend Framework** | Next.js 14+ (App Router) | React framework with SSR/API routes |
 | **Language** | TypeScript | Type safety and better DX |
-| **UI Library** | shadcn/ui | Accessible, customizable component library |
 | **Styling** | TailwindCSS | Utility-first CSS framework |
 | **State Management** | React Context | Wizard session state (no persistence) |
-| **LLM Provider** | OpenRouter API | GLM 4.7 via OpenRouter |
-| **Markdown** | react-markdown | For documentation display |
+| **Icons** | lucide-react | Icon library |
 | **Deployment** | Vercel/Netlify | Serverless deployment platform |
-| **Terminal Interaction** | Copy-paste | Users manually copy commands to terminal |
 
 ---
 
@@ -28,339 +27,309 @@ A web-based wizard application that helps HISE developers setup their computer t
 
 ```
 hise-install-wizard/
-├── src/
-│   ├── app/                          # Next.js App Router
-│   │   ├── page.tsx                  # Landing page
-│   │   ├── setup/
-│   │   │   ├── page.tsx              # Phase 0: System detection & preferences
-│   │   │   └── [phase]/page.tsx      # Individual phase pages (1-10)
-│   │   └── api/                      # API routes
-│   │       ├── setup/
-│   │       │   ├── detect-system/route.ts    # Auto-detect system & completed phases
-│   │       │   ├── generate-plan/route.ts    # Generate setup plan
-│   │       │   ├── generate-command/route.ts # Generate command for current step
-│   │       │   └── parse-error/route.ts      # LLM error analysis
-│   │       └── llm/
-│   │           └── chat/route.ts             # Direct LLM access
-│   │
-│   ├── components/
-│   │   ├── wizard/
-│   │   │   ├── SetupWizard.tsx        # Main wizard container
-│   │   │   ├── PhaseStepper.tsx       # Progress stepper component
-│   │   │   ├── CommandBlock.tsx        # Code block with copy functionality
-│   │   │   ├── SystemDetection.tsx     # Auto-detection results display
-│   │   │   ├── StepExplanation.tsx     # Explains what each step does
-│   │   │   └── ErrorAssistant.tsx     # LLM-powered error help
-│   │   ├── ui/                         # shadcn/ui components
-│   │   │   ├── button.tsx
-│   │   │   ├── card.tsx
-│   │   │   ├── alert.tsx
-│   │   │   ├── stepper.tsx
-│   │   │   ├── tabs.tsx
-│   │   │   └── badge.tsx
-│   │   └── layout/
-│   │       ├── Header.tsx
-│   │       └── Footer.tsx
-│   │
-│   ├── lib/
-│   │   ├── llm/
-│   │   │   ├── openRouter.ts          # OpenRouter API client
-│   │   │   ├── prompts.ts             # Prompt templates
-│   │   │   └── parsers.ts             # Response parsers
-│   │   ├── setup/
-│   │   │   ├── phases.ts              # Phase definitions & data
-│   │   │   ├── commands.ts            # Command templates
-│   │   │   ├── validation.ts          # Validation logic
-│   │   │   └── detection.ts           # System detection functions
-│   │   └── utils/
-│   │       └── platform.ts            # Platform detection utilities
-│   │
-│   └── contexts/
-│       └── WizardContext.tsx          # React Context for wizard state
+├── app/                                # Next.js App Router
+│   ├── page.tsx                        # Landing page
+│   ├── layout.tsx                      # Root layout with header/footer
+│   ├── setup/
+│   │   ├── page.tsx                    # Configuration page (platform, path, components)
+│   │   └── generate/page.tsx           # Script preview, summary, and download
+│   ├── help/
+│   │   └── page.tsx                    # Error analysis page
+│   └── api/
+│       ├── generate-script/route.ts    # Script generation endpoint
+│       └── parse-error/route.ts        # Error pattern matching endpoint
 │
-├── public/                           # Static assets
-├── hise-setup-windows.md             # Windows setup documentation
-├── hise-setup-macos.md                # macOS setup documentation (future)
-├── hise-setup-linux.md                # Linux setup documentation (future)
+├── components/
+│   ├── wizard/
+│   │   ├── PlatformSelector.tsx        # OS selection with auto-detect
+│   │   ├── ArchitectureSelector.tsx    # x64/arm64 for macOS
+│   │   ├── PathInput.tsx               # Install path with validation & paste
+│   │   ├── ComponentChecklist.tsx      # Component detection + install toggles
+│   │   ├── PhaseStepper.tsx            # 2-step progress indicator
+│   │   ├── ScriptPreview.tsx           # Clean code display with line numbers
+│   │   └── SetupSummary.tsx            # Shows all phases with run/skip status
+│   ├── ui/
+│   │   ├── Button.tsx
+│   │   ├── Card.tsx
+│   │   ├── Input.tsx
+│   │   ├── Checkbox.tsx
+│   │   ├── RadioGroup.tsx
+│   │   ├── Alert.tsx
+│   │   ├── CodeBlock.tsx               # Code display with copy button
+│   │   ├── InlineCopy.tsx              # Inline command with copy button
+│   │   └── Textarea.tsx
+│   └── layout/
+│       ├── Header.tsx
+│       ├── Footer.tsx
+│       └── PageContainer.tsx
+│
+├── contexts/
+│   └── WizardContext.tsx               # React Context for wizard state
+│
+├── lib/
+│   └── scripts/
+│       ├── generator.ts                # Main script generator
+│       └── templates/
+│           ├── common.ts               # Shared template utilities
+│           ├── windows.ts              # PowerShell script template
+│           ├── macos.ts                # Bash script for macOS
+│           └── linux.ts                # Bash script for Linux
+│
+├── types/
+│   └── wizard.ts                       # TypeScript type definitions
+│
+├── public/                             # Static assets
+├── hise-setup-windows.md               # Windows setup reference
+├── hise-setup-macos.md                 # macOS setup reference
+├── hise-setup-linux.md                 # Linux setup reference
+├── style_guide.md                      # Design guidelines
 ├── package.json
 ├── tsconfig.json
 ├── tailwind.config.ts
-├── next.config.js
-└── .env.local                        # OpenRouter API key (gitignored)
+└── next.config.js
 ```
 
 ---
 
-## Phase Definitions
+## User Flow
 
-| Phase | Name | Required | Description |
-|-------|------|----------|-------------|
-| 0 | System State Detection | - | Detect system state and installed components |
-| 1 | User Configuration | - | Gather user preferences and configuration settings |
-| 2 | Git Setup | ✓ | Install Git, clone HISE repository, init JUCE submodule |
-| 3 | Visual Studio 2026 Installation | ✓ | Install Visual Studio 2026 Community with C++ workload |
-| 4 | Intel IPP Installation | ○ | Optional: Install Intel IPP oneAPI for performance optimization |
-| 5 | Faust Installation | ○ | Optional: Install Faust DSP compiler |
-| 6 | HISE Repository Structure Check | ✓ | Verify JUCE submodule and SDK installation |
-| 7 | Compile HISE Standalone | ✓ | Compile HISE standalone application |
-| 8 | Add HISE to PATH | ✓ | Add HISE binary to system PATH |
-| 9 | Verify Build Configuration | ✓ | Run `HISE get_build_flags` to verify build |
-| 10 | Compile Test Project | ✓ | Compile demo project to verify setup |
-| 11 | Success Verification | ✓ | Final verification and completion |
+1. **Landing Page** (`/`) - User clicks "Start Setup"
+2. **Configuration** (`/setup`) - Three-section form:
+   - Section 1: Platform selection (auto-detected)
+   - Section 2: Installation path (with regex validation)
+   - Section 3: Component checklist with auto-detect feature
+3. **Script Generation** (`/setup/generate`) - Shows:
+   - Setup summary (all phases with run/skip status)
+   - Download button with unique timestamped filename
+   - How to run instructions
+   - Clean script preview with line numbers
+4. **Help** (`/help`) - Error analysis with pattern matching
 
 ---
 
-## System Detection Logic
+## Key Features
 
-**Important:** Each phase is checked **independently**. No assumptions are made about previous phases being complete.
+### Auto-Detect Components (ComponentChecklist.tsx)
 
+Users can run a detection script to automatically check which components are installed:
+
+1. Click "Show" on Auto-Detect section
+2. Copy the generated detection script
+3. Run in PowerShell/Terminal
+4. Paste output (e.g., `git,compiler,hiseRepo,juce,sdks`)
+5. Click "Apply" - checkboxes are automatically ticked
+
+**Detection Script Output Format:** Comma-separated list of installed component keys
+
+### Path Validation (PathInput.tsx)
+
+Regex patterns validate paths per platform:
 ```typescript
-async function detectAllPhases(): Promise<PhaseStatus[]> {
-  const checks = await Promise.all([
-    checkPlatform(),           // Phase 0
-    checkGitInstall(),         // Phase 2
-    checkSDKsExtracted(),      // Phase 3
-    checkJUCEInitialized(),    // Phase 4
-    checkFaustInstalled(),     // Phase 5 (optional)
-    checkHISECompiled(),       // Phase 6
-    checkHISEInPATH(),         // Phase 7
-    checkBuildFlags(),         // Phase 8
-    checkTestProject(),        // Phase 9
-  ]);
-
-  return checks.map((status, index) => ({
-    phase: index + 1,
-    name: PHASE_NAMES[index],
-    status: status ? 'completed' : 'pending',
-    isRequired: REQUIRED_PHASES.includes(index + 1)
-  }));
-}
+const PATH_PATTERNS = {
+  windows: /^[A-Za-z]:\\(?:[^<>:"|?*\n]+\\?)*$/,  // C:\Users\Name\HISE
+  macos: /^(?:~|\/)[^<>:"|?*\n]*$/,               // ~/Development/HISE
+  linux: /^(?:~|\/)[^<>:"|?*\n]*$/,               // /home/user/HISE
+};
 ```
 
-### Detection Functions
+### Verification Commands
 
-| Function | Purpose |
-|----------|---------|
-| `checkPlatform()` | Verify OS is Windows 7+ x64, detect architecture |
-| `checkGitInstall()` | Check if Git is installed and accessible |
-| `checkSDKsExtracted()` | Verify ASIO SDK and VST3 SDK directories exist |
-| `checkJUCEInitialized()` | Verify JUCE submodule is initialized on juce6 branch |
-| `checkFaustInstalled()` | Check if Faust is installed at `C:\Program Files\Faust\` |
-| `checkHISECompiled()` | Verify HISE.exe exists and is > 10MB |
-| `checkHISEInPATH()` | Check if HISE binary directory is in PATH |
-| `checkBuildFlags()` | Run `HISE get_build_flags` and validate output |
-| `checkTestProject()` | Verify demo project compiles successfully |
+All component verification commands return `True`/`False` for consistency:
+
+| Component | Windows | macOS/Linux |
+|-----------|---------|-------------|
+| Git | `[bool](Get-Command git -ErrorAction SilentlyContinue)` | `command -v git >/dev/null && echo "True" \|\| echo "False"` |
+| Compiler | `Test-Path "...MSBuild.exe"` | `xcode-select -p` / `command -v gcc` |
+| HISE Repo | `Test-Path "<path>\.git"` | `test -d "<path>/.git"` |
+| JUCE | `(Test-Path ...) -and (git branch = "juce6")` | `test + git branch check` |
+| SDKs | `Test-Path "<path>\tools\SDK"` | `test -d` |
+| Faust | `Test-Path "C:\Program Files\Faust\bin\faust.exe"` | `test -f /usr/local/bin/faust` |
+| Intel IPP | `Test-Path "...\Intel\oneAPI\ipp\latest"` | N/A |
+
+### Setup Summary (SetupSummary.tsx)
+
+Shows all setup phases with status indicators:
+
+| Status | Icon | Meaning |
+|--------|------|---------|
+| Will Run | Orange circle | Phase will be executed |
+| Already Done | Green check | Component detected, phase skipped |
+| Skipped | Gray arrow | Optional phase not selected |
+
+**Phases displayed:**
+- Git & Repository Setup
+- C++ Compiler
+- Intel IPP (optional, Windows only)
+- Faust DSP Compiler (optional)
+- Repository Check
+- Compile HISE (always runs)
+- Add to PATH (always runs)
+- Verify Build (always runs)
+- Test Project (always runs)
+
+### Script Preview (ScriptPreview.tsx)
+
+Clean, minimal display:
+- Line numbers
+- Comments highlighted in gray italic
+- No colorful syntax highlighting (cleaner look)
+- Copy and download buttons
+- Expandable for long scripts
 
 ---
 
 ## API Routes
 
-### `/api/setup/detect-system`
-- **Method:** POST
-- **Input:** `{ platform?: string }` (optional, defaults to client platform)
-- **Output:**
-  ```typescript
-  {
-    platform: 'windows' | 'macos' | 'linux';
-    architecture: 'x64' | 'arm64';
-    phases: PhaseStatus[];
-    detectedComponents: {
-      visualStudio?: 'vs2026' | null;
-      git?: boolean;
-      intelIPP?: boolean;
-      faust?: boolean;
-    };
-  }
-  ```
+### POST `/api/generate-script`
+**Input:**
+```typescript
+{
+  platform: 'windows' | 'macos' | 'linux';
+  architecture: 'x64' | 'arm64';
+  installPath: string;
+  includeFaust: boolean;
+  includeIPP: boolean;
+  skipPhases: number[];  // Phase IDs to skip
+}
+```
 
-### `/api/setup/generate-plan`
-- **Method:** POST
-- **Input:**
-  ```typescript
-  {
-    detectedPhases: PhaseStatus[];
-    preferences: {
-      installLocation: string;
-      includeIntelIPP: boolean;
-      includeFaust: boolean;
-    };
-  }
-  ```
-- **Output:** Customized setup plan with first incomplete phase
+**Output:**
+```typescript
+{
+  script: string;        // The generated script content
+  filename: string;      // e.g., "hise-setup.ps1"
+  warnings: string[];    // Any warnings for the user
+}
+```
 
-### `/api/setup/generate-command`
-- **Method:** POST
-- **Input:**
-  ```typescript
-  {
-    phase: number;
-    context: {
-      platform: string;
-      installLocation: string;
-      includeIntelIPP: boolean;
-      includeFaust: boolean;
-      detectedComponents: DetectedComponents;
-      previousSteps: CompletedStep[];
-    };
-  }
-  ```
-- **Output:**
-  ```typescript
-  {
-    commands: string[];
-    explanation: string;
-    tips: string[];
-    warnings: string[];
-    estimatedTime: string;
-  }
-  ```
+### POST `/api/parse-error`
+**Input:**
+```typescript
+{
+  error: string;         // Error message from user
+  platform: string;
+}
+```
 
-### `/api/setup/parse-error`
-- **Method:** POST
-- **Input:**
-  ```typescript
-  {
-    error: string;
-    phase: number;
-    command: string;
-    platform: string;
-    context: SetupContext;
-  }
-  ```
-- **Output:**
-  ```typescript
-  {
+**Output:**
+```typescript
+{
+  patterns: Array<{
+    pattern: string;
     cause: string;
-    fixCommands: string[];
-    prevention: string;
-    severity: 'low' | 'medium' | 'high';
-    canContinue: boolean;
-  }
-  ```
-
-### `/api/llm/chat`
-- **Method:** POST
-- **Input:** `{ message: string; history?: Message[] }`
-- **Output:** `{ response: string; history: Message[] }`
-
----
-
-## LLM Integration
-
-### Provider
-- **Service:** OpenRouter API
-- **Model:** GLM 4.7
-- **Authentication:** `OPENROUTER_API_KEY` environment variable
-
-### Prompt Templates
-
-**Command Generation:**
-```
-You are a HISE setup assistant. Generate terminal command(s) for:
-
-Phase: {phaseNumber} - {phaseName}
-Platform: {platform}
-Install Location: {installPath}
-Preferences: Intel IPP={includeIPP}, Faust={includeFaust}
-
-Detected State:
-- VS2026: {detected}
-- Git: {detected}
-- etc.
-
-Generate ONLY the command(s) needed. Keep it concise and accurate.
-```
-
-**Error Parsing:**
-```
-Analyze this error from HISE setup:
-
-Error: {errorMessage}
-Phase: {phase}
-Command: {command}
-Platform: {platform}
-
-Provide:
-1. Root cause analysis (1-2 sentences)
-2. Step-by-step fix (max 3 commands)
-3. Prevention tips (1 sentence)
-
-Format as JSON with: cause, fixCommands, prevention, severity, canContinue
+    solution: string;
+  }>;
+}
 ```
 
 ---
 
-## User Flow Summary
+## State Management
 
-1. **Landing Page** → User clicks "Start Setup"
-2. **Phase 0: System Detection** → All phases checked independently
-   - Display status of all 10 phases
-   - Show detected components
-   - Gather preferences (install location, optional components)
-3. **Wizard Start** → Begin at first incomplete phase
-4. **Phase Pages (1-10)** → Each phase includes:
-   - Step explanation (what we're doing)
-   - Command block with copy button
-   - Success/failure toggles
-   - Error assistant (if something goes wrong)
-5. **Completion** → Success message with quick start commands
+`WizardContext.tsx` manages:
+```typescript
+interface WizardState {
+  platform: 'windows' | 'macos' | 'linux' | null;
+  architecture: 'x64' | 'arm64' | null;
+  installPath: string;
+  detectedComponents: {
+    git: boolean;
+    compiler: boolean;
+    hiseRepo: boolean;
+    juce: boolean;
+    sdks: boolean;
+    faust: boolean;
+    intelIPP: boolean;
+  };
+  includeFaust: boolean;
+  includeIPP: boolean;
+}
+```
 
----
-
-## Key Components
-
-### SetupWizard.tsx
-Main container that manages the wizard state and phase navigation.
-
-### PhaseStepper.tsx
-Displays progress stepper showing completed/pending phases.
-
-### CommandBlock.tsx
-Displays terminal commands with copy-to-clipboard functionality.
-
-### SystemDetection.tsx
-Shows auto-detection results and phase status.
-
-### StepExplanation.tsx
-Explains what each step is doing to the user in clear language.
-
-### ErrorAssistant.tsx
-LLM-powered error analysis and fix suggestions.
+**Skip Phase Logic:**
+- Phase 2 (Git): Skip if `git` + `hiseRepo` detected
+- Phase 3 (Compiler): Skip if `compiler` detected
+- Phase 4 (IPP): Skip if `intelIPP` detected OR not selected
+- Phase 5 (Faust): Skip if `faust` detected OR not selected
+- Phase 6 (Repo Check): Skip if `sdks` + `juce` detected
+- Phases 7-10: Always run (compile, PATH, verify, test)
 
 ---
 
-## Environment Variables
+## Script Templates
 
-```env
-OPENROUTER_API_KEY=your_openrouter_api_key_here
+Located in `lib/scripts/templates/`:
+
+| File | Output | Description |
+|------|--------|-------------|
+| `windows.ts` | PowerShell (.ps1) | Uses winget, MSBuild, VS2022 |
+| `macos.ts` | Bash (.sh) | Uses Homebrew, xcodebuild |
+| `linux.ts` | Bash (.sh) | Uses apt/dnf, make |
+
+Each template:
+- Checks prerequisites
+- Skips phases based on user configuration
+- Includes error handling with colored output
+- Provides progress indicators
+
+---
+
+## Styling
+
+Colors defined in `tailwind.config.ts`:
+- **Background:** `#0F0F0F`
+- **Surface:** `#1A1A1A`
+- **Border:** `#2A2A2A`
+- **Accent:** `#FF6B35` (orange)
+- **Success:** `#10B981`
+- **Warning:** `#F59E0B`
+- **Error:** `#EF4444`
+
+---
+
+## Build & Run
+
+```bash
+# Development
+npm run dev
+
+# Production build
+npm run build
+
+# Start production
+npm start
 ```
 
 ---
 
-## Deployment
+## Next Steps / TODO
 
-- **Platform:** Vercel or Netlify
-- **Build:** `npm run build`
-- **Start:** `npm start`
-- **Framework:** Next.js 14+ with App Router
+### Testing Phase
+- [ ] Test generated scripts on Windows VM (fresh install)
+- [ ] Test generated scripts on Windows VM (partial install)
+- [ ] Test generated scripts on macOS VM (fresh install)
+- [ ] Test generated scripts on macOS VM (partial install)
+- [ ] Test generated scripts on Linux VM (Ubuntu fresh)
+- [ ] Test generated scripts on Linux VM (Ubuntu partial)
+- [ ] Verify skip logic works correctly for each component
+- [ ] Verify error handling in scripts
+
+### Future Enhancements
+- [ ] Add progress tracking during script execution
+- [ ] Add rollback functionality for failed installs
+- [ ] Add log file generation
+- [ ] Add email/notification on completion
+- [ ] Add installer creation support
 
 ---
 
 ## Notes
 
 - No user authentication required
-- No data persistence (no LocalStorage, no database)
-- Session-only state via React Context
-- Terminal commands delivered via copy-paste
-- Each phase tested independently (no dependency assumptions)
-- LLM used for intelligent command generation and error handling
-- Platform-specific: Windows initially, macOS/Linux to follow
-
----
-
-## Future Enhancements
-
-- macOS support (hise-setup-macos.md)
-- Linux support (hise-setup-linux.md)
-- Advanced configuration options
-- Offline command generation (cached commands)
+- No data persistence (session-only state)
+- Scripts are generated via API route
+- Unique filenames with timestamps prevent download conflicts
+- Path validation prevents invalid paths from being used
+- All platforms supported: Windows, macOS, Linux
+- PowerShell commands use `Test-Path` (compatible with all PS versions)
+- Verification commands all return `True`/`False` for consistency

@@ -7,6 +7,7 @@ import { GenerateScriptResponse } from '@/types/wizard';
 import PageContainer from '@/components/layout/PageContainer';
 import PhaseStepper from '@/components/wizard/PhaseStepper';
 import ScriptPreview from '@/components/wizard/ScriptPreview';
+import SetupSummary from '@/components/wizard/SetupSummary';
 import Button from '@/components/ui/Button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/Card';
 import Alert from '@/components/ui/Alert';
@@ -150,6 +151,16 @@ export default function GeneratePage() {
                   ))}
                 </div>
               )}
+              
+              {/* Setup Summary */}
+              <div className="bg-background border border-border rounded-lg p-4">
+                <SetupSummary
+                  platform={state.platform}
+                  skipPhases={getSkipPhases()}
+                  includeFaust={state.includeFaust}
+                  includeIPP={state.includeIPP}
+                />
+              </div>
               
               {/* Download Button */}
               <div className="flex justify-center">
