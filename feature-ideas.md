@@ -160,13 +160,13 @@ I noticed that the UI components that give additional information are not consis
 
 | # | Task | Status |
 |---|------|--------|
-| 4.1 | Audit current info box usage across all pages | Pending |
-| 4.2 | Document inconsistent patterns (elements not using Alert style) | Pending |
-| 4.3 | Convert ComponentChecklist popup to collapsible section with Alert styling | Pending |
-| 4.4 | Standardize setup page hints to use Alert component | Pending |
-| 4.5 | Standardize generate page hints to use Alert component | Pending |
-| 4.6 | Review information ordering for each section | Pending |
-| 4.7 | Fix setup page ordering (move component checklist hint above checkboxes) | Pending |
-| 4.8 | Create Collapsible wrapper component if needed | Pending |
-| 4.9 | Update Alert component if missing variants or props needed | Pending |
-| 4.10 | Visual QA pass across all pages for consistency | Pending |
+| 4.1 | Audit current info box usage across all pages | Done |
+| 4.2 | Document inconsistent patterns (elements not using Alert style) | Done |
+| 4.3 | Convert ComponentChecklist popup to collapsible section with Alert styling | Done |
+| 4.4 | Standardize setup page hints to use Alert component | Done |
+| 4.5 | Standardize generate page hints to use Alert component | Done |
+| 4.6 | Review information ordering for each section | Done |
+| 4.7 | Fix setup page ordering (move component checklist hint above checkboxes) | Done |
+| 4.8 | Create Collapsible wrapper component if needed | Done |
+| 4.9 | Update Alert component if missing variants or props needed | Done (no changes needed) |
+| 4.10 | Visual QA pass across all pages for consistency | Done |

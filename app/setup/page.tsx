@@ -124,6 +124,12 @@ export default function SetupPage() {
                   <span className="w-6 h-6 rounded-full bg-accent text-background text-xs font-bold flex items-center justify-center">3</span>
                   Components
                 </h3>
+                
+                <Alert variant="info">
+                  Check any components you already have installed. The script will skip those steps.
+                  For optional components (Faust, Intel IPP), check &quot;Install during setup&quot; if you want them included.
+                </Alert>
+                
                 <ComponentChecklist
                   platform={state.platform}
                   installPath={state.installPath}
@@ -135,11 +141,6 @@ export default function SetupPage() {
                   onInstallIPPChange={setIncludeIPP}
                 />
               </div>
-              
-              <Alert variant="info">
-                Check any components you already have installed. The script will skip those steps.
-                For optional components (Faust, Intel IPP), check &quot;Install during setup&quot; if you want them included.
-              </Alert>
             </>
           )}
         </CardContent>

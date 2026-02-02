@@ -12,7 +12,8 @@ import Button from '@/components/ui/Button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/Card';
 import Alert from '@/components/ui/Alert';
 import InlineCopy from '@/components/ui/InlineCopy';
-import { ArrowLeft, Download, RefreshCw, Terminal } from 'lucide-react';
+import { ArrowLeft, Download, RefreshCw, Terminal, Info } from 'lucide-react';
+import Collapsible from '@/components/ui/Collapsible';
 
 // Generate unique filename with timestamp
 function generateUniqueFilename(baseFilename: string): string {
@@ -171,14 +172,16 @@ export default function GeneratePage() {
               </div>
               
               {/* Instructions */}
-              <div className="bg-code-bg rounded p-4 space-y-4">
-                <h4 className="font-medium text-white flex items-center gap-2">
-                  <Terminal className="w-4 h-4" />
-                  How to run the script
-                </h4>
-                
+              <Collapsible
+                title="How to run the script"
+                icon={<Terminal className="w-4 h-4 text-accent" />}
+                defaultOpen={true}
+              >
                 {state.platform === 'windows' ? (
                   <div className="text-sm text-gray-400 space-y-3">
+                    <Alert variant="info">
+                      Make sure to run PowerShell as Administrator for the script to work correctly.
+                    </Alert>
                     <div>
                       <p className="mb-2">1. Open PowerShell as Administrator</p>
                     </div>
@@ -214,7 +217,7 @@ export default function GeneratePage() {
                     </div>
                   </div>
                 )}
-              </div>
+              </Collapsible>
               
               {/* Script Preview */}
               <div className="space-y-2">

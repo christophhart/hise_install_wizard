@@ -4,7 +4,9 @@ import { Platform, DetectedComponents } from '@/types/wizard';
 import Checkbox from '@/components/ui/Checkbox';
 import CodeBlock from '@/components/ui/CodeBlock';
 import Button from '@/components/ui/Button';
-import { ChevronDown, ChevronUp, CheckCircle, Download, PlayCircle, Wand2, HelpCircle, ClipboardPaste, X } from 'lucide-react';
+import { ChevronDown, ChevronUp, CheckCircle, Download, PlayCircle, Wand2, ClipboardPaste } from 'lucide-react';
+import Alert from '@/components/ui/Alert';
+import Collapsible from '@/components/ui/Collapsible';
 import { useState } from 'react';
 
 interface ComponentChecklistProps {
@@ -218,7 +220,6 @@ export default function ComponentChecklist({
 }: ComponentChecklistProps) {
   const [showVerifyCommands, setShowVerifyCommands] = useState(false);
   const [showAutoDetect, setShowAutoDetect] = useState(false);
-  const [showHelpPopup, setShowHelpPopup] = useState(false);
   const [detectionInput, setDetectionInput] = useState('');
   const [detectionApplied, setDetectionApplied] = useState(false);
   
@@ -369,115 +370,79 @@ export default function ComponentChecklist({
       </div>
       
       {/* Auto-Detect Section */}
-      <div className="bg-surface border border-border rounded-lg p-4 space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Wand2 className="w-4 h-4 text-accent" />
-            <span className="text-sm font-medium text-white">Auto-Detect Components</span>
-            <button
-              type="button"
-              onClick={() => setShowHelpPopup(!showHelpPopup)}
-              className="text-gray-500 hover:text-gray-300 transition-colors"
-              aria-label="Help"
-            >
-              <HelpCircle className="w-4 h-4" />
-            </button>
-          </div>
-          <button
-            type="button"
-            onClick={() => setShowAutoDetect(!showAutoDetect)}
-            className="text-xs text-accent hover:underline flex items-center gap-1"
-          >
-            {showAutoDetect ? (
-              <>Hide <ChevronUp className="w-3 h-3" /></>
-            ) : (
-              <>Show <ChevronDown className="w-3 h-3" /></>
-            )}
-          </button>
-        </div>
-        
-        {/* Help Popup */}
-        {showHelpPopup && (
-          <div className="relative bg-background border border-border rounded-lg p-4 text-sm">
-            <button
-              type="button"
-              onClick={() => setShowHelpPopup(false)}
-              className="absolute top-2 right-2 text-gray-500 hover:text-gray-300"
-            >
-              <X className="w-4 h-4" />
-            </button>
-            <p className="text-gray-300 mb-2">
-              <strong>How it works:</strong>
-            </p>
-            <ol className="list-decimal list-inside text-gray-400 space-y-1 text-xs">
+      <Collapsible
+        title="Auto-Detect Components"
+        icon={<Wand2 className="w-4 h-4 text-accent" />}
+        defaultOpen={false}
+      >
+        <div className="space-y-4">
+          {/* How it works - using Alert styling */}
+          <Alert variant="info" title="How it works">
+            <ol className="list-decimal list-inside space-y-1 text-xs mt-1">
               <li>Copy the detection script below</li>
               <li>Run it in your terminal ({platform === 'windows' ? 'PowerShell' : 'Terminal'})</li>
               <li>Copy the output (e.g., <code className="text-accent">git,compiler,hiseRepo</code>)</li>
               <li>Paste it in the input field below and click Apply</li>
               <li>The checkboxes will be automatically ticked based on the result</li>
             </ol>
+          </Alert>
+          
+          {/* Detection Script */}
+          <div className="space-y-2">
+            <p className="text-xs text-gray-500">
+              1. Run this command in {platform === 'windows' ? 'PowerShell' : 'Terminal'}:
+            </p>
+            <CodeBlock code={detectionScript} className="text-xs" />
           </div>
-        )}
-        
-        {showAutoDetect && (
-          <div className="space-y-4">
-            {/* Detection Script */}
-            <div className="space-y-2">
-              <p className="text-xs text-gray-500">
-                1. Run this command in {platform === 'windows' ? 'PowerShell' : 'Terminal'}:
-              </p>
-              <CodeBlock code={detectionScript} className="text-xs" />
-            </div>
-            
-            {/* Paste Input */}
-            <div className="space-y-2">
-              <p className="text-xs text-gray-500">
-                2. Paste the output here:
-              </p>
-              <div className="flex gap-2">
-                <div className="flex-1 relative">
-                  <input
-                    type="text"
-                    value={detectionInput}
-                    onChange={(e) => setDetectionInput(e.target.value)}
-                    placeholder="e.g., git,compiler,hiseRepo,juce,sdks"
-                    className="w-full px-3 py-2 bg-background border border-border rounded text-sm text-white placeholder-gray-600 focus:outline-none focus:border-accent"
-                  />
-                </div>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="sm"
-                  onClick={handlePasteFromClipboard}
-                  title="Paste from clipboard"
-                >
-                  <ClipboardPaste className="w-4 h-4" />
-                </Button>
+          
+          {/* Paste Input */}
+          <div className="space-y-2">
+            <p className="text-xs text-gray-500">
+              2. Paste the output here:
+            </p>
+            <div className="flex gap-2">
+              <div className="flex-1 relative">
+                <input
+                  type="text"
+                  value={detectionInput}
+                  onChange={(e) => setDetectionInput(e.target.value)}
+                  placeholder="e.g., git,compiler,hiseRepo,juce,sdks"
+                  className="w-full px-3 py-2 bg-background border border-border rounded text-sm text-white placeholder-gray-600 focus:outline-none focus:border-accent"
+                />
               </div>
-            </div>
-            
-            {/* Apply Button */}
-            <div className="flex items-center gap-3">
               <Button
                 type="button"
-                variant="primary"
+                variant="secondary"
                 size="sm"
-                onClick={applyDetectionResult}
-                disabled={!detectionInput.trim()}
+                onClick={handlePasteFromClipboard}
+                title="Paste from clipboard"
               >
-                <Wand2 className="w-4 h-4" />
-                {detectionApplied ? 'Applied!' : 'Apply Detection Result'}
+                <ClipboardPaste className="w-4 h-4" />
               </Button>
-              {detectionApplied && (
-                <span className="text-xs text-success flex items-center gap-1">
-                  <CheckCircle className="w-3 h-3" />
-                  Checkboxes updated
-                </span>
-              )}
             </div>
           </div>
-        )}
-      </div>
+          
+          {/* Apply Button */}
+          <div className="flex items-center gap-3">
+            <Button
+              type="button"
+              variant="primary"
+              size="sm"
+              onClick={applyDetectionResult}
+              disabled={!detectionInput.trim()}
+            >
+              <Wand2 className="w-4 h-4" />
+              {detectionApplied ? 'Applied!' : 'Apply Detection Result'}
+            </Button>
+            {detectionApplied && (
+              <span className="text-xs text-success flex items-center gap-1">
+                <CheckCircle className="w-3 h-3" />
+                Checkboxes updated
+              </span>
+            )}
+          </div>
+        </div>
+      </Collapsible>
       
       {/* Required Components */}
       <div className="space-y-3">

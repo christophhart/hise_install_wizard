@@ -3,6 +3,7 @@
 import { Platform, DEFAULT_PATHS } from '@/types/wizard';
 import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
+import Alert from '@/components/ui/Alert';
 import { RotateCcw, Clipboard, AlertCircle } from 'lucide-react';
 import { useState, useMemo } from 'react';
 
@@ -123,19 +124,17 @@ export default function PathInput({ value, onChange, platform }: PathInputProps)
         </div>
       )}
       
-      <div className="text-xs space-y-1">
-        <p className="text-gray-500">
-          Default: <code className="text-accent">{defaultPath}</code>
-        </p>
-        <p className="text-gray-400">
-          Enter the full path where HISE will be installed (e.g., <code className="text-gray-500">{examplePath}</code>)
-        </p>
-        {platform === 'windows' && (
-          <p className="text-gray-500">
-            Tip: In File Explorer, click the address bar and copy the path, then paste it here.
-          </p>
-        )}
-      </div>
+      <p className="text-xs text-gray-500">
+        Default: <code className="text-accent">{defaultPath}</code>
+      </p>
+      <p className="text-xs text-gray-400">
+        Enter the full path where HISE will be installed (e.g., <code className="text-gray-500">{examplePath}</code>)
+      </p>
+      {platform === 'windows' && (
+        <Alert variant="info" className="mt-3">
+          In File Explorer, click the address bar and copy the path, then paste it here.
+        </Alert>
+      )}
     </div>
   );
 }
