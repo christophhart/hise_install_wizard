@@ -1,5 +1,6 @@
 export type Platform = 'windows' | 'macos' | 'linux' | null;
 export type Architecture = 'x64' | 'arm64' | null;
+export type ExplanationMode = 'easy' | 'dev';
 
 export interface DetectedComponents {
   git: boolean;
@@ -21,6 +22,9 @@ export interface WizardState {
   installPath: string;
   includeFaust: boolean;
   includeIPP: boolean; // Windows only
+  
+  // UI Settings
+  explanationMode: ExplanationMode; // 'easy' = beginner-friendly, 'dev' = concise technical
 }
 
 export interface GenerateScriptRequest {

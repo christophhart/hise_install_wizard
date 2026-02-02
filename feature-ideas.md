@@ -131,16 +131,16 @@ These modes should be switchable at the beginning of the setup page.
 
 | # | Task | Status |
 |---|------|--------|
-| 3.1 | Add `explanationMode: 'easy' \| 'dev'` state field to WizardContext | Pending |
-| 3.2 | Create ExplanationModeSelector component (toggle at top of setup page) | Pending |
-| 3.3 | Create content strings file (`lib/content/explanations.ts`) | Pending |
-| 3.4 | Write Easy Mode content (beginner-friendly explanations for all elements) | Pending |
-| 3.5 | Write Dev Mode content (concise, technical explanations) | Pending |
-| 3.6 | Update ComponentChecklist to use mode-aware descriptions | Pending |
-| 3.7 | Update auto-detect instructions to use mode-aware text | Pending |
-| 3.8 | Update "How to run" instructions on generate page | Pending |
-| 3.9 | Update general page copy (headers, intro text, tips) | Pending |
-| 3.10 | Create `useExplanation` hook (helper to get mode-appropriate text) | Pending |
+| 3.1 | Add `explanationMode: 'easy' \| 'dev'` state field to WizardContext | Done |
+| 3.2 | Create ExplanationModeSelector component (toggle at top of setup page) | Done |
+| 3.3 | Create content strings file (`lib/content/explanations.ts`) | Done |
+| 3.4 | Write Easy Mode content (beginner-friendly explanations for all elements) | Done |
+| 3.5 | Write Dev Mode content (concise, technical explanations) | Done |
+| 3.6 | Update ComponentChecklist to use mode-aware descriptions | Done |
+| 3.7 | Update auto-detect instructions to use mode-aware text | Done |
+| 3.8 | Update "How to run" instructions on generate page | Done |
+| 3.9 | Update general page copy (headers, intro text, tips) | Done |
+| 3.10 | Create `useExplanation` hook (helper to get mode-appropriate text) | Done |
 
 ---
 

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useWizard } from '@/contexts/WizardContext';
-import { GenerateScriptResponse } from '@/types/wizard';
+import { GenerateScriptResponse, Platform } from '@/types/wizard';
 import PageContainer from '@/components/layout/PageContainer';
 import PhaseStepper from '@/components/wizard/PhaseStepper';
 import ScriptPreview from '@/components/wizard/ScriptPreview';
@@ -14,6 +14,8 @@ import Alert from '@/components/ui/Alert';
 import InlineCopy from '@/components/ui/InlineCopy';
 import { ArrowLeft, Download, RefreshCw, Terminal, Info } from 'lucide-react';
 import Collapsible from '@/components/ui/Collapsible';
+import { useExplanation } from '@/hooks/useExplanation';
+import { generatePage, howToRun, alerts } from '@/lib/content/explanations';
 
 // Generate unique filename with timestamp
 function generateUniqueFilename(baseFilename: string): string {
@@ -26,9 +28,75 @@ function generateUniqueFilename(baseFilename: string): string {
   return `${name}_${timestamp}.${ext}`;
 }
 
+// Commands for each step based on platform
+const stepCommands: Record<Exclude<Platform, null>, (string | ((filename: string) => string))[]> = {
+  windows: [
+    '', // Step 1: no command
+    'cd $HOME\\Downloads',
+    'Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser',
+    (filename: string) => `.\\"${filename}"`,
+  ],
+  macos: [
+    '', // Step 1: no command
+    'cd ~/Downloads',
+    (filename: string) => `chmod +x "${filename}"`,
+    (filename: string) => `./"${filename}"`,
+  ],
+  linux: [
+    '', // Step 1: no command
+    'cd ~/Downloads',
+    (filename: string) => `chmod +x "${filename}"`,
+    (filename: string) => `./"${filename}"`,
+  ],
+};
+
+// Render how-to-run instructions based on explanation mode
+function renderHowToRunInstructions(
+  platform: Platform,
+  filename: string,
+  get: (content: { easy: string; dev: string }) => string,
+  getOptional: (content: { easy: string; dev: string | null }) => string,
+  isEasyMode: boolean
+) {
+  if (!platform) return null;
+  
+  const steps = howToRun[platform].steps;
+  const commands = stepCommands[platform];
+  
+  return (
+    <div className="text-sm text-gray-400 space-y-3">
+      {/* Windows admin alert */}
+      {platform === 'windows' && (
+        <Alert variant="info">
+          {get(alerts.windowsAdmin)}
+        </Alert>
+      )}
+      
+      {steps.map((step, index) => {
+        const command = commands[index];
+        const commandStr = typeof command === 'function' ? command(filename) : command;
+        const description = step.description ? getOptional(step.description) : null;
+        
+        return (
+          <div key={index}>
+            <p className="mb-2">
+              {index + 1}. {get(step.title)}
+              {isEasyMode && description && (
+                <span className="text-gray-500 ml-1">- {description}</span>
+              )}
+            </p>
+            {commandStr && <InlineCopy text={commandStr} />}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function GeneratePage() {
   const router = useRouter();
   const { state, getSkipPhases } = useWizard();
+  const { get, getOptional, isEasyMode } = useExplanation();
   
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -111,9 +179,9 @@ export default function GeneratePage() {
       
       <Card>
         <CardHeader>
-          <CardTitle>Your Setup Script</CardTitle>
+          <CardTitle>{get(generatePage.title)}</CardTitle>
           <CardDescription>
-            Download and run this script to set up HISE on your system.
+            {get(generatePage.description)}
           </CardDescription>
         </CardHeader>
         
@@ -177,46 +245,7 @@ export default function GeneratePage() {
                 icon={<Terminal className="w-4 h-4 text-accent" />}
                 defaultOpen={true}
               >
-                {state.platform === 'windows' ? (
-                  <div className="text-sm text-gray-400 space-y-3">
-                    <Alert variant="info">
-                      Make sure to run PowerShell as Administrator for the script to work correctly.
-                    </Alert>
-                    <div>
-                      <p className="mb-2">1. Open PowerShell as Administrator</p>
-                    </div>
-                    <div>
-                      <p className="mb-2">2. Navigate to your Downloads folder:</p>
-                      <InlineCopy text="cd $HOME\Downloads" />
-                    </div>
-                    <div>
-                      <p className="mb-2">3. Allow script execution (if needed):</p>
-                      <InlineCopy text="Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser" />
-                    </div>
-                    <div>
-                      <p className="mb-2">4. Run the script:</p>
-                      <InlineCopy text={`.\\"${uniqueFilename}"`} />
-                    </div>
-                  </div>
-                ) : (
-                  <div className="text-sm text-gray-400 space-y-3">
-                    <div>
-                      <p className="mb-2">1. Open Terminal</p>
-                    </div>
-                    <div>
-                      <p className="mb-2">2. Navigate to your Downloads folder:</p>
-                      <InlineCopy text="cd ~/Downloads" />
-                    </div>
-                    <div>
-                      <p className="mb-2">3. Make the script executable:</p>
-                      <InlineCopy text={`chmod +x "${uniqueFilename}"`} />
-                    </div>
-                    <div>
-                      <p className="mb-2">4. Run the script:</p>
-                      <InlineCopy text={`./"${uniqueFilename}"`} />
-                    </div>
-                  </div>
-                )}
+                {renderHowToRunInstructions(state.platform, uniqueFilename, get, getOptional, isEasyMode)}
               </Collapsible>
               
               {/* Script Preview */}
@@ -230,9 +259,19 @@ export default function GeneratePage() {
               
               {/* Help Link */}
               <Alert variant="info">
-                If you encounter any errors while running the script, visit the{' '}
-                <a href="/help" className="text-accent hover:underline">Help page</a>
-                {' '}to get assistance.
+                {isEasyMode ? (
+                  <>
+                    If something goes wrong while running the script, don&apos;t worry! Visit our{' '}
+                    <a href="/help" className="text-accent hover:underline">Help page</a>
+                    {' '}where we can analyze the error and suggest solutions.
+                  </>
+                ) : (
+                  <>
+                    If you encounter any errors while running the script, visit the{' '}
+                    <a href="/help" className="text-accent hover:underline">Help page</a>
+                    {' '}to get assistance.
+                  </>
+                )}
               </Alert>
             </>
           )}

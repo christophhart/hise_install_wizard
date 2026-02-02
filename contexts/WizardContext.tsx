@@ -6,6 +6,7 @@ import {
   Architecture, 
   DetectedComponents, 
   WizardState,
+  ExplanationMode,
   DEFAULT_PATHS 
 } from '@/types/wizard';
 
@@ -26,6 +27,7 @@ const initialState: WizardState = {
   installPath: '',
   includeFaust: false,
   includeIPP: false,
+  explanationMode: 'easy', // Default to beginner-friendly mode
 };
 
 interface WizardContextType {
@@ -36,6 +38,7 @@ interface WizardContextType {
   setInstallPath: (path: string) => void;
   setIncludeFaust: (include: boolean) => void;
   setIncludeIPP: (include: boolean) => void;
+  setExplanationMode: (mode: ExplanationMode) => void;
   reset: () => void;
   getSkipPhases: () => number[];
 }
@@ -84,6 +87,10 @@ export function WizardProvider({ children }: { children: ReactNode }) {
     setState(prev => ({ ...prev, includeIPP }));
   }, []);
 
+  const setExplanationMode = useCallback((explanationMode: ExplanationMode) => {
+    setState(prev => ({ ...prev, explanationMode }));
+  }, []);
+
   const reset = useCallback(() => {
     setState(initialState);
   }, []);
@@ -124,6 +131,7 @@ export function WizardProvider({ children }: { children: ReactNode }) {
         setInstallPath,
         setIncludeFaust,
         setIncludeIPP,
+        setExplanationMode,
         reset,
         getSkipPhases,
       }}

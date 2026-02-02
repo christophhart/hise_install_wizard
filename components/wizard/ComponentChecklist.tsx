@@ -1,6 +1,6 @@
 'use client';
 
-import { Platform, DetectedComponents } from '@/types/wizard';
+import { Platform, DetectedComponents, ExplanationMode } from '@/types/wizard';
 import Checkbox from '@/components/ui/Checkbox';
 import CodeBlock from '@/components/ui/CodeBlock';
 import Button from '@/components/ui/Button';
@@ -8,6 +8,7 @@ import { ChevronDown, ChevronUp, CheckCircle, Download, PlayCircle, Wand2, Clipb
 import Alert from '@/components/ui/Alert';
 import Collapsible from '@/components/ui/Collapsible';
 import { useState } from 'react';
+import { components as componentContent, autoDetect } from '@/lib/content/explanations';
 
 interface ComponentChecklistProps {
   platform: Exclude<Platform, null>;
@@ -19,6 +20,8 @@ interface ComponentChecklistProps {
   installIPP: boolean;
   onInstallFaustChange: (install: boolean) => void;
   onInstallIPPChange: (install: boolean) => void;
+  // Explanation mode
+  explanationMode: ExplanationMode;
 }
 
 interface ComponentInfo {
@@ -217,7 +220,10 @@ export default function ComponentChecklist({
   installIPP,
   onInstallFaustChange,
   onInstallIPPChange,
+  explanationMode,
 }: ComponentChecklistProps) {
+  // Helper to get mode-appropriate content
+  const getContent = (content: { easy: string; dev: string }) => content[explanationMode];
   const [showVerifyCommands, setShowVerifyCommands] = useState(false);
   const [showAutoDetect, setShowAutoDetect] = useState(false);
   const [detectionInput, setDetectionInput] = useState('');
@@ -281,11 +287,17 @@ export default function ComponentChecklist({
     const isFaust = component.key === 'faust';
     const isIPP = component.key === 'intelIPP';
     
+    // Get mode-aware description if available, fallback to component's default
+    const content = componentContent[component.key];
+    const description = content 
+      ? getContent(content.description)
+      : component.description;
+    
     return (
       <div key={component.key} className="space-y-2">
         <Checkbox
           label={component.label}
-          description={component.description}
+          description={description}
           checked={isChecked}
           onChange={(e) => onChange(component.key, e.target.checked)}
         />
@@ -371,26 +383,29 @@ export default function ComponentChecklist({
       
       {/* Auto-Detect Section */}
       <Collapsible
-        title="Auto-Detect Components"
+        title={getContent(autoDetect.title)}
         icon={<Wand2 className="w-4 h-4 text-accent" />}
         defaultOpen={false}
       >
         <div className="space-y-4">
           {/* How it works - using Alert styling */}
-          <Alert variant="info" title="How it works">
-            <ol className="list-decimal list-inside space-y-1 text-xs mt-1">
-              <li>Copy the detection script below</li>
-              <li>Run it in your terminal ({platform === 'windows' ? 'PowerShell' : 'Terminal'})</li>
-              <li>Copy the output (e.g., <code className="text-accent">git,compiler,hiseRepo</code>)</li>
-              <li>Paste it in the input field below and click Apply</li>
-              <li>The checkboxes will be automatically ticked based on the result</li>
+          <Alert variant="info" title={autoDetect.howItWorks[explanationMode].title}>
+            {autoDetect.howItWorks[explanationMode].intro && (
+              <p className="text-xs mb-2">{autoDetect.howItWorks[explanationMode].intro}</p>
+            )}
+            <ol className="list-decimal list-inside space-y-1 text-xs">
+              {autoDetect.howItWorks[explanationMode].steps.map((step, i) => (
+                <li key={i}>{step}</li>
+              ))}
             </ol>
           </Alert>
           
           {/* Detection Script */}
           <div className="space-y-2">
             <p className="text-xs text-gray-500">
-              1. Run this command in {platform === 'windows' ? 'PowerShell' : 'Terminal'}:
+              {explanationMode === 'easy' 
+                ? `1. ${getContent(autoDetect.scriptLabel)}`
+                : getContent(autoDetect.scriptLabel)}
             </p>
             <CodeBlock code={detectionScript} className="text-xs" />
           </div>
@@ -398,7 +413,9 @@ export default function ComponentChecklist({
           {/* Paste Input */}
           <div className="space-y-2">
             <p className="text-xs text-gray-500">
-              2. Paste the output here:
+              {explanationMode === 'easy' 
+                ? `2. ${getContent(autoDetect.pasteLabel)}`
+                : getContent(autoDetect.pasteLabel)}
             </p>
             <div className="flex gap-2">
               <div className="flex-1 relative">
@@ -406,7 +423,7 @@ export default function ComponentChecklist({
                   type="text"
                   value={detectionInput}
                   onChange={(e) => setDetectionInput(e.target.value)}
-                  placeholder="e.g., git,compiler,hiseRepo,juce,sdks"
+                  placeholder={getContent(autoDetect.placeholder)}
                   className="w-full px-3 py-2 bg-background border border-border rounded text-sm text-white placeholder-gray-600 focus:outline-none focus:border-accent"
                 />
               </div>

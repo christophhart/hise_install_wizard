@@ -14,6 +14,8 @@ import Button from '@/components/ui/Button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/Card';
 import Alert from '@/components/ui/Alert';
 import { ArrowRight } from 'lucide-react';
+import { useExplanation } from '@/hooks/useExplanation';
+import { setupPage } from '@/lib/content/explanations';
 
 export default function SetupPage() {
   const router = useRouter();
@@ -26,6 +28,7 @@ export default function SetupPage() {
     setIncludeFaust,
     setIncludeIPP,
   } = useWizard();
+  const { get } = useExplanation();
   
   const [detectedPlatform, setDetectedPlatform] = useState<Platform>(null);
   
@@ -66,9 +69,9 @@ export default function SetupPage() {
       
       <Card>
         <CardHeader>
-          <CardTitle>Setup Configuration</CardTitle>
+          <CardTitle>{get(setupPage.title)}</CardTitle>
           <CardDescription>
-            Configure your system and preferences to generate a customized setup script.
+            {get(setupPage.description)}
           </CardDescription>
         </CardHeader>
         
@@ -126,8 +129,7 @@ export default function SetupPage() {
                 </h3>
                 
                 <Alert variant="info">
-                  Check any components you already have installed. The script will skip those steps.
-                  For optional components (Faust, Intel IPP), check &quot;Install during setup&quot; if you want them included.
+                  {get(setupPage.componentsSection.description)}
                 </Alert>
                 
                 <ComponentChecklist
@@ -139,6 +141,7 @@ export default function SetupPage() {
                   installIPP={state.includeIPP}
                   onInstallFaustChange={setIncludeFaust}
                   onInstallIPPChange={setIncludeIPP}
+                  explanationMode={state.explanationMode}
                 />
               </div>
             </>

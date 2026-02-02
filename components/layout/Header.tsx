@@ -2,8 +2,17 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { useWizard } from '@/contexts/WizardContext';
+import ExplanationModeSelector from '@/components/wizard/ExplanationModeSelector';
 
 export default function Header() {
+  const pathname = usePathname();
+  const { state, setExplanationMode } = useWizard();
+  
+  // Only show mode selector on setup pages (not on landing or help)
+  const showModeSelector = pathname?.startsWith('/setup');
+  
   return (
     <header className="bg-surface border-b border-border">
       <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
@@ -19,6 +28,12 @@ export default function Header() {
         </Link>
         
         <nav className="flex items-center gap-4">
+          {showModeSelector && (
+            <ExplanationModeSelector
+              value={state.explanationMode}
+              onChange={setExplanationMode}
+            />
+          )}
           <Link 
             href="/help" 
             className="text-sm text-gray-400 hover:text-accent transition-colors"
