@@ -311,11 +311,14 @@ success "Build verified"
 # ============================================
 phase "Phase 10: Test Project"
 
+step "Configuring HISE compiler settings..."
+"$HISE_BIN_PATH/HISE" set_hise_settings -hisepath:"$HISE_PATH"
+
 step "Setting project folder..."
 "$HISE_BIN_PATH/HISE" set_project_folder -p:"$HISE_PATH/extras/demo_project"
 
 step "Exporting demo project (VST3 instrument)..."
-"$HISE_BIN_PATH/HISE" export_ci "XmlPresetBackups/Demo.xml" -t:instrument -p:VST3 -a:x64 -nolto || warn "Demo project export had issues, but HISE is installed"
+"$HISE_BIN_PATH/HISE" export "$HISE_PATH/extras/demo_project/XmlPresetBackups/Demo.xml" -t:instrument -p:VST3 -nolto || warn "Demo project export had issues, but HISE is installed"
 
 success "Demo project exported successfully"
 

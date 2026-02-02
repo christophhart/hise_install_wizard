@@ -263,21 +263,21 @@ if (-not (Test-Path $projucer)) {
     Handle-Error 2 "Projucer not found at $projucer"
 }
 
-& $projucer --resave "HISE Standalone.jucer"
+& $projucer --resave "$HISE_PATH\\projects\\standalone\\HISE Standalone.jucer"
 
 Write-Step "Compiling HISE (this will take 5-15 minutes)..."
 $env:PreferredToolArchitecture = "x64"
 $msbuild = "${msbuildPath}"
 $buildConfig = "${buildConfig}"
 
-& $msbuild "Builds\\VisualStudio2026\\HISE Standalone.sln" /p:Configuration="$buildConfig" /p:Platform=x64 /verbosity:minimal
+& $msbuild "$HISE_PATH\\projects\\standalone\\Builds\\VisualStudio2026\\HISE Standalone.sln" /p:Configuration="$buildConfig" /p:Platform=x64 /verbosity:minimal
 
 if ($LASTEXITCODE -ne 0) {
     Handle-Error 2 "HISE compilation failed"
 }
 
 # Verify build
-$hiseExe = "Builds\\VisualStudio2026\\x64\\$buildConfig\\App\\HISE.exe"
+$hiseExe = "$HISE_PATH\\projects\\standalone\\Builds\\VisualStudio2026\\x64\\$buildConfig\\App\\HISE.exe"
 if (-not (Test-Path $hiseExe)) {
     Handle-Error 2 "HISE.exe not found after build"
 }
@@ -554,14 +554,14 @@ if ! command -v HISE &> /dev/null; then
     echo "The update completed successfully, but HISE is not in your PATH."
     echo "To run the test manually, add HISE to your PATH and run:"
     echo "  HISE set_project_folder -p:\\"$HISE_PATH/extras/demo_project\\""
-    echo "  HISE export_ci \\"XmlPresetBackups/Demo.xml\\" -t:instrument -p:VST3 -a:x64 -nolto"
+    echo "  HISE export \\"$HISE_PATH/extras/demo_project/XmlPresetBackups/Demo.xml\\" -t:instrument -p:VST3 -nolto"
     echo ""
 else
     step "Setting project folder..."
     HISE set_project_folder -p:"$HISE_PATH/extras/demo_project"
 
     step "Exporting demo project (VST3 instrument)..."
-    HISE export_ci "XmlPresetBackups/Demo.xml" -t:instrument -p:VST3 -a:x64 -nolto || warn "Demo project export had issues, but HISE is updated"
+    HISE export "$HISE_PATH/extras/demo_project/XmlPresetBackups/Demo.xml" -t:instrument -p:VST3 -nolto || warn "Demo project export had issues, but HISE is updated"
 
     success "Demo project exported successfully"
 
@@ -592,15 +592,15 @@ if (-not $hiseCmd) {
     Write-Host ""
     Write-Host "The update completed successfully, but HISE is not in your PATH."
     Write-Host "To run the test manually, add HISE to your PATH and run:"
-    Write-Host "  HISE set_project_folder -p:\\\`"$HISE_PATH\\\\extras\\\\demo_project\\\`""
-    Write-Host "  HISE export_ci \\\`"XmlPresetBackups\\\\Demo.xml\\\`" -t:instrument -p:VST3 -a:x64 -nolto"
+    Write-Host "  HISE set_project_folder -p:\\\`"$HISE_PATH\\extras\\demo_project\\\`""
+    Write-Host "  HISE export \\\`"$HISE_PATH\\extras\\demo_project\\XmlPresetBackups\\Demo.xml\\\`" -t:instrument -p:VST3 -a:x64 -nolto"
     Write-Host ""
 } else {
     Write-Step "Setting project folder..."
-    & HISE set_project_folder -p:"$HISE_PATH\\\\extras\\\\demo_project"
+    & HISE set_project_folder -p:"$HISE_PATH\\extras\\demo_project"
 
     Write-Step "Exporting demo project (VST3 instrument)..."
-    & HISE export_ci "XmlPresetBackups\\\\Demo.xml" -t:instrument -p:VST3 -a:x64 -nolto
+    & HISE export "$HISE_PATH\\extras\\demo_project\\XmlPresetBackups\\Demo.xml" -t:instrument -p:VST3 -a:x64 -nolto
 
     if ($LASTEXITCODE -ne 0) {
         Write-Warn "Demo project export had issues, but HISE is updated"
@@ -609,9 +609,9 @@ if (-not $hiseCmd) {
         
         # Run the generated batch compile script
         Write-Step "Running batch compile script..."
-        $batchScript = "$HISE_PATH\\\\extras\\\\demo_project\\\\Binaries\\\\batchCompile.bat"
+        $batchScript = "$HISE_PATH\\extras\\demo_project\\Binaries\\batchCompile.bat"
         if (Test-Path $batchScript) {
-            Set-Location "$HISE_PATH\\\\extras\\\\demo_project\\\\Binaries"
+            Set-Location "$HISE_PATH\\extras\\demo_project\\Binaries"
             & cmd.exe /c "batchCompile.bat"
             if ($LASTEXITCODE -ne 0) {
                 Write-Warn "Batch compile had issues, but HISE is updated"

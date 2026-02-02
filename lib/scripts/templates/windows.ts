@@ -122,26 +122,21 @@ Write-Success "Git setup complete"
 # ============================================
 Write-Phase "Phase 3: Visual Studio 2026 Check"
 
-# Check for VS2026 in any edition (Community, Professional, Enterprise)
-$vsPath = $null
-$vsEditions = @("Community", "Professional", "Enterprise")
-foreach ($edition in $vsEditions) {
-    $testPath = "C:\\Program Files\\Microsoft Visual Studio\\18\\$edition\\MSBuild\\Current\\Bin\\MSBuild.exe"
-    if (Test-Path $testPath) {
-        $vsPath = $testPath
-        Write-Success "Visual Studio 2026 $edition detected"
-        break
-    }
-}
-
-if (-not $vsPath) {
-    Write-Err "Visual Studio 2026 is not installed."
+# Check for VS2026 Community Edition (required - Pro/Enterprise not supported)
+$vsPath = "C:\\Program Files\\Microsoft Visual Studio\\18\\Community\\MSBuild\\Current\\Bin\\MSBuild.exe"
+if (Test-Path $vsPath) {
+    Write-Success "Visual Studio 2026 Community Edition detected"
+} else {
+    Write-Err "Visual Studio 2026 Community Edition is not installed."
     Write-Host ""
     Write-Host "========================================" -ForegroundColor Red
     Write-Host "  PREREQUISITE MISSING" -ForegroundColor Red
     Write-Host "========================================" -ForegroundColor Red
     Write-Host ""
     Write-Host "Please install Visual Studio 2026 Community Edition before running this script." -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "NOTE: HISE requires the Community Edition. Professional and Enterprise" -ForegroundColor Yellow
+    Write-Host "editions are not currently supported." -ForegroundColor Yellow
     Write-Host ""
     Write-Host "Download: https://visualstudio.microsoft.com/downloads/" -ForegroundColor Cyan
     Write-Host ""
@@ -218,10 +213,10 @@ Set-Location $HISE_PATH
 
 # Verify JUCE submodule
 Write-Step "Verifying JUCE submodule..."
-if (-not (Test-Path "JUCE\\modules")) {
+if (-not (Test-Path "$HISE_PATH\\JUCE\\modules")) {
     git submodule update --init
 }
-Set-Location JUCE
+Set-Location "$HISE_PATH\\JUCE"
 $branch = git branch --show-current
 if ($branch -ne "juce6") {
     git checkout juce6
@@ -230,14 +225,14 @@ Set-Location $HISE_PATH
 
 # Extract SDKs
 Write-Step "Extracting SDKs..."
-if (-not (Test-Path "tools\\SDK\\ASIOSDK2.3")) {
-    Set-Location "tools\\SDK"
+if (-not (Test-Path "$HISE_PATH\\tools\\SDK\\ASIOSDK2.3")) {
+    Set-Location "$HISE_PATH\\tools\\SDK"
     tar -xf sdk.zip
     Set-Location $HISE_PATH
 }
 
 # Verify
-if ((Test-Path "tools\\SDK\\ASIOSDK2.3") -and (Test-Path "tools\\SDK\\VST3 SDK")) {
+if ((Test-Path "$HISE_PATH\\tools\\SDK\\ASIOSDK2.3") -and (Test-Path "$HISE_PATH\\tools\\SDK\\VST3 SDK")) {
     Write-Success "SDKs verified"
 } else {
     Handle-Error 6 "SDK extraction failed"
@@ -259,7 +254,7 @@ if (-not (Test-Path $projucer)) {
     Handle-Error 7 "Projucer not found at $projucer"
 }
 
-& $projucer --resave "HISE Standalone.jucer"
+& $projucer --resave "$HISE_PATH\\projects\\standalone\\HISE Standalone.jucer"
 
 Write-Step "Compiling HISE (this will take 5-15 minutes)..."
 $env:PreferredToolArchitecture = "x64"
@@ -273,14 +268,14 @@ $buildConfig = if ($FAUST_INSTALLED) { "Release with Faust" } else { "Release" }
 $buildConfig = "Release"
 `}
 
-& $msbuild "Builds\\VisualStudio2026\\HISE Standalone.sln" /p:Configuration="$buildConfig" /p:Platform=x64 /verbosity:minimal
+& $msbuild "$HISE_PATH\\projects\\standalone\\Builds\\VisualStudio2026\\HISE Standalone.sln" /p:Configuration="$buildConfig" /p:Platform=x64 /verbosity:minimal
 
 if ($LASTEXITCODE -ne 0) {
     Handle-Error 7 "HISE compilation failed"
 }
 
 # Verify build
-$hiseExe = "Builds\\VisualStudio2026\\x64\\$buildConfig\\App\\HISE.exe"
+$hiseExe = "$HISE_PATH\\projects\\standalone\\Builds\\VisualStudio2026\\x64\\$buildConfig\\App\\HISE.exe"
 if (-not (Test-Path $hiseExe)) {
     Handle-Error 7 "HISE.exe not found after build"
 }
@@ -323,11 +318,22 @@ Write-Success "Build verified"
 # ============================================
 Write-Phase "Phase 10: Test Project"
 
+# Detect IPP installation
+$ippInstalled = Test-Path "C:\\Program Files (x86)\\Intel\\oneAPI\\ipp\\latest"
+$ippFlag = if ($ippInstalled) { "-ipp:1" } else { "-ipp:0" }
+
+# Detect Faust installation
+$faustInstalled = Test-Path "C:\\Program Files\\Faust\\lib\\faust.dll"
+$faustFlag = if ($faustInstalled) { "-faustpath:\`"C:\\Program Files\\Faust\`"" } else { "" }
+
+Write-Step "Configuring HISE compiler settings..."
+& "$hiseBinPath\\HISE.exe" set_hise_settings -hisepath:"$HISE_PATH" -vs:2026 $ippFlag $faustFlag
+
 Write-Step "Setting project folder..."
 & "$hiseBinPath\\HISE.exe" set_project_folder -p:"$HISE_PATH\\extras\\demo_project"
 
 Write-Step "Exporting demo project (VST3 instrument)..."
-& "$hiseBinPath\\HISE.exe" export_ci "XmlPresetBackups\\Demo.xml" -t:instrument -p:VST3 -a:x64 -nolto
+& "$hiseBinPath\\HISE.exe" export "$HISE_PATH\\extras\\demo_project\\XmlPresetBackups\\Demo.xml" -t:instrument -p:VST3 -a:x64 -nolto
 
 if ($LASTEXITCODE -ne 0) {
     Write-Warn "Demo project export had issues, but HISE is installed"
