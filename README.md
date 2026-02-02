@@ -1,12 +1,12 @@
 # HISE Setup Wizard
 
-A web-based wizard that generates platform-specific setup scripts for [HISE](https://hise.dev) (Hart Instruments Software Environment). Configure your preferences through an intuitive interface and download a customized script to automate the entire build process.
+A web-based wizard that generates platform-specific setup scripts for [HISE](https://hise.dev). Configure your preferences through an intuitive interface and download a customized script to automate the entire build process.
 
 ## Why Use This?
 
 Setting up HISE from source can be challenging, especially for newcomers. This wizard solves common pain points:
 
-- **Smart Version Selection** - Automatically checks CI build status and uses the last known working commit if the latest is broken. No more pulling broken code.
+- **Smart Version Selection** - Automatically checks CI build status and uses the last known working commit if the latest is broken because of reasons. No more pulling broken code.
 
 - **Auto-Detect Components** - Detects already-installed tools like Git, compilers, and Faust, then skips unnecessary setup steps.
 
