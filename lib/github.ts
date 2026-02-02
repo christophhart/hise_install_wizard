@@ -4,6 +4,7 @@ const HISE_REPO = 'christophhart/HISE';
 const BRANCH = 'develop';
 const API_BASE = 'https://api.github.com';
 const STALE_THRESHOLD_DAYS = 30;
+const CI_WORKFLOW_ID = 39324714; // "CI Build" workflow
 
 // Types for GitHub Actions API response
 interface GitHubWorkflowRun {
@@ -87,8 +88,8 @@ function mapConclusion(
  * Fetch CI status from GitHub Actions API
  */
 export async function fetchCIStatus(): Promise<CIStatus> {
-  // Fetch recent workflow runs for the develop branch
-  const runsUrl = `${API_BASE}/repos/${HISE_REPO}/actions/runs?branch=${BRANCH}&per_page=50`;
+  // Fetch recent workflow runs for the develop branch (filtered to CI Build workflow only)
+  const runsUrl = `${API_BASE}/repos/${HISE_REPO}/actions/workflows/${CI_WORKFLOW_ID}/runs?branch=${BRANCH}&per_page=50`;
   
   const response = await fetch(runsUrl, {
     headers: {
