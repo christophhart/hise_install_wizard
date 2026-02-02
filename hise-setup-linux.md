@@ -265,12 +265,26 @@ Validates:
 
 ## Phase 10: Test Project
 
-> **Note:** Uses CI configuration with `-nolto` for faster test builds. Builds a VST3 instrument plugin which requires the VST3 SDK (extracted in Phase 6).
+> **Note:** Uses `-nolto` for faster test builds. Builds a VST3 instrument plugin which requires the VST3 SDK (extracted in Phase 6).
+
+**Step 1: Configure HISE compiler settings**
+
+Before exporting, configure the HISE source path:
+
+```bash
+HISE set_hise_settings -hisepath:"{hisePath}"
+```
+
+> **Note:** On Linux, the `-vs` and `-ipp` flags are not used.
+
+**Step 2: Set project folder and export**
 
 ```bash
 HISE set_project_folder -p:"{hisePath}/extras/demo_project"
-HISE export_ci "XmlPresetBackups/Demo.xml" -t:instrument -p:VST3 -a:x64 -nolto
+HISE export "{hisePath}/extras/demo_project/XmlPresetBackups/Demo.xml" -t:instrument -p:VST3 -nolto
 ```
+
+> **Note:** The `export` command requires an absolute path to the XML file. The `-a:x64` flag is not used on Linux.
 
 **Expected Output:**
 - Build files generated in `{hisePath}/extras/demo_project/Binaries/`
@@ -298,14 +312,28 @@ Criteria:
 
 | Command | Description |
 |---------|-------------|
-| `export` | Build project with default settings |
-| `export_ci` | Build for automated/CI workflows |
+| `export` | Build project with default settings (requires absolute path to XML) |
+| `export_ci` | Build for automated/CI workflows (uses relative path) |
 | `set_project_folder` | Set current project folder |
 | `set_hise_folder` | Set HISE source location |
+| `set_hise_settings` | Configure compiler settings (hisepath, faustpath) |
 | `get_project_folder` | Get current project folder |
 | `set_version` | Set project version |
 | `clean` | Clean Binaries folder |
 | `get_build_flags` | Show build configuration and features |
+
+### set_hise_settings Command
+
+```bash
+HISE set_hise_settings [-hisepath:PATH] [-faustpath:PATH]
+```
+
+| Flag | Description |
+|------|-------------|
+| `-hisepath:PATH` | Absolute path to HISE source repository |
+| `-faustpath:PATH` | Absolute path to Faust installation |
+
+> **Note:** On Linux, the `-vs` and `-ipp` flags are not used.
 
 ---
 
@@ -334,6 +362,7 @@ Criteria:
 | HISE not in PATH | Check shell config file (`.bashrc` or `.zshrc`) and restart terminal |
 | HISE command not found | Create symlink: `ln -sf "HISE Standalone" HISE` in the build directory |
 | Binary name has space | Use quotes: `"HISE Standalone"` or use the `HISE` symlink |
+| PRESET NOT FOUND error | Use absolute path with `export` command, not `export_ci` |
 
 ---
 
@@ -346,7 +375,9 @@ Criteria:
 - **Parallel Build:** Uses `nproc --ignore=2` to leave 2 cores free
 - **Projucer Path:** `{hisePath}/JUCE/Projucer/Projucer` (case-sensitive)
 - **Binary Name:** `HISE Standalone` (with space) - create symlink `HISE` for convenience
-- **Test Build Config:** CI configuration with `-nolto` flag for faster test builds
+- **Test Build Config:** Uses `-nolto` flag for faster test builds
+- **Export Command:** Use `export` with absolute XML path (not `export_ci` which uses relative paths)
+- **Compiler Settings:** Stored in `~/.config/HISE/compilerSettings.xml`
 - **Build Output:** `projects/standalone/Builds/LinuxMakefile/build/HISE Standalone`
 
 ---

@@ -98,15 +98,18 @@ cd JUCE && git checkout juce6 && cd ..
 
 **This step cannot be skipped.** HISE requires a C++ compiler.
 
+> **IMPORTANT:** HISE requires Visual Studio 2026 **Community Edition** specifically. Professional and Enterprise editions are not currently supported.
+
 1. Download Visual Studio Community 2026
 2. Select "Desktop development with C++" workload
 3. Verify installation:
 
 ```batch
 if exist "C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\MsBuild.exe" (
-    echo Visual Studio 2026 installed successfully
+    echo Visual Studio 2026 Community Edition installed successfully
 ) else (
-    echo ERROR: Visual Studio not detected
+    echo ERROR: Visual Studio 2026 Community Edition not detected
+    echo NOTE: Professional and Enterprise editions are not supported
     exit /b 1
 )
 ```
@@ -189,20 +192,22 @@ if exist "JUCE\Projucer\Projucer.exe" (echo Projucer OK) else (echo ERROR: Proju
 
 > **Projucer Location:** `{hisePath}\JUCE\Projucer\Projucer.exe` (case-sensitive path)
 
+> **Important:** Use absolute paths for all file references to avoid working directory issues.
+
 **Without Faust:**
 ```batch
 cd {hisePath}\projects\standalone
-"{hisePath}\JUCE\Projucer\Projucer.exe" --resave "HISE Standalone.jucer"
+"{hisePath}\JUCE\Projucer\Projucer.exe" --resave "{hisePath}\projects\standalone\HISE Standalone.jucer"
 set PreferredToolArchitecture=x64
-"C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\MsBuild.exe" "Builds\VisualStudio2026\HISE Standalone.sln" /p:Configuration=Release /p:Platform=x64 /verbosity:minimal
+"C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\MsBuild.exe" "{hisePath}\projects\standalone\Builds\VisualStudio2026\HISE Standalone.sln" /p:Configuration=Release /p:Platform=x64 /verbosity:minimal
 ```
 
 **With Faust:**
 ```batch
 cd {hisePath}\projects\standalone
-"{hisePath}\JUCE\Projucer\Projucer.exe" --resave "HISE Standalone.jucer"
+"{hisePath}\JUCE\Projucer\Projucer.exe" --resave "{hisePath}\projects\standalone\HISE Standalone.jucer"
 set PreferredToolArchitecture=x64
-"C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\MsBuild.exe" "Builds\VisualStudio2026\HISE Standalone.sln" /p:Configuration="Release with Faust" /p:Platform=x64 /verbosity:minimal
+"C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\MsBuild.exe" "{hisePath}\projects\standalone\Builds\VisualStudio2026\HISE Standalone.sln" /p:Configuration="Release with Faust" /p:Platform=x64 /verbosity:minimal
 ```
 
 **Post-build verification:** HISE.exe must be > 10MB (corrupted builds are ~2MB)
@@ -247,12 +252,39 @@ Validates:
 
 ## Phase 10: Test Project
 
-> **Note:** Uses CI configuration with `-nolto` for faster test builds. Builds a VST3 instrument plugin which requires the VST3 SDK (extracted in Phase 6).
+> **Note:** Uses `-nolto` for faster test builds. Builds a VST3 instrument plugin which requires the VST3 SDK (extracted in Phase 6).
+
+**Step 1: Configure HISE compiler settings**
+
+Before exporting, configure the compiler settings. This sets the HISE source path, Visual Studio version, and optionally IPP and Faust paths:
+
+```batch
+REM Detect IPP installation
+if exist "C:\Program Files (x86)\Intel\oneAPI\ipp\latest" (
+    set IPP_FLAG=-ipp:1
+) else (
+    set IPP_FLAG=-ipp:0
+)
+
+REM Detect Faust installation
+if exist "C:\Program Files\Faust\lib\faust.dll" (
+    set FAUST_FLAG=-faustpath:"C:\Program Files\Faust"
+) else (
+    set FAUST_FLAG=
+)
+
+REM Configure HISE settings
+HISE set_hise_settings -hisepath:"{hisePath}" -vs:2026 %IPP_FLAG% %FAUST_FLAG%
+```
+
+**Step 2: Set project folder and export**
 
 ```batch
 HISE set_project_folder "-p:{hisePath}\extras\demo_project"
-HISE export_ci "XmlPresetBackups\Demo.xml" -t:instrument -p:VST3 -a:x64 -nolto
+HISE export "{hisePath}\extras\demo_project\XmlPresetBackups\Demo.xml" -t:instrument -p:VST3 -a:x64 -nolto
 ```
+
+> **Note:** The `export` command requires an absolute path to the XML file.
 
 **Expected Output:**
 - Build files generated in `{hisePath}\extras\demo_project\Binaries\`
@@ -279,14 +311,30 @@ Criteria:
 
 | Command | Description |
 |---------|-------------|
-| `export` | Build project with default settings |
-| `export_ci` | Build for automated/CI workflows |
+| `export` | Build project with default settings (requires absolute path to XML) |
+| `export_ci` | Build for automated/CI workflows (uses relative path, VS2017) |
 | `set_project_folder` | Set current project folder |
 | `set_hise_folder` | Set HISE source location |
+| `set_hise_settings` | Configure compiler settings (hisepath, vs, ipp, faustpath) |
 | `get_project_folder` | Get current project folder |
 | `set_version` | Set project version |
 | `clean` | Clean Binaries folder |
 | `get_build_flags` | Show build configuration and features |
+
+### set_hise_settings Command
+
+```batch
+HISE set_hise_settings [-hisepath:PATH] [-vs:20XX] [-ipp:X] [-faustpath:PATH]
+```
+
+| Flag | Description |
+|------|-------------|
+| `-hisepath:PATH` | Absolute path to HISE source repository |
+| `-vs:20XX` | Visual Studio version (2022 or 2026). Windows only. |
+| `-ipp:X` | Enable Intel IPP (1 or 0) |
+| `-faustpath:PATH` | Absolute path to Faust installation |
+
+All flags are optional. Omitted flags will use default values.
 
 ---
 
@@ -303,14 +351,17 @@ Criteria:
 
 | Issue | Solution |
 |-------|----------|
+| Script execution blocked | Run `Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process` before running script |
 | Git not found | `curl -L -o "%TEMP%\git-installer.exe" "https://github.com/git-for-windows/git/releases/download/v2.43.0.windows.1/Git-2.43.0-64-bit.exe"` |
-| VS2026 not found | Download from https://visualstudio.microsoft.com/downloads/ - HALT until installed |
+| VS2026 Community not found | Download Community Edition from https://visualstudio.microsoft.com/downloads/ - HALT until installed. Note: Pro/Enterprise not supported |
 | ARM64 detected | Proceed with x64 build (runs via emulation) |
 | Projucer not found | Run `git submodule update --init --recursive` |
+| MSBuild path error | Use absolute paths: `"{hisePath}\projects\standalone\Builds\VisualStudio2026\HISE Standalone.sln"` |
 | MSBuild already running | Wait for existing build to complete |
 | HISE.exe < 10MB | Linker failure - rebuild with `/p:PreferredToolArchitecture=x64` |
 | IPP not found | Silent install: `intel-ipp-installer.exe -s -a --silent --eula accept` |
 | Faust version too old | Requires 2.54.0+ or enable `HI_FAUST_NO_WARNING_MESSAGES` flag |
+| PRESET NOT FOUND error | Use absolute path with `export` command, not `export_ci` |
 
 ---
 
@@ -322,8 +373,12 @@ Criteria:
 - **64-bit Linker:** Set `PreferredToolArchitecture=x64` environment variable to avoid out-of-memory errors
 - **Intel IPP Silent Install:** `-s -a --silent --eula accept` includes VS integration by default
 - **MSBuild Path (VS2026):** `C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\MsBuild.exe`
+- **VS Edition:** Community Edition only - Professional and Enterprise are not supported
 - **Projucer Path:** `{hisePath}\JUCE\Projucer\Projucer.exe`
-- **Test Build Config:** CI configuration with `-nolto` flag for faster test builds
+- **Test Build Config:** Uses `-nolto` flag for faster test builds
+- **Export Command:** Use `export` with absolute XML path (not `export_ci` which uses relative paths)
+- **Compiler Settings:** Stored in `%APPDATA%\HISE\compilerSettings.xml`
+- **PowerShell Execution Policy:** May require `Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process`
 
 ---
 
