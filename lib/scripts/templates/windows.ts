@@ -1,4 +1,16 @@
-import { ScriptConfig, HELP_URL, generateHeader } from './common';
+import { 
+  ScriptConfig, 
+  UpdateScriptConfig,
+  HELP_URL, 
+  generateHeader,
+  generateUpdateHeader,
+  generatePowerShellUtilities,
+  generatePowerShellErrorHandler,
+  generateGitPullSectionPS,
+  generateCompileSectionWindows,
+  generateVerifySectionPS,
+  generateUpdateSuccessMessagePS,
+} from './common';
 
 export function generateWindowsScript(config: ScriptConfig): string {
   const { installPath, includeFaust, includeIPP, skipPhases } = config;
@@ -303,6 +315,88 @@ Write-Host "Resources:" -ForegroundColor White
 Write-Host "  - Documentation: https://docs.hise.dev" -ForegroundColor Cyan
 Write-Host "  - Forum: https://forum.hise.audio" -ForegroundColor Cyan
 Write-Host ""
+`;
+
+  return script;
+}
+
+// ============================================
+// Windows Update Script Generator
+// ============================================
+
+export function generateWindowsUpdateScript(config: UpdateScriptConfig): string {
+  const { hisePath, hasFaust } = config;
+  
+  // Escape backslashes for PowerShell
+  const escapedPath = hisePath.replace(/\\/g, '\\');
+  const buildConfig = hasFaust ? 'Release with Faust' : 'Release';
+  
+  const script = `# ${generateUpdateHeader(config).split('\n').join('\n# ')}
+
+# ============================================
+# HISE Update Script for Windows
+# ============================================
+
+$ErrorActionPreference = "Stop"
+$ProgressPreference = "SilentlyContinue"
+
+${generatePowerShellUtilities()}
+
+${generatePowerShellErrorHandler('update')}
+
+# Check admin privileges
+$isAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+if (-not $isAdmin) {
+    Write-Err "This script requires Administrator privileges."
+    Write-Host "Please right-click PowerShell and select 'Run as Administrator'" -ForegroundColor Yellow
+    exit 1
+}
+
+$HISE_PATH = "${escapedPath}"
+
+Write-Host ""
+Write-Host "========================================" -ForegroundColor Cyan
+Write-Host "  HISE Update Script for Windows" -ForegroundColor Cyan
+Write-Host "========================================" -ForegroundColor Cyan
+Write-Host ""
+Write-Host "HISE path: $HISE_PATH" -ForegroundColor White
+Write-Host "Build config: ${buildConfig}" -ForegroundColor White
+Write-Host ""
+
+# ============================================
+# Phase 1: Validate HISE Path
+# ============================================
+Write-Phase "Validating HISE Installation"
+
+if (-not (Test-Path "$HISE_PATH\\.git")) {
+    Handle-Error 0 "Invalid HISE path - not a git repository: $HISE_PATH"
+}
+
+if (-not (Test-Path "$HISE_PATH\\JUCE")) {
+    Handle-Error 0 "JUCE submodule not found in $HISE_PATH"
+}
+
+Write-Success "HISE installation validated"
+
+# ============================================
+# Phase 2: Update Repository
+# ============================================
+${generateGitPullSectionPS(escapedPath)}
+
+# ============================================
+# Phase 3: Compile HISE
+# ============================================
+${generateCompileSectionWindows(escapedPath, hasFaust)}
+
+# ============================================
+# Phase 4: Verify Build
+# ============================================
+${generateVerifySectionPS(escapedPath, buildConfig)}
+
+# ============================================
+# Success
+# ============================================
+${generateUpdateSuccessMessagePS(escapedPath)}
 `;
 
   return script;

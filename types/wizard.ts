@@ -71,3 +71,56 @@ export const PLATFORM_LABELS: Record<Exclude<Platform, null>, string> = {
   macos: 'macOS',
   linux: 'Linux',
 };
+
+// ============================================
+// Update Mode Types
+// ============================================
+
+// Detection result from the path detection script
+export interface DetectionResult {
+  path: string | null;
+  status: 'valid' | 'invalid' | 'not_found';
+  hasFaust: boolean;
+  architecture?: Architecture;  // Only populated for macOS
+}
+
+// Config for update script generation
+export interface UpdateScriptConfig {
+  platform: Exclude<Platform, null>;
+  architecture: Exclude<Architecture, null>;
+  hisePath: string;
+  hasFaust: boolean;
+}
+
+export interface UpdateScriptResponse {
+  script: string;
+  filename: string;
+  warnings: string[];
+}
+
+// Helper function to parse detection script output
+// Format: "<path>,<status>,<hasFaust>[,<architecture>]" or "not_found"
+export function parseDetectionResult(
+  output: string, 
+  platform: Exclude<Platform, null>
+): DetectionResult {
+  const trimmed = output.trim();
+  
+  if (trimmed === 'not_found' || trimmed === '') {
+    return { path: null, status: 'not_found', hasFaust: false };
+  }
+  
+  const parts = trimmed.split(',');
+  const path = parts[0] || null;
+  const status = (parts[1] as 'valid' | 'invalid') || 'invalid';
+  const hasFaust = parts[2] === 'faust';
+  
+  // Architecture is only present for macOS (4th element)
+  // Convert uname -m output to our Architecture type
+  let architecture: Architecture | undefined;
+  if (platform === 'macos' && parts[3]) {
+    architecture = parts[3] === 'arm64' ? 'arm64' : 'x64';
+  }
+  
+  return { path, status, hasFaust, architecture };
+}

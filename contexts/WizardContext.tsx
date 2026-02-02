@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
 import { 
   Platform, 
   Architecture, 
@@ -9,6 +9,9 @@ import {
   ExplanationMode,
   DEFAULT_PATHS 
 } from '@/types/wizard';
+
+// Local storage key for shared explanation mode preference
+const EXPLANATION_MODE_KEY = 'hise-wizard-explanation-mode';
 
 const initialDetectedComponents: DetectedComponents = {
   git: false,
@@ -47,6 +50,26 @@ const WizardContext = createContext<WizardContextType | undefined>(undefined);
 
 export function WizardProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<WizardState>(initialState);
+
+  // Load explanation mode from localStorage on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem(EXPLANATION_MODE_KEY);
+      if (stored === 'easy' || stored === 'dev') {
+        setState(prev => ({ ...prev, explanationMode: stored }));
+      }
+    }
+  }, []);
+
+  // Listen for explanation mode changes from Header
+  useEffect(() => {
+    const handleModeChange = (e: CustomEvent<ExplanationMode>) => {
+      setState(prev => ({ ...prev, explanationMode: e.detail }));
+    };
+    
+    window.addEventListener('explanationModeChange', handleModeChange as EventListener);
+    return () => window.removeEventListener('explanationModeChange', handleModeChange as EventListener);
+  }, []);
 
   const setPlatform = useCallback((platform: Platform) => {
     setState(prev => ({
@@ -89,6 +112,10 @@ export function WizardProvider({ children }: { children: ReactNode }) {
 
   const setExplanationMode = useCallback((explanationMode: ExplanationMode) => {
     setState(prev => ({ ...prev, explanationMode }));
+    // Persist to localStorage for sharing with UpdateContext
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(EXPLANATION_MODE_KEY, explanationMode);
+    }
   }, []);
 
   const reset = useCallback(() => {

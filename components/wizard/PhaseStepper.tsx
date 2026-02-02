@@ -7,17 +7,24 @@ interface Phase {
   name: string;
 }
 
-const phases: Phase[] = [
+const defaultPhases: Phase[] = [
   { id: 0, name: 'Setup' },
+  { id: 1, name: 'Generate Script' },
+];
+
+const updatePhases: Phase[] = [
+  { id: 0, name: 'Configure' },
   { id: 1, name: 'Generate Script' },
 ];
 
 interface PhaseStepperProps {
   currentPhase: number;
   className?: string;
+  mode?: 'setup' | 'update';
 }
 
-export default function PhaseStepper({ currentPhase, className = '' }: PhaseStepperProps) {
+export default function PhaseStepper({ currentPhase, className = '', mode = 'setup' }: PhaseStepperProps) {
+  const phases = mode === 'update' ? updatePhases : defaultPhases;
   return (
     <div className={`flex items-center justify-center ${className}`}>
       {phases.map((phase, index) => (

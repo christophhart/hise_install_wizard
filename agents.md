@@ -28,13 +28,18 @@ A web-based wizard application that generates platform-specific setup scripts fo
 ```
 hise-install-wizard/
 ├── app/                                # Next.js App Router
-│   ├── page.tsx                        # Landing page
+│   ├── page.tsx                        # Landing page (New Installation / Update HISE)
 │   ├── layout.tsx                      # Root layout with header/footer
 │   ├── setup/
 │   │   ├── page.tsx                    # Configuration page (platform, path, components)
 │   │   └── generate/page.tsx           # Script preview, summary, and download
+│   ├── update/
+│   │   ├── layout.tsx                  # Update layout with UpdateProvider
+│   │   ├── page.tsx                    # Update config (detect HISE installation)
+│   │   └── generate/page.tsx           # Update script preview and download
 │   └── api/
-│       └── generate-script/route.ts    # Script generation endpoint
+│       ├── generate-script/route.ts    # Setup script generation endpoint
+│       └── generate-update-script/route.ts  # Update script generation endpoint
 │
 ├── components/
 │   ├── wizard/
@@ -43,9 +48,10 @@ hise-install-wizard/
 │   │   ├── PathInput.tsx               # Install path with validation & paste
 │   │   ├── ComponentChecklist.tsx      # iOS-style toggles + auto-detect
 │   │   ├── ExplanationModeSelector.tsx # EZ/Dev mode toggle in header
-│   │   ├── PhaseStepper.tsx            # 2-step progress indicator
+│   │   ├── PhaseStepper.tsx            # 2-step progress indicator (setup/update modes)
 │   │   ├── ScriptPreview.tsx           # Clean code display with line numbers
-│   │   └── SetupSummary.tsx            # Shows all phases with run/skip status
+│   │   ├── SetupSummary.tsx            # Shows all phases with run/skip status
+│   │   └── HisePathDetector.tsx        # Detect existing HISE installation from PATH
 │   ├── ui/
 │   │   ├── Button.tsx
 │   │   ├── Card.tsx
@@ -63,7 +69,8 @@ hise-install-wizard/
 │       └── PageContainer.tsx
 │
 ├── contexts/
-│   └── WizardContext.tsx               # React Context for wizard state
+│   ├── WizardContext.tsx               # React Context for setup wizard state
+│   └── UpdateContext.tsx               # React Context for update mode state
 │
 ├── hooks/
 │   └── useExplanation.ts               # Hook for EZ/Dev mode content switching
@@ -72,12 +79,12 @@ hise-install-wizard/
 │   ├── content/
 │   │   └── explanations.ts             # Mode-aware content strings (EZ/Dev)
 │   └── scripts/
-│       ├── generator.ts                # Main script generator
+│       ├── generator.ts                # Main script generator (setup + update)
 │       └── templates/
-│           ├── common.ts               # Shared template utilities
-│           ├── windows.ts              # PowerShell script template
-│           ├── macos.ts                # Bash script for macOS
-│           └── linux.ts                # Bash script for Linux
+│           ├── common.ts               # Shared template utilities and sections
+│           ├── windows.ts              # PowerShell scripts (setup + update)
+│           ├── macos.ts                # Bash scripts for macOS (setup + update)
+│           └── linux.ts                # Bash scripts for Linux (setup + update)
 │
 ├── types/
 │   └── wizard.ts                       # TypeScript type definitions
@@ -99,7 +106,9 @@ hise-install-wizard/
 
 ## User Flow
 
-1. **Landing Page** (`/`) - User clicks "Start Setup"
+### New Installation Flow (Setup)
+
+1. **Landing Page** (`/`) - User clicks "New Installation"
 2. **Configuration** (`/setup`) - Three-section form:
    - Section 1: Platform selection (auto-detected)
    - Section 2: Installation path (with regex validation)
@@ -109,6 +118,19 @@ hise-install-wizard/
    - Setup summary (all phases with run/skip status)
    - Download button with unique timestamped filename
    - How to run instructions
+   - Clean script preview with line numbers
+
+### Update Flow
+
+1. **Landing Page** (`/`) - User clicks "Update HISE"
+2. **Configuration** (`/update`) - Two-section form:
+   - Section 1: Platform display (auto-detected)
+   - Section 2: HISE path detection via script (detects path from PATH, Faust status, architecture)
+3. **Script Generation** (`/update/generate`) - Shows:
+   - HISE path display with Faust build status
+   - Update summary (4 phases: validate, git pull, compile, verify)
+   - Download button with unique timestamped filename
+   - Simplified how to run instructions
    - Clean script preview with line numbers
 
 ---
@@ -208,6 +230,26 @@ Shows all setup phases with status indicators:
 }
 ```
 
+### POST `/api/generate-update-script`
+**Input:**
+```typescript
+{
+  platform: 'windows' | 'macos' | 'linux';
+  architecture: 'x64' | 'arm64';
+  hisePath: string;      // Detected HISE repository path
+  hasFaust: boolean;     // Whether current build has Faust support
+}
+```
+
+**Output:**
+```typescript
+{
+  script: string;        // The generated update script content
+  filename: string;      // e.g., "hise-update.ps1"
+  warnings: string[];    // Any warnings for the user
+}
+```
+
 ---
 
 ## State Management
@@ -249,15 +291,31 @@ Located in `lib/scripts/templates/`:
 
 | File | Output | Description |
 |------|--------|-------------|
+| `common.ts` | - | Shared utilities and script section generators |
 | `windows.ts` | PowerShell (.ps1) | Uses winget, MSBuild, VS2022 |
 | `macos.ts` | Bash (.sh) | Uses Homebrew, xcodebuild |
 | `linux.ts` | Bash (.sh) | Uses apt/dnf, make |
 
-Each template:
+Each template exports two functions:
+- `generate{Platform}Script(config)` - Full setup script
+- `generate{Platform}UpdateScript(config)` - Streamlined update script
+
+Common features:
 - Checks prerequisites
 - Skips phases based on user configuration
 - Includes error handling with colored output
 - Provides progress indicators
+
+### Shared Script Sections (common.ts)
+
+The `common.ts` file provides reusable script section generators:
+- `generateBashUtilities()` / `generatePowerShellUtilities()` - Color output functions
+- `generateGitPullSectionBash()` / `generateGitPullSectionPS()` - Git update logic
+- `generateCompileSectionMacOS()` / `generateCompileSectionLinux()` / `generateCompileSectionWindows()` - Build commands
+- `generateVerifySectionBash()` / `generateVerifySectionPS()` - Build verification
+- `generateUpdateSuccessMessageBash()` / `generateUpdateSuccessMessagePS()` - Success output
+
+This shared approach keeps the codebase lean and ensures consistency between setup and update scripts.
 
 ---
 
@@ -323,3 +381,4 @@ npm start
 - Verification commands all return `True`/`False` for consistency
 - Component toggles use inverted display logic (ON = will install)
 - JUCE and SDKs hidden from UI but tracked in state
+- Explanation mode (EZ/Dev) is shared between Setup and Update flows via localStorage

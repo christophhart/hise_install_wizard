@@ -393,3 +393,204 @@ export function getContentForPlatform(
 ): string {
   return content[mode][platform];
 }
+
+// ============================================================================
+// Update Page Content
+// ============================================================================
+
+export const updatePage = {
+  title: {
+    easy: 'Update HISE',
+    dev: 'Update HISE',
+  } as ModeContent,
+  
+  description: {
+    easy: 'Already have HISE installed? This will detect your installation and generate a script to pull the latest changes and recompile.',
+    dev: 'Generate update script to pull latest and recompile.',
+  } as ModeContent,
+  
+  detectSection: {
+    title: {
+      easy: 'Detect HISE Installation',
+      dev: 'Detect Installation',
+    } as ModeContent,
+    
+    description: {
+      easy: 'Run this script in your terminal to find your HISE installation:',
+      dev: 'Run to detect HISE path:',
+    } as ModeContent,
+    
+    pasteLabel: {
+      easy: 'Paste the result here:',
+      dev: 'Paste output:',
+    } as ModeContent,
+    
+    placeholder: {
+      easy: 'After running the command, paste the result here',
+      dev: 'e.g., C:\\HISE,valid,faust',
+    } as ModeContent,
+  },
+  
+  pathStatus: {
+    valid: {
+      easy: 'Valid HISE repository found!',
+      dev: 'Valid repo',
+    } as ModeContent,
+    
+    invalid: {
+      easy: 'Path found but it doesn\'t appear to be a valid HISE git repository.',
+      dev: 'Invalid repo - .git not found',
+    } as ModeContent,
+    
+    notFound: {
+      easy: 'HISE not found in your PATH. Have you completed the initial setup?',
+      dev: 'HISE not in PATH',
+    } as ModeContent,
+  },
+  
+  faustStatus: {
+    enabled: {
+      easy: 'Faust support detected - update will preserve this.',
+      dev: 'Faust: enabled',
+    } as ModeContent,
+    
+    disabled: {
+      easy: 'Standard build detected (no Faust).',
+      dev: 'Faust: disabled',
+    } as ModeContent,
+  },
+};
+
+export const updateGeneratePage = {
+  title: {
+    easy: 'Your Update Script',
+    dev: 'Update Script',
+  } as ModeContent,
+  
+  description: {
+    easy: 'Your update script is ready. It will pull the latest HISE changes and recompile.',
+    dev: 'Script will pull and recompile.',
+  } as ModeContent,
+  
+  stepsExplanation: {
+    easy: 'The script will perform these steps:',
+    dev: 'Update phases:',
+  } as ModeContent,
+};
+
+// Simplified "How to Run" for update mode
+interface UpdateHowToRunStep {
+  title: ModeContent;
+  command?: ModeContent;
+}
+
+export const updateHowToRun: Record<Exclude<Platform, null>, { steps: UpdateHowToRunStep[] }> = {
+  windows: {
+    steps: [
+      {
+        title: {
+          easy: 'Open PowerShell as Administrator',
+          dev: 'Admin PowerShell',
+        },
+      },
+      {
+        title: {
+          easy: 'Navigate to Downloads and run the script',
+          dev: 'Run script',
+        },
+        command: {
+          easy: 'cd $HOME\\Downloads; .\\"hise-update.ps1"',
+          dev: 'cd $HOME\\Downloads; .\\"hise-update.ps1"',
+        },
+      },
+    ],
+  },
+  macos: {
+    steps: [
+      {
+        title: {
+          easy: 'Open Terminal',
+          dev: 'Terminal',
+        },
+      },
+      {
+        title: {
+          easy: 'Navigate to Downloads, make executable, and run',
+          dev: 'Run script',
+        },
+        command: {
+          easy: 'cd ~/Downloads && chmod +x hise-update.sh && ./hise-update.sh',
+          dev: 'cd ~/Downloads && chmod +x hise-update.sh && ./hise-update.sh',
+        },
+      },
+    ],
+  },
+  linux: {
+    steps: [
+      {
+        title: {
+          easy: 'Open Terminal',
+          dev: 'Terminal',
+        },
+      },
+      {
+        title: {
+          easy: 'Navigate to Downloads, make executable, and run',
+          dev: 'Run script',
+        },
+        command: {
+          easy: 'cd ~/Downloads && chmod +x hise-update.sh && ./hise-update.sh',
+          dev: 'cd ~/Downloads && chmod +x hise-update.sh && ./hise-update.sh',
+        },
+      },
+    ],
+  },
+};
+
+// Update phases for summary display
+export const updatePhases = [
+  {
+    id: 1,
+    name: {
+      easy: 'Validate Installation',
+      dev: 'Validate',
+    } as ModeContent,
+    description: {
+      easy: 'Check that the HISE path is valid',
+      dev: 'Verify .git and JUCE exist',
+    } as ModeContent,
+  },
+  {
+    id: 2,
+    name: {
+      easy: 'Update Repository',
+      dev: 'Git Pull',
+    } as ModeContent,
+    description: {
+      easy: 'Pull latest changes and update submodules',
+      dev: 'git pull, submodule update, JUCE juce6',
+    } as ModeContent,
+  },
+  {
+    id: 3,
+    name: {
+      easy: 'Compile HISE',
+      dev: 'Compile',
+    } as ModeContent,
+    description: {
+      easy: 'Rebuild HISE with the updated code',
+      dev: 'Projucer + build',
+    } as ModeContent,
+  },
+  {
+    id: 4,
+    name: {
+      easy: 'Verify Build',
+      dev: 'Verify',
+    } as ModeContent,
+    description: {
+      easy: 'Check that the build completed successfully',
+      dev: 'get_build_flags',
+    } as ModeContent,
+  },
+];

@@ -1,4 +1,16 @@
-import { ScriptConfig, HELP_URL, generateHeader } from './common';
+import { 
+  ScriptConfig, 
+  UpdateScriptConfig,
+  HELP_URL, 
+  generateHeader,
+  generateUpdateHeader,
+  generateBashUtilities,
+  generateBashErrorHandler,
+  generateGitPullSectionBash,
+  generateCompileSectionMacOS,
+  generateVerifySectionBash,
+  generateUpdateSuccessMessageBash,
+} from './common';
 
 export function generateMacOSScript(config: ScriptConfig): string {
   const { installPath, includeFaust, architecture, skipPhases } = config;
@@ -311,6 +323,85 @@ echo "Resources:"
 echo -e "  - Documentation: \${CYAN}https://docs.hise.dev\${NC}"
 echo -e "  - Forum: \${CYAN}https://forum.hise.audio\${NC}"
 echo ""
+`;
+
+  return script;
+}
+
+// ============================================
+// macOS Update Script Generator
+// ============================================
+
+export function generateMacOSUpdateScript(config: UpdateScriptConfig): string {
+  const { hisePath, hasFaust, architecture } = config;
+  
+  // Expand ~ for home directory
+  const expandedPath = hisePath.startsWith('~') 
+    ? hisePath.replace('~', '$HOME')
+    : hisePath;
+  
+  const buildConfig = hasFaust ? 'Release with Faust' : 'Release';
+  
+  const script = `#!/bin/bash
+# ${generateUpdateHeader(config).split('\n').join('\n# ')}
+
+# ============================================
+# HISE Update Script for macOS
+# ============================================
+
+set -e
+
+${generateBashUtilities()}
+
+${generateBashErrorHandler('update')}
+
+HISE_PATH="${expandedPath}"
+ARCH="${architecture}"
+
+echo ""
+echo -e "\${CYAN}========================================\${NC}"
+echo -e "\${CYAN}  HISE Update Script for macOS\${NC}"
+echo -e "\${CYAN}========================================\${NC}"
+echo ""
+echo "HISE path: $HISE_PATH"
+echo "Architecture: $ARCH"
+echo "Build config: ${buildConfig}"
+echo ""
+
+# ============================================
+# Phase 1: Validate HISE Path
+# ============================================
+phase "Validating HISE Installation"
+
+if [ ! -d "$HISE_PATH/.git" ]; then
+    handle_error 0 "Invalid HISE path - not a git repository: $HISE_PATH"
+fi
+
+if [ ! -d "$HISE_PATH/JUCE" ]; then
+    handle_error 0 "JUCE submodule not found in $HISE_PATH"
+fi
+
+success "HISE installation validated"
+
+# ============================================
+# Phase 2: Update Repository
+# ============================================
+${generateGitPullSectionBash(expandedPath)}
+
+# ============================================
+# Phase 3: Compile HISE
+# ============================================
+${generateCompileSectionMacOS(expandedPath, architecture, hasFaust)}
+
+# ============================================
+# Phase 4: Verify Build
+# ============================================
+${generateVerifySectionBash(expandedPath, buildConfig, 'macos')}
+
+# ============================================
+# Success
+# ============================================
+${generateUpdateSuccessMessageBash(expandedPath)}
 `;
 
   return script;

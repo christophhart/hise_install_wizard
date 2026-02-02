@@ -4,13 +4,14 @@ import PageContainer from '@/components/layout/PageContainer';
 import Button from '@/components/ui/Button';
 import { Card, CardContent } from '@/components/ui/Card';
 import { 
-  ArrowRight, 
   Monitor, 
   Apple, 
   Terminal, 
   Download,
   Settings,
-  CheckCircle2
+  CheckCircle2,
+  RefreshCw,
+  PackagePlus
 } from 'lucide-react';
 
 export default function HomePage() {
@@ -34,12 +35,26 @@ export default function HomePage() {
           Get your development environment ready to compile HISE and export 
           professional audio plugins in minutes.
         </p>
-        <Link href="/setup">
-          <Button size="lg">
-            Start Setup
-            <ArrowRight className="w-5 h-5" />
-          </Button>
-        </Link>
+        <div className="flex gap-6 justify-center flex-wrap">
+          <Link href="/setup" className="flex flex-col items-center gap-2 group">
+            <Button size="lg">
+              New Installation
+              <PackagePlus className="w-5 h-5" />
+            </Button>
+            <p className="text-xs text-gray-500 max-w-[180px] text-center group-hover:text-gray-400 transition-colors">
+              Set up HISE from scratch with all dependencies
+            </p>
+          </Link>
+          <Link href="/update" className="flex flex-col items-center gap-2 group">
+            <Button size="lg">
+              Update HISE
+              <RefreshCw className="w-5 h-5" />
+            </Button>
+            <p className="text-xs text-gray-500 max-w-[180px] text-center group-hover:text-gray-400 transition-colors">
+              Pull latest changes and recompile existing installation
+            </p>
+          </Link>
+        </div>
       </div>
       
       {/* Platforms */}
