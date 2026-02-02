@@ -234,8 +234,13 @@ export default function ComponentChecklist({
     (c) => c.platforms.includes(platform)
   );
   
-  const requiredComponents = filteredComponents.filter(c => c.category === 'required');
-  const optionalComponents = filteredComponents.filter(c => c.category === 'optional');
+  // Components to display in the UI (exclude juce and sdks - they're handled with repo setup)
+  const displayedComponents = filteredComponents.filter(
+    (c) => c.key !== 'juce' && c.key !== 'sdks'
+  );
+  
+  const requiredComponents = displayedComponents.filter(c => c.category === 'required');
+  const optionalComponents = displayedComponents.filter(c => c.category === 'optional');
   
   // Generate detection script for current platform
   const detectionScript = generateDetectionScript(platform, installPath);
@@ -283,7 +288,7 @@ export default function ComponentChecklist({
   
   const renderComponent = (component: ComponentInfo) => {
     const verifyCommand = component.getVerifyCommand(installPath, platform);
-    const isChecked = components[component.key];
+    const isInstalled = components[component.key]; // true = already installed (skip)
     const isFaust = component.key === 'faust';
     const isIPP = component.key === 'intelIPP';
     
@@ -293,18 +298,74 @@ export default function ComponentChecklist({
       ? getContent(content.description)
       : component.description;
     
+    // Inverted display logic: toggle is ON when we WILL install (i.e., not installed)
+    // For required components: toggle ON = will install, toggle OFF = already have it
+    // For optional components: handled separately below
+    const toggleOn = !isInstalled;
+    
+    // Determine what the script will actually do
+    const willInstallOptional = component.isOptional && !isInstalled && (isFaust ? installFaust : isIPP ? installIPP : false);
+    const willSkip = isInstalled || (component.isOptional && !willInstallOptional);
+    
     return (
       <div key={component.key} className="space-y-2">
-        <Checkbox
-          label={component.label}
-          description={description}
-          checked={isChecked}
-          onChange={(e) => onChange(component.key, e.target.checked)}
-        />
+        <div className="flex items-start gap-3">
+          {/* Toggle and label area */}
+          <div className="flex-1">
+            <label className="flex items-start gap-3 cursor-pointer group">
+              {/* iOS-style toggle */}
+              <div className="relative flex-shrink-0 mt-0.5">
+                <input
+                  type="checkbox"
+                  checked={toggleOn}
+                  onChange={(e) => onChange(component.key, !e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div className={`
+                  w-11 h-6 rounded-full
+                  transition-colors duration-200
+                  ${toggleOn 
+                    ? 'bg-accent' 
+                    : 'bg-gray-600'
+                  }
+                  peer-focus:ring-2 peer-focus:ring-accent/50
+                `}>
+                  <div className={`
+                    absolute top-0.5 left-0.5
+                    w-5 h-5 rounded-full bg-white shadow-md
+                    transition-transform duration-200
+                    ${toggleOn ? 'translate-x-5' : 'translate-x-0'}
+                  `} />
+                </div>
+              </div>
+              <div className="flex-1">
+                <span className="text-sm font-medium text-white">
+                  {component.label}
+                </span>
+                <p className="text-sm text-gray-500 mt-0.5">{description}</p>
+              </div>
+            </label>
+          </div>
+          
+          {/* Status badge */}
+          <div className="flex-shrink-0 mt-0.5">
+            {willSkip ? (
+              <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs bg-gray-500/10 text-gray-400 border border-gray-500/20">
+                <CheckCircle className="w-3 h-3" />
+                Already Installed
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs bg-accent/10 text-accent border border-accent/20">
+                <Download className="w-3 h-3" />
+                Will Install
+              </span>
+            )}
+          </div>
+        </div>
         
-        {/* Install toggle for optional components when not already installed */}
-        {component.isOptional && !isChecked && (
-          <div className="ml-8 mt-2">
+        {/* Install toggle for optional components when marked as not installed */}
+        {component.isOptional && toggleOn && (
+          <div className="ml-14 mt-2">
             <label className="flex items-center gap-2 cursor-pointer group">
               <input
                 type="checkbox"
@@ -335,7 +396,7 @@ export default function ComponentChecklist({
         )}
         
         {showVerifyCommands && verifyCommand && (
-          <div className="ml-8 space-y-2">
+          <div className="ml-14 space-y-2">
             {/* Verification command */}
             <div>
               <p className="text-xs text-gray-500 mb-1">Run this command to verify:</p>
@@ -364,23 +425,6 @@ export default function ComponentChecklist({
   
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <label className="block text-sm font-medium text-gray-300">
-          What do you already have installed?
-        </label>
-        <button
-          type="button"
-          onClick={() => setShowVerifyCommands(!showVerifyCommands)}
-          className="text-xs text-accent hover:underline flex items-center gap-1"
-        >
-          {showVerifyCommands ? (
-            <>Hide verification commands <ChevronUp className="w-3 h-3" /></>
-          ) : (
-            <>Show verification commands <ChevronDown className="w-3 h-3" /></>
-          )}
-        </button>
-      </div>
-      
       {/* Auto-Detect Section */}
       <Collapsible
         title={getContent(autoDetect.title)}
@@ -461,6 +505,24 @@ export default function ComponentChecklist({
         </div>
       </Collapsible>
       
+      {/* Manual Selection Header */}
+      <div className="flex items-center justify-between">
+        <label className="block text-sm font-medium text-gray-300">
+          What needs to be installed?
+        </label>
+        <button
+          type="button"
+          onClick={() => setShowVerifyCommands(!showVerifyCommands)}
+          className="text-xs text-accent hover:underline flex items-center gap-1"
+        >
+          {showVerifyCommands ? (
+            <>Hide verification commands <ChevronUp className="w-3 h-3" /></>
+          ) : (
+            <>Show verification commands <ChevronDown className="w-3 h-3" /></>
+          )}
+        </button>
+      </div>
+      
       {/* Required Components */}
       <div className="space-y-3">
         <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">Required</p>
@@ -474,6 +536,40 @@ export default function ComponentChecklist({
           {optionalComponents.map(renderComponent)}
         </div>
       )}
+      
+      {/* Summary */}
+      {(() => {
+        // Calculate counts (only for displayed components)
+        const skipCount = displayedComponents.filter(c => {
+          const isChecked = components[c.key];
+          if (isChecked) return true;
+          if (c.isOptional) {
+            const isFaust = c.key === 'faust';
+            const isIPP = c.key === 'intelIPP';
+            const willInstallOptional = isFaust ? installFaust : isIPP ? installIPP : false;
+            return !willInstallOptional;
+          }
+          return false;
+        }).length;
+        
+        const installCount = displayedComponents.length - skipCount;
+        
+        return (
+          <div className="pt-4 border-t border-border">
+            <div className="flex items-center justify-center gap-6 text-sm">
+              <span className="flex items-center gap-2 text-gray-400">
+                <CheckCircle className="w-4 h-4" />
+                <strong>{skipCount}</strong> already installed
+              </span>
+              <span className="text-gray-600">|</span>
+              <span className="flex items-center gap-2 text-accent">
+                <Download className="w-4 h-4" />
+                <strong>{installCount}</strong> {installCount === 1 ? 'component' : 'components'} will be installed
+              </span>
+            </div>
+          </div>
+        );
+      })()}
       
       {/* Combined Verification Command */}
       {showVerifyCommands && combinedCommand && (

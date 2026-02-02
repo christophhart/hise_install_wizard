@@ -33,18 +33,16 @@ hise-install-wizard/
 │   ├── setup/
 │   │   ├── page.tsx                    # Configuration page (platform, path, components)
 │   │   └── generate/page.tsx           # Script preview, summary, and download
-│   ├── help/
-│   │   └── page.tsx                    # Error analysis page
 │   └── api/
-│       ├── generate-script/route.ts    # Script generation endpoint
-│       └── parse-error/route.ts        # Error pattern matching endpoint
+│       └── generate-script/route.ts    # Script generation endpoint
 │
 ├── components/
 │   ├── wizard/
 │   │   ├── PlatformSelector.tsx        # OS selection with auto-detect
 │   │   ├── ArchitectureSelector.tsx    # x64/arm64 for macOS
 │   │   ├── PathInput.tsx               # Install path with validation & paste
-│   │   ├── ComponentChecklist.tsx      # Component detection + install toggles
+│   │   ├── ComponentChecklist.tsx      # iOS-style toggles + auto-detect
+│   │   ├── ExplanationModeSelector.tsx # EZ/Dev mode toggle in header
 │   │   ├── PhaseStepper.tsx            # 2-step progress indicator
 │   │   ├── ScriptPreview.tsx           # Clean code display with line numbers
 │   │   └── SetupSummary.tsx            # Shows all phases with run/skip status
@@ -56,17 +54,23 @@ hise-install-wizard/
 │   │   ├── RadioGroup.tsx
 │   │   ├── Alert.tsx
 │   │   ├── CodeBlock.tsx               # Code display with copy button
+│   │   ├── Collapsible.tsx             # Expandable section component
 │   │   ├── InlineCopy.tsx              # Inline command with copy button
 │   │   └── Textarea.tsx
 │   └── layout/
-│       ├── Header.tsx
+│       ├── Header.tsx                  # Black header bar with logo + mode selector
 │       ├── Footer.tsx
 │       └── PageContainer.tsx
 │
 ├── contexts/
 │   └── WizardContext.tsx               # React Context for wizard state
 │
+├── hooks/
+│   └── useExplanation.ts               # Hook for EZ/Dev mode content switching
+│
 ├── lib/
+│   ├── content/
+│   │   └── explanations.ts             # Mode-aware content strings (EZ/Dev)
 │   └── scripts/
 │       ├── generator.ts                # Main script generator
 │       └── templates/
@@ -78,7 +82,9 @@ hise-install-wizard/
 ├── types/
 │   └── wizard.ts                       # TypeScript type definitions
 │
-├── public/                             # Static assets
+├── public/
+│   └── images/
+│       └── logo_new.png                # HISE logo
 ├── hise-setup-windows.md               # Windows setup reference
 ├── hise-setup-macos.md                 # macOS setup reference
 ├── hise-setup-linux.md                 # Linux setup reference
@@ -97,27 +103,52 @@ hise-install-wizard/
 2. **Configuration** (`/setup`) - Three-section form:
    - Section 1: Platform selection (auto-detected)
    - Section 2: Installation path (with regex validation)
-   - Section 3: Component checklist with auto-detect feature
+   - Section 3: Component checklist with auto-detect feature and iOS-style toggles
 3. **Script Generation** (`/setup/generate`) - Shows:
+   - Installation folder display with HISE repository status
    - Setup summary (all phases with run/skip status)
    - Download button with unique timestamped filename
    - How to run instructions
    - Clean script preview with line numbers
-4. **Help** (`/help`) - Error analysis with pattern matching
 
 ---
 
 ## Key Features
 
-### Auto-Detect Components (ComponentChecklist.tsx)
+### Explanation Modes (EZ Mode / Dev Mode)
+
+Two content modes available via toggle in header:
+- **EZ Mode**: Detailed explanations for beginners new to development environments
+- **Dev Mode**: Concise, technical information for experienced developers
+
+Content is managed in `lib/content/explanations.ts` with mode-aware strings.
+
+### Component Checklist (ComponentChecklist.tsx)
+
+iOS-style toggles with inverted UX logic:
+- **Toggle ON (orange)**: Component will be installed
+- **Toggle OFF (grey)**: Component already installed, will be skipped
+- Status badges show "Will Install" or "Already Installed"
+- Summary at bottom shows counts
+
+**Displayed Components:**
+- Git
+- C++ Compiler
+- HISE Repository
+- Faust DSP Compiler (optional)
+- Intel IPP (optional, Windows only)
+
+**Note:** JUCE Submodule and SDKs are tracked internally but hidden from UI (assumed handled with repo setup).
+
+### Auto-Detect Components
 
 Users can run a detection script to automatically check which components are installed:
 
-1. Click "Show" on Auto-Detect section
+1. Expand "Auto-Detect Components" section
 2. Copy the generated detection script
 3. Run in PowerShell/Terminal
-4. Paste output (e.g., `git,compiler,hiseRepo,juce,sdks`)
-5. Click "Apply" - checkboxes are automatically ticked
+4. Paste output (e.g., `git,compiler,hiseRepo`)
+5. Click "Apply" - toggles are automatically updated
 
 **Detection Script Output Format:** Comma-separated list of installed component keys
 
@@ -132,19 +163,14 @@ const PATH_PATTERNS = {
 };
 ```
 
-### Verification Commands
+### Generate Page Features
 
-All component verification commands return `True`/`False` for consistency:
-
-| Component | Windows | macOS/Linux |
-|-----------|---------|-------------|
-| Git | `[bool](Get-Command git -ErrorAction SilentlyContinue)` | `command -v git >/dev/null && echo "True" \|\| echo "False"` |
-| Compiler | `Test-Path "...MSBuild.exe"` | `xcode-select -p` / `command -v gcc` |
-| HISE Repo | `Test-Path "<path>\.git"` | `test -d "<path>/.git"` |
-| JUCE | `(Test-Path ...) -and (git branch = "juce6")` | `test + git branch check` |
-| SDKs | `Test-Path "<path>\tools\SDK"` | `test -d` |
-| Faust | `Test-Path "C:\Program Files\Faust\bin\faust.exe"` | `test -f /usr/local/bin/faust` |
-| Intel IPP | `Test-Path "...\Intel\oneAPI\ipp\latest"` | N/A |
+- **Install Path Display**: Shows selected folder with HISE repository checkbox indicator
+- **Steps Explanation**: Mode-aware text explaining what the script will do
+- **Setup Summary**: Visual list of all phases with status indicators
+- **Download Button**: Unique timestamped filenames prevent conflicts
+- **How to Run**: Collapsible instructions with copy-able commands
+- **Script Preview**: Clean display with line numbers
 
 ### Setup Summary (SetupSummary.tsx)
 
@@ -155,26 +181,6 @@ Shows all setup phases with status indicators:
 | Will Run | Orange circle | Phase will be executed |
 | Already Done | Green check | Component detected, phase skipped |
 | Skipped | Gray arrow | Optional phase not selected |
-
-**Phases displayed:**
-- Git & Repository Setup
-- C++ Compiler
-- Intel IPP (optional, Windows only)
-- Faust DSP Compiler (optional)
-- Repository Check
-- Compile HISE (always runs)
-- Add to PATH (always runs)
-- Verify Build (always runs)
-- Test Project (always runs)
-
-### Script Preview (ScriptPreview.tsx)
-
-Clean, minimal display:
-- Line numbers
-- Comments highlighted in gray italic
-- No colorful syntax highlighting (cleaner look)
-- Copy and download buttons
-- Expandable for long scripts
 
 ---
 
@@ -202,26 +208,6 @@ Clean, minimal display:
 }
 ```
 
-### POST `/api/parse-error`
-**Input:**
-```typescript
-{
-  error: string;         // Error message from user
-  platform: string;
-}
-```
-
-**Output:**
-```typescript
-{
-  patterns: Array<{
-    pattern: string;
-    cause: string;
-    solution: string;
-  }>;
-}
-```
-
 ---
 
 ## State Management
@@ -243,6 +229,7 @@ interface WizardState {
   };
   includeFaust: boolean;
   includeIPP: boolean;
+  explanationMode: 'easy' | 'dev';
 }
 ```
 
@@ -279,6 +266,7 @@ Each template:
 Colors defined in `tailwind.config.ts`:
 - **Background:** `#0F0F0F`
 - **Surface:** `#1A1A1A`
+- **Header:** `#000000` (black)
 - **Border:** `#2A2A2A`
 - **Accent:** `#FF6B35` (orange)
 - **Success:** `#10B981`
@@ -333,3 +321,5 @@ npm start
 - All platforms supported: Windows, macOS, Linux
 - PowerShell commands use `Test-Path` (compatible with all PS versions)
 - Verification commands all return `True`/`False` for consistency
+- Component toggles use inverted display logic (ON = will install)
+- JUCE and SDKs hidden from UI but tracked in state

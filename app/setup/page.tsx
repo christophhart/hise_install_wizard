@@ -12,7 +12,6 @@ import PathInput, { validatePath } from '@/components/wizard/PathInput';
 import ComponentChecklist from '@/components/wizard/ComponentChecklist';
 import Button from '@/components/ui/Button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/Card';
-import Alert from '@/components/ui/Alert';
 import { ArrowRight } from 'lucide-react';
 import { useExplanation } from '@/hooks/useExplanation';
 import { setupPage } from '@/lib/content/explanations';
@@ -128,9 +127,9 @@ export default function SetupPage() {
                   Components
                 </h3>
                 
-                <Alert variant="info">
+                <p className="text-sm text-gray-400">
                   {get(setupPage.componentsSection.description)}
-                </Alert>
+                </p>
                 
                 <ComponentChecklist
                   platform={state.platform}

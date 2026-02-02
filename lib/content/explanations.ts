@@ -61,8 +61,8 @@ export const setupPage = {
       dev: 'Components',
     } as ModeContent,
     description: {
-      easy: 'Check the boxes for any tools you already have installed on your computer. This helps us skip unnecessary steps and make the installation faster. Don\'t worry if you\'re not sure - leaving them unchecked just means the script will install them for you.',
-      dev: 'Check any components you already have installed. The script will skip those steps. For optional components (Faust, Intel IPP), check "Install during setup" if you want them included.',
+      easy: 'Toggle off any components you already have installed to skip them. Use the Auto-Detect feature to automatically detect what\'s on your system, or adjust the toggles manually. The status badges show what the script will do for each component.',
+      dev: 'Toggle off installed components to skip them. Use Auto-Detect or adjust manually. Optional components require enabling "Install during setup".',
     } as ModeContent,
   },
 };
@@ -190,8 +190,13 @@ export const generatePage = {
   } as ModeContent,
   
   description: {
-    easy: 'Your custom installation script is ready! Download it and follow the instructions below to install HISE on your computer.',
-    dev: 'Download and run this script to set up HISE on your system.',
+    easy: 'Your custom installation script is ready to install HISE to this location:',
+    dev: 'Script configured to install HISE to this location:',
+  } as ModeContent,
+  
+  stepsExplanation: {
+    easy: 'The script will perform the following steps automatically. Steps marked with a green checkmark will be skipped because those components are already installed on your system.',
+    dev: 'The script will execute the following phases. Detected components will be skipped.',
   } as ModeContent,
   
   downloadButton: {

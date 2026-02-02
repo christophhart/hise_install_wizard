@@ -10,11 +10,11 @@ export default function Header() {
   const pathname = usePathname();
   const { state, setExplanationMode } = useWizard();
   
-  // Only show mode selector on setup pages (not on landing or help)
+  // Only show mode selector on setup pages (not on landing page)
   const showModeSelector = pathname?.startsWith('/setup');
   
   return (
-    <header className="bg-surface border-b border-border">
+    <header className="bg-black border-b border-border">
       <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
           <Image
@@ -27,20 +27,12 @@ export default function Header() {
           <span className="font-bold text-lg">HISE Setup Wizard</span>
         </Link>
         
-        <nav className="flex items-center gap-4">
-          {showModeSelector && (
-            <ExplanationModeSelector
-              value={state.explanationMode}
-              onChange={setExplanationMode}
-            />
-          )}
-          <Link 
-            href="/help" 
-            className="text-sm text-gray-400 hover:text-accent transition-colors"
-          >
-            Need Help?
-          </Link>
-        </nav>
+{showModeSelector && (
+          <ExplanationModeSelector
+            value={state.explanationMode}
+            onChange={setExplanationMode}
+          />
+        )}
       </div>
     </header>
   );
