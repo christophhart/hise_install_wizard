@@ -12,6 +12,7 @@ import {
   generateGitCloneWithCommitPS,
   generateGitUpdateWithCommitPS,
   generateCommitNotePS,
+  generateTestProjectSectionPS,
 } from './common';
 
 export function generateWindowsScript(config: ScriptConfig): string {
@@ -445,6 +446,11 @@ ${generateCompileSectionWindows(escapedPath, hasFaust)}
 # Phase 4: Verify Build
 # ============================================
 ${generateVerifySectionPS(escapedPath, buildConfig)}
+
+# ============================================
+# Phase 5: Test Project
+# ============================================
+${generateTestProjectSectionPS(escapedPath)}
 
 # ============================================
 # Success

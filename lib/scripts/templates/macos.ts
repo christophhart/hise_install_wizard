@@ -10,6 +10,7 @@ import {
   generateVerifySectionBash,
   generateUpdateSuccessMessageBash,
   generateGitUpdateWithCommitBash,
+  generateTestProjectSectionBash,
 } from './common';
 
 export function generateMacOSScript(config: ScriptConfig): string {
@@ -425,6 +426,11 @@ ${generateCompileSectionMacOS(expandedPath, architecture, hasFaust)}
 # Phase 4: Verify Build
 # ============================================
 ${generateVerifySectionBash(expandedPath, buildConfig, 'macos')}
+
+# ============================================
+# Phase 5: Test Project
+# ============================================
+${generateTestProjectSectionBash(expandedPath, 'macos')}
 
 # ============================================
 # Success

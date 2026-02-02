@@ -629,4 +629,15 @@ export const updatePhases = [
       dev: 'get_build_flags',
     } as ModeContent,
   },
+  {
+    id: 5,
+    name: {
+      easy: 'Test Project',
+      dev: 'Test',
+    } as ModeContent,
+    description: {
+      easy: 'Verify HISE can export and compile a demo project',
+      dev: 'export_ci -nolto + batch compile',
+    } as ModeContent,
+  },
 ];

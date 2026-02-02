@@ -10,6 +10,7 @@ import {
   generateVerifySectionBash,
   generateUpdateSuccessMessageBash,
   generateGitUpdateWithCommitBash,
+  generateTestProjectSectionBash,
 } from './common';
 
 export function generateLinuxScript(config: ScriptConfig): string {
@@ -423,6 +424,11 @@ ${generateCompileSectionLinux(expandedPath, hasFaust)}
 # Phase 4: Verify Build
 # ============================================
 ${generateVerifySectionBash(expandedPath, buildConfig, 'linux')}
+
+# ============================================
+# Phase 5: Test Project
+# ============================================
+${generateTestProjectSectionBash(expandedPath, 'linux')}
 
 # ============================================
 # Success

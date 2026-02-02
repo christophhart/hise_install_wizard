@@ -531,3 +531,97 @@ Set-Location $HISE_PATH
 
 Write-Success "Repository updated"`;
 }
+
+// ============================================
+// Shared Test Project Section (Update Scripts)
+// ============================================
+
+/**
+ * Generate test project phase for Bash (macOS/Linux)
+ * Includes PATH check - if HISE not in PATH, skips test but doesn't fail
+ */
+export function generateTestProjectSectionBash(hisePath: string, platform: 'macos' | 'linux'): string {
+  const batchScript = platform === 'macos' 
+    ? '$HISE_PATH/extras/demo_project/Binaries/batchCompileOSX'
+    : '$HISE_PATH/extras/demo_project/Binaries/batchCompileLinux.sh';
+  
+  return `phase "Test Project"
+
+# Check HISE is in PATH
+if ! command -v HISE &> /dev/null; then
+    warn "HISE not found in PATH - skipping test phase"
+    echo ""
+    echo "The update completed successfully, but HISE is not in your PATH."
+    echo "To run the test manually, add HISE to your PATH and run:"
+    echo "  HISE set_project_folder -p:\\"$HISE_PATH/extras/demo_project\\""
+    echo "  HISE export_ci \\"XmlPresetBackups/Demo.xml\\" -t:instrument -p:VST3 -a:x64 -nolto"
+    echo ""
+else
+    step "Setting project folder..."
+    HISE set_project_folder -p:"$HISE_PATH/extras/demo_project"
+
+    step "Exporting demo project (VST3 instrument)..."
+    HISE export_ci "XmlPresetBackups/Demo.xml" -t:instrument -p:VST3 -a:x64 -nolto || warn "Demo project export had issues, but HISE is updated"
+
+    success "Demo project exported successfully"
+
+    # Run the generated batch compile script
+    step "Running batch compile script..."
+    BATCH_SCRIPT="${batchScript}"
+    if [ -f "$BATCH_SCRIPT" ]; then
+        chmod +x "$BATCH_SCRIPT"
+        "$BATCH_SCRIPT" || warn "Batch compile had issues, but HISE is updated"
+        success "Demo project compiled successfully"
+    else
+        warn "Batch compile script not found at $BATCH_SCRIPT"
+    fi
+fi`;
+}
+
+/**
+ * Generate test project phase for PowerShell (Windows)
+ * Includes PATH check - if HISE not in PATH, skips test but doesn't fail
+ */
+export function generateTestProjectSectionPS(hisePath: string): string {
+  return `Write-Phase "Test Project"
+
+# Check HISE is in PATH
+$hiseCmd = Get-Command HISE -ErrorAction SilentlyContinue
+if (-not $hiseCmd) {
+    Write-Warn "HISE not found in PATH - skipping test phase"
+    Write-Host ""
+    Write-Host "The update completed successfully, but HISE is not in your PATH."
+    Write-Host "To run the test manually, add HISE to your PATH and run:"
+    Write-Host "  HISE set_project_folder -p:\\\`"$HISE_PATH\\\\extras\\\\demo_project\\\`""
+    Write-Host "  HISE export_ci \\\`"XmlPresetBackups\\\\Demo.xml\\\`" -t:instrument -p:VST3 -a:x64 -nolto"
+    Write-Host ""
+} else {
+    Write-Step "Setting project folder..."
+    & HISE set_project_folder -p:"$HISE_PATH\\\\extras\\\\demo_project"
+
+    Write-Step "Exporting demo project (VST3 instrument)..."
+    & HISE export_ci "XmlPresetBackups\\\\Demo.xml" -t:instrument -p:VST3 -a:x64 -nolto
+
+    if ($LASTEXITCODE -ne 0) {
+        Write-Warn "Demo project export had issues, but HISE is updated"
+    } else {
+        Write-Success "Demo project exported successfully"
+        
+        # Run the generated batch compile script
+        Write-Step "Running batch compile script..."
+        $batchScript = "$HISE_PATH\\\\extras\\\\demo_project\\\\Binaries\\\\batchCompile.bat"
+        if (Test-Path $batchScript) {
+            Set-Location "$HISE_PATH\\\\extras\\\\demo_project\\\\Binaries"
+            & cmd.exe /c "batchCompile.bat"
+            if ($LASTEXITCODE -ne 0) {
+                Write-Warn "Batch compile had issues, but HISE is updated"
+            } else {
+                Write-Success "Demo project compiled successfully"
+            }
+            Set-Location $HISE_PATH
+        } else {
+            Write-Warn "Batch compile script not found at $batchScript"
+        }
+    }
+}`;
+}
