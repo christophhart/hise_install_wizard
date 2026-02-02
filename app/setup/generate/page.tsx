@@ -185,6 +185,32 @@ export default function GeneratePage() {
     router.push('/setup');
   };
   
+  // Get dynamic message based on which tools are unverified
+  const getUnverifiedToolsMessage = (): { title: string; subtitle: string } => {
+    const unverifiedTools: string[] = [];
+    
+    if (state.platform !== 'linux' && verificationStatus.ide !== true) {
+      unverifiedTools.push(state.platform === 'windows' ? 'Visual Studio 2026' : 'Xcode');
+    }
+    
+    if (state.platform === 'windows' && state.includeIPP && verificationStatus.ipp !== true) {
+      unverifiedTools.push('Intel IPP');
+    }
+    
+    if (unverifiedTools.length === 1) {
+      return {
+        title: `Install and verify ${unverifiedTools[0]} before downloading`,
+        subtitle: `The setup script requires ${unverifiedTools[0]} to be installed first.`
+      };
+    }
+    
+    const toolsList = unverifiedTools.join(' and ');
+    return {
+      title: 'Install and verify all prerequisites above before downloading',
+      subtitle: `The setup script requires ${toolsList} to be installed first.`
+    };
+  };
+  
   if (!state.platform) {
     return null;
   }
@@ -311,25 +337,41 @@ export default function GeneratePage() {
                   </h4>
                 </div>
                 
-                {/* Unverified warning */}
-                {hasUnverifiedTools && (
-                  <Alert variant="warning" className="mb-4">
-                    <div className="flex items-start gap-2">
-                      <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
-                      <div>
-                        <p className="text-sm font-medium">
-                          {isEasyMode 
-                            ? 'Some required tools have not been verified'
-                            : 'Prerequisites not verified'}
-                        </p>
-                        <p className="text-xs text-gray-400 mt-1">
-                          {isEasyMode
-                            ? 'The setup script may fail if they are not installed correctly. Use the Verify buttons above to check your installation.'
-                            : 'Script may fail. Verify prerequisites above.'}
-                        </p>
+                {/* Prerequisites status message - only show on Windows/macOS */}
+                {state.platform !== 'linux' && (
+                  hasUnverifiedTools ? (
+                    <Alert variant={isEasyMode ? "error" : "warning"} className="mb-4">
+                      <div className="flex items-start gap-2">
+                        <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-sm font-medium">
+                            {isEasyMode 
+                              ? getUnverifiedToolsMessage().title
+                              : 'Prerequisites not verified'}
+                          </p>
+                          <p className="text-xs text-gray-400 mt-1">
+                            {isEasyMode
+                              ? getUnverifiedToolsMessage().subtitle
+                              : 'Script may fail. Verify prerequisites above.'}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  </Alert>
+                    </Alert>
+                  ) : (
+                    <Alert variant="success" className="mb-4">
+                      <div className="flex items-start gap-2">
+                        <Check className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-sm font-medium">All prerequisites verified</p>
+                          <p className="text-xs text-gray-400 mt-1">
+                            {isEasyMode
+                              ? "You're ready to download and run the setup script!"
+                              : 'Ready to download.'}
+                          </p>
+                        </div>
+                      </div>
+                    </Alert>
+                  )
                 )}
                 
                 {/* Download Button */}
@@ -337,7 +379,7 @@ export default function GeneratePage() {
                   <Button 
                     onClick={handleDownload} 
                     size="lg"
-                    disabled={hasDownloaded}
+                    disabled={hasDownloaded || (isEasyMode && !!hasUnverifiedTools)}
                   >
                     <Download className="w-5 h-5" />
                     Download {uniqueFilename}
@@ -367,13 +409,6 @@ export default function GeneratePage() {
                     </>
                   )}
                 </div>
-                
-                {/* Windows admin alert */}
-                {state.platform === 'windows' && (
-                  <Alert variant="info" className="mb-4">
-                    {get(alerts.windowsAdmin)}
-                  </Alert>
-                )}
                 
                 {/* How to Run */}
                 <Collapsible

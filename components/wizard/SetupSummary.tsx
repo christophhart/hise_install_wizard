@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Platform } from '@/types/wizard';
-import { Check, SkipForward, Circle, ExternalLink, Download, Shield } from 'lucide-react';
+import { Check, SkipForward, Circle, ExternalLink, Download, Shield, Lock } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import VerificationModal from '@/components/wizard/VerificationModal';
 import { VerifiableTool, requiresVerification, getToolName } from '@/lib/verification';
@@ -148,6 +148,23 @@ export function getManualPhases(platform: Exclude<Platform, null>, includeIPP: b
   });
 }
 
+// Check if IPP is locked due to IDE not being verified
+function isIPPLocked(
+  phaseId: number,
+  ideVerified: boolean | null,
+  isEasyMode: boolean,
+  ippOverride: boolean
+): boolean {
+  // Only applies to IPP phase (id 4)
+  if (phaseId !== 4) return false;
+  // If IDE is verified, not locked
+  if (ideVerified === true) return false;
+  // In dev mode with override acknowledged, not locked
+  if (!isEasyMode && ippOverride) return false;
+  // Otherwise, locked
+  return true;
+}
+
 /**
  * Step header component for numbered sections
  */
@@ -185,6 +202,7 @@ export default function SetupSummary({
   onVerificationChange,
 }: SetupSummaryProps) {
   const [verifyingTool, setVerifyingTool] = useState<VerifiableTool | null>(null);
+  const [ippOverrideAcknowledged, setIppOverrideAcknowledged] = useState(false);
 
   // Filter phases for current platform
   const filteredPhases = setupPhases.filter((phase) => {
@@ -274,6 +292,9 @@ export default function SetupSummary({
               const instructions = phase.downloadInstructions?.[platform];
               const showVerify = canVerify(phase) && !isSkipped;
               
+              // Check if IPP is locked (IDE not verified yet)
+              const isLocked = isIPPLocked(phase.id, verificationStatus.ide, isEasyMode, ippOverrideAcknowledged);
+              
               return (
                 <div
                   key={phase.id}
@@ -283,15 +304,20 @@ export default function SetupSummary({
                       ? 'bg-surface/50 border-border/50' 
                       : isVerified
                         ? 'bg-success/5 border-success/30'
-                        : isNotFound
-                          ? 'bg-warning/5 border-warning/30'
-                          : 'bg-surface border-border'
+                        : isLocked
+                          ? 'bg-surface/50 border-border/50'
+                          : isNotFound
+                            ? 'bg-warning/5 border-warning/30'
+                            : 'bg-surface border-border'
                     }
+                    ${isLocked ? 'opacity-50' : ''}
                   `}
                 >
                   {/* Status Icon */}
                   <div className="flex-shrink-0">
-                    {isVerified ? (
+                    {isLocked ? (
+                      <Lock className="w-4 h-4 text-gray-500" />
+                    ) : isVerified ? (
                       <Check className="w-4 h-4 text-success" />
                     ) : isSkipped ? (
                       <SkipForward className="w-4 h-4 text-gray-500" />
@@ -304,13 +330,13 @@ export default function SetupSummary({
                   
                   {/* Content */}
                   <div className="flex-1 min-w-0">
-                    <div className={`font-medium text-sm ${isSkipped ? 'text-gray-500' : 'text-white'}`}>
+                    <div className={`font-medium text-sm ${isSkipped || isLocked ? 'text-gray-500' : 'text-white'}`}>
                       {phase.name}
                       {!phase.required && (
                         <span className="ml-2 text-xs text-gray-600">(Optional)</span>
                       )}
                     </div>
-                    <div className={`text-xs ${isSkipped ? 'text-gray-600' : 'text-gray-400'}`}>
+                    <div className={`text-xs ${isSkipped || isLocked ? 'text-gray-600' : 'text-gray-400'}`}>
                       {instructions || phase.description}
                     </div>
                   </div>
@@ -321,6 +347,47 @@ export default function SetupSummary({
                       <span className="text-xs text-success font-medium px-2">Verified</span>
                     ) : isSkipped ? (
                       <span className="text-xs text-gray-500">Skipped</span>
+                    ) : isLocked ? (
+                      // Locked state: show message and disabled buttons
+                      <div className="flex items-center gap-2">
+                        {/* Dev mode: show override checkbox */}
+                        {!isEasyMode && (
+                          <label className="flex items-center gap-1.5 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={ippOverrideAcknowledged}
+                              onChange={(e) => setIppOverrideAcknowledged(e.target.checked)}
+                              className="w-3 h-3 rounded border-border bg-background text-accent focus:ring-accent"
+                            />
+                            <span className="text-xs text-gray-400">I've installed VS2026, proceed anyway</span>
+                          </label>
+                        )}
+                        {/* EZ mode: just show message */}
+                        {isEasyMode && (
+                          <span className="text-xs text-gray-500">Verify Visual Studio 2026 first</span>
+                        )}
+                        {/* Disabled buttons */}
+                        {showVerify && (
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            size="sm"
+                            disabled
+                            className="text-xs opacity-50 cursor-not-allowed"
+                          >
+                            <Shield className="w-3 h-3" />
+                            Verify
+                          </Button>
+                        )}
+                        {downloadUrl && (
+                          <span
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium bg-accent/50 text-background/70 cursor-not-allowed"
+                          >
+                            Download
+                            <ExternalLink className="w-3 h-3" />
+                          </span>
+                        )}
+                      </div>
                     ) : (
                       <>
                         {showVerify && (

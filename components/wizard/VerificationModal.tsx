@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Platform } from '@/types/wizard';
 import { Check, AlertCircle, ClipboardPaste } from 'lucide-react';
 import Modal from '@/components/ui/Modal';
@@ -48,7 +48,12 @@ export default function VerificationModal({
     try {
       const text = await navigator.clipboard.readText();
       if (text) {
-        setInput(text.trim());
+        const trimmedText = text.trim();
+        setInput(trimmedText);
+        // Auto-verify after paste
+        const verified = parseVerificationOutput(trimmedText, platform, tool);
+        setResult(verified);
+        onVerified(verified);
       }
     } catch (err) {
       console.log('Clipboard access denied');
@@ -61,6 +66,16 @@ export default function VerificationModal({
     setResult(null);
     onClose();
   };
+
+  // Auto-close modal 1 second after successful verification
+  useEffect(() => {
+    if (result === true) {
+      const timer = setTimeout(() => {
+        handleClose();
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [result]);
 
   return (
     <Modal
