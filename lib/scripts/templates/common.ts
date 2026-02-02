@@ -175,16 +175,14 @@ export function generateCompileSectionMacOS(hisePath: string, architecture: stri
 cd "$HISE_PATH/projects/standalone"
 
 step "Running Projucer..."
-PROJUCER="$HISE_PATH/JUCE/extras/Projucer/Builds/MacOSX/build/Release/Projucer.app/Contents/MacOS/Projucer"
+PROJUCER="$HISE_PATH/JUCE/Projucer/Projucer.app/Contents/MacOS/Projucer"
 
-# Build Projucer if needed
+# Verify Projucer exists
 if [ ! -f "$PROJUCER" ]; then
-    step "Building Projucer..."
-    cd "$HISE_PATH/JUCE/extras/Projucer/Builds/MacOSX"
-    xcodebuild -project Projucer.xcodeproj -configuration Release -jobs $(sysctl -n hw.ncpu) | xcpretty 2>/dev/null || xcodebuild -project Projucer.xcodeproj -configuration Release -jobs $(sysctl -n hw.ncpu)
-    cd "$HISE_PATH/projects/standalone"
+    handle_error 2 "Projucer not found at $PROJUCER"
 fi
 
+chmod +x "$PROJUCER"
 "$PROJUCER" --resave "HISE Standalone.jucer"
 
 step "Compiling HISE (this will take 5-15 minutes)..."
@@ -192,9 +190,10 @@ CORES=$(sysctl -n hw.ncpu)
 BUILD_CONFIG="${buildConfig}"
 
 # Try with xcbeautify first, fall back to plain xcodebuild
+# Use set -o pipefail to detect xcodebuild errors when piped
 XCBEAUTIFY="$HISE_PATH/tools/Projucer/xcbeautify"
 if [ -x "$XCBEAUTIFY" ]; then
-    xcodebuild -project "Builds/MacOSX/HISE Standalone.xcodeproj" -configuration "$BUILD_CONFIG" -jobs $CORES | "$XCBEAUTIFY" || handle_error 2 "HISE compilation failed"
+    set -o pipefail && xcodebuild -project "Builds/MacOSX/HISE Standalone.xcodeproj" -configuration "$BUILD_CONFIG" -jobs $CORES | "$XCBEAUTIFY" || handle_error 2 "HISE compilation failed"
 else
     xcodebuild -project "Builds/MacOSX/HISE Standalone.xcodeproj" -configuration "$BUILD_CONFIG" -jobs $CORES || handle_error 2 "HISE compilation failed"
 fi
@@ -216,16 +215,14 @@ export function generateCompileSectionLinux(hisePath: string, hasFaust: boolean)
 cd "$HISE_PATH/projects/standalone"
 
 step "Running Projucer..."
-PROJUCER="$HISE_PATH/JUCE/extras/Projucer/Builds/LinuxMakefile/build/Projucer"
+PROJUCER="$HISE_PATH/JUCE/Projucer/Projucer"
 
-# Build Projucer if needed
+# Verify Projucer exists
 if [ ! -f "$PROJUCER" ]; then
-    step "Building Projucer..."
-    cd "$HISE_PATH/JUCE/extras/Projucer/Builds/LinuxMakefile"
-    make CONFIG=Release -j$(nproc --ignore=2)
-    cd "$HISE_PATH/projects/standalone"
+    handle_error 2 "Projucer not found at $PROJUCER"
 fi
 
+chmod +x "$PROJUCER"
 "$PROJUCER" --resave "HISE Standalone.jucer"
 
 step "Compiling HISE (this will take 5-15 minutes)..."
@@ -234,46 +231,53 @@ BUILD_CONFIG="${buildConfig}"
 
 make CONFIG=$BUILD_CONFIG AR=gcc-ar -j$(nproc --ignore=2) || handle_error 2 "HISE compilation failed"
 
-# Verify build
-HISE_BIN="build/HISE"
+# Verify build (note: binary is named "HISE Standalone" with space)
+HISE_BIN="build/HISE Standalone"
 if [ ! -f "$HISE_BIN" ]; then
     handle_error 2 "HISE binary not found after build"
 fi
+
+# Create symlink for convenience
+step "Creating HISE symlink..."
+cd build
+ln -sf "HISE Standalone" HISE
+cd ..
 
 success "HISE compiled successfully"`;
 }
 
 export function generateCompileSectionWindows(hisePath: string, hasFaust: boolean): string {
   const buildConfig = hasFaust ? 'Release with Faust' : 'Release';
-  // Use String.raw or construct paths carefully to avoid octal escape issues
-  const msbuildPath = 'C:\\\\Program Files\\\\Microsoft Visual Studio\\\\2022\\\\Community\\\\MSBuild\\\\Current\\\\Bin\\\\MSBuild.exe';
+  // VS2026 uses version folder "18"
+  const msbuildPath = 'C:\\\\Program Files\\\\Microsoft Visual Studio\\\\18\\\\Community\\\\MSBuild\\\\Current\\\\Bin\\\\MSBuild.exe';
   
   return `Write-Phase "Compiling HISE"
 
 Set-Location "$HISE_PATH\\projects\\standalone"
 
 Write-Step "Running Projucer..."
-$projucer = "$HISE_PATH\\JUCE\\extras\\Projucer\\Builds\\VisualStudio2022\\x64\\Release\\App\\Projucer.exe"
+$projucer = "$HISE_PATH\\JUCE\\Projucer\\Projucer.exe"
 
-# Build Projucer if needed - fall back to shipped version
+# Verify Projucer exists
 if (-not (Test-Path $projucer)) {
-    $projucer = "$HISE_PATH\\JUCE\\Projucer\\Projucer.exe"
+    Handle-Error 2 "Projucer not found at $projucer"
 }
 
 & $projucer --resave "HISE Standalone.jucer"
 
 Write-Step "Compiling HISE (this will take 5-15 minutes)..."
+$env:PreferredToolArchitecture = "x64"
 $msbuild = "${msbuildPath}"
 $buildConfig = "${buildConfig}"
 
-& $msbuild "Builds\\VisualStudio2022\\HISE Standalone.sln" /p:Configuration="$buildConfig" /p:PreferredToolArchitecture=x64 /verbosity:minimal
+& $msbuild "Builds\\VisualStudio2026\\HISE Standalone.sln" /p:Configuration="$buildConfig" /p:Platform=x64 /verbosity:minimal
 
 if ($LASTEXITCODE -ne 0) {
     Handle-Error 2 "HISE compilation failed"
 }
 
 # Verify build
-$hiseExe = "Builds\\VisualStudio2022\\x64\\$buildConfig\\App\\HISE.exe"
+$hiseExe = "Builds\\VisualStudio2026\\x64\\$buildConfig\\App\\HISE.exe"
 if (-not (Test-Path $hiseExe)) {
     Handle-Error 2 "HISE.exe not found after build"
 }
@@ -295,6 +299,7 @@ export function generateVerifySectionBash(hisePath: string, buildConfig: string,
   if (platform === 'macos') {
     binPath = `$HISE_PATH/projects/standalone/Builds/MacOSX/build/${buildConfig}/HISE.app/Contents/MacOS/HISE`;
   } else {
+    // Linux uses symlink HISE -> "HISE Standalone"
     binPath = `$HISE_PATH/projects/standalone/Builds/LinuxMakefile/build/HISE`;
   }
   
@@ -309,7 +314,7 @@ success "Build verified"`;
 export function generateVerifySectionPS(hisePath: string, buildConfig: string): string {
   return `Write-Phase "Verifying Build"
 
-$hiseBinPath = "$HISE_PATH\\projects\\standalone\\Builds\\VisualStudio2022\\x64\\${buildConfig}\\App"
+$hiseBinPath = "$HISE_PATH\\projects\\standalone\\Builds\\VisualStudio2026\\x64\\${buildConfig}\\App"
 
 Write-Step "Checking build flags..."
 & "$hiseBinPath\\HISE.exe" get_build_flags

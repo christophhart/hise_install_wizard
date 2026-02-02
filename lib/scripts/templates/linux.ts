@@ -206,7 +206,9 @@ cd "$HISE_PATH"
 # Extract SDKs
 step "Extracting SDKs..."
 if [ ! -d "tools/SDK/ASIOSDK2.3" ]; then
-    unzip -q tools/SDK/sdk.zip -d tools/SDK/
+    cd tools/SDK
+    tar -xf sdk.zip
+    cd "$HISE_PATH"
 fi
 
 # Verify
@@ -225,16 +227,14 @@ phase "Phase 7: Compile HISE"
 cd "$HISE_PATH/projects/standalone"
 
 step "Running Projucer..."
-PROJUCER="$HISE_PATH/JUCE/extras/Projucer/Builds/LinuxMakefile/build/Projucer"
+PROJUCER="$HISE_PATH/JUCE/Projucer/Projucer"
 
-# Build Projucer if needed
+# Verify Projucer exists
 if [ ! -f "$PROJUCER" ]; then
-    step "Building Projucer..."
-    cd "$HISE_PATH/JUCE/extras/Projucer/Builds/LinuxMakefile"
-    make CONFIG=Release -j$(nproc --ignore=2)
-    cd "$HISE_PATH/projects/standalone"
+    handle_error 7 "Projucer not found at $PROJUCER"
 fi
 
+chmod +x "$PROJUCER"
 "$PROJUCER" --resave "HISE Standalone.jucer"
 
 step "Compiling HISE (this will take 5-15 minutes)..."
@@ -252,11 +252,17 @@ BUILD_CONFIG="Release"
 
 make CONFIG=$BUILD_CONFIG AR=gcc-ar -j$(nproc --ignore=2) || handle_error 7 "HISE compilation failed"
 
-# Verify build
-HISE_BIN="build/HISE"
+# Verify build (note: binary is named "HISE Standalone" with space)
+HISE_BIN="build/HISE Standalone"
 if [ ! -f "$HISE_BIN" ]; then
     handle_error 7 "HISE binary not found after build"
 fi
+
+# Create symlink for convenience
+step "Creating HISE symlink..."
+cd build
+ln -sf "HISE Standalone" HISE
+cd ..
 
 success "HISE compiled successfully"
 
@@ -302,10 +308,21 @@ phase "Phase 10: Test Project"
 step "Setting project folder..."
 "$HISE_BIN_PATH/HISE" set_project_folder -p:"$HISE_PATH/extras/demo_project"
 
-step "Compiling demo project..."
-"$HISE_BIN_PATH/HISE" export_ci "XmlPresetBackups/Demo.xml" -t:standalone -a:x64 || warn "Demo project compilation had issues, but HISE is installed"
+step "Exporting demo project (VST3 instrument)..."
+"$HISE_BIN_PATH/HISE" export_ci "XmlPresetBackups/Demo.xml" -t:instrument -p:VST3 -a:x64 -nolto || warn "Demo project export had issues, but HISE is installed"
 
-success "Demo project compiled successfully"
+success "Demo project exported successfully"
+
+# Run the generated batch compile script
+step "Running batch compile script..."
+BATCH_SCRIPT="$HISE_PATH/extras/demo_project/Binaries/batchCompileLinux.sh"
+if [ -f "$BATCH_SCRIPT" ]; then
+    chmod +x "$BATCH_SCRIPT"
+    "$BATCH_SCRIPT" || warn "Batch compile had issues, but HISE is installed"
+    success "Demo project compiled successfully"
+else
+    warn "Batch compile script not found at $BATCH_SCRIPT"
+fi
 
 # ============================================
 # Phase 11: Success

@@ -105,23 +105,23 @@ Write-Success "Git setup complete"
 `}
 
 # ============================================
-# Phase 3: Visual Studio 2022
+# Phase 3: Visual Studio 2026
 # ============================================
 ${skipPhases.includes(3) ? '# SKIPPED: Visual Studio already installed' : `
-Write-Phase "Phase 3: Visual Studio 2022"
+Write-Phase "Phase 3: Visual Studio 2026"
 
-$vsPath = "C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\MSBuild\\Current\\Bin\\MSBuild.exe"
+$vsPath = "C:\\Program Files\\Microsoft Visual Studio\\18\\Community\\MSBuild\\Current\\Bin\\MSBuild.exe"
 if (-not (Test-Path $vsPath)) {
-    Write-Err "Visual Studio 2022 is not installed."
+    Write-Err "Visual Studio 2026 is not installed."
     Write-Host ""
-    Write-Host "Please install Visual Studio 2022 Community with 'Desktop development with C++' workload:" -ForegroundColor Yellow
+    Write-Host "Please install Visual Studio 2026 Community with 'Desktop development with C++' workload:" -ForegroundColor Yellow
     Write-Host "https://visualstudio.microsoft.com/downloads/" -ForegroundColor Cyan
     Write-Host ""
     Write-Host "After installation, run this script again." -ForegroundColor Yellow
     exit 1
 }
 
-Write-Success "Visual Studio 2022 detected"
+Write-Success "Visual Studio 2026 detected"
 `}
 
 # ============================================
@@ -205,7 +205,9 @@ Set-Location $HISE_PATH
 # Extract SDKs
 Write-Step "Extracting SDKs..."
 if (-not (Test-Path "tools\\SDK\\ASIOSDK2.3")) {
-    Expand-Archive -Path "tools\\SDK\\sdk.zip" -DestinationPath "tools\\SDK\\" -Force
+    Set-Location "tools\\SDK"
+    tar -xf sdk.zip
+    Set-Location $HISE_PATH
 }
 
 # Verify
@@ -225,24 +227,31 @@ Set-Location "$HISE_PATH\\projects\\standalone"
 
 Write-Step "Running Projucer..."
 $projucer = "$HISE_PATH\\JUCE\\Projucer\\Projucer.exe"
+
+# Verify Projucer exists
+if (-not (Test-Path $projucer)) {
+    Handle-Error 7 "Projucer not found at $projucer"
+}
+
 & $projucer --resave "HISE Standalone.jucer"
 
 Write-Step "Compiling HISE (this will take 5-15 minutes)..."
-$msbuild = "C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\MSBuild\\Current\\Bin\\MSBuild.exe"
+$env:PreferredToolArchitecture = "x64"
+$msbuild = "C:\\Program Files\\Microsoft Visual Studio\\18\\Community\\MSBuild\\Current\\Bin\\MSBuild.exe"
 ${includeFaust ? `
 $buildConfig = if ($FAUST_INSTALLED) { "Release with Faust" } else { "Release" }
 ` : `
 $buildConfig = "Release"
 `}
 
-& $msbuild "Builds\\VisualStudio2022\\HISE Standalone.sln" /p:Configuration="$buildConfig" /p:PreferredToolArchitecture=x64 /verbosity:minimal
+& $msbuild "Builds\\VisualStudio2026\\HISE Standalone.sln" /p:Configuration="$buildConfig" /p:Platform=x64 /verbosity:minimal
 
 if ($LASTEXITCODE -ne 0) {
     Handle-Error 7 "HISE compilation failed"
 }
 
 # Verify build
-$hiseExe = "Builds\\VisualStudio2022\\x64\\$buildConfig\\App\\HISE.exe"
+$hiseExe = "Builds\\VisualStudio2026\\x64\\$buildConfig\\App\\HISE.exe"
 if (-not (Test-Path $hiseExe)) {
     Handle-Error 7 "HISE.exe not found after build"
 }
@@ -259,7 +268,7 @@ Write-Success "HISE compiled successfully"
 # ============================================
 Write-Phase "Phase 8: Add HISE to PATH"
 
-$hiseBinPath = "$HISE_PATH\\projects\\standalone\\Builds\\VisualStudio2022\\x64\\$buildConfig\\App"
+$hiseBinPath = "$HISE_PATH\\projects\\standalone\\Builds\\VisualStudio2026\\x64\\$buildConfig\\App"
 $currentPath = [Environment]::GetEnvironmentVariable("Path", "User")
 
 if ($currentPath -notlike "*$hiseBinPath*") {
@@ -288,13 +297,29 @@ Write-Phase "Phase 10: Test Project"
 Write-Step "Setting project folder..."
 & "$hiseBinPath\\HISE.exe" set_project_folder -p:"$HISE_PATH\\extras\\demo_project"
 
-Write-Step "Compiling demo project..."
-& "$hiseBinPath\\HISE.exe" export_ci "XmlPresetBackups\\Demo.xml" -t:standalone -a:x64
+Write-Step "Exporting demo project (VST3 instrument)..."
+& "$hiseBinPath\\HISE.exe" export_ci "XmlPresetBackups\\Demo.xml" -t:instrument -p:VST3 -a:x64 -nolto
 
 if ($LASTEXITCODE -ne 0) {
-    Write-Warn "Demo project compilation had issues, but HISE is installed"
+    Write-Warn "Demo project export had issues, but HISE is installed"
 } else {
-    Write-Success "Demo project compiled successfully"
+    Write-Success "Demo project exported successfully"
+    
+    # Run the generated batch compile script
+    Write-Step "Running batch compile script..."
+    $batchScript = "$HISE_PATH\\extras\\demo_project\\Binaries\\batchCompile.bat"
+    if (Test-Path $batchScript) {
+        Set-Location "$HISE_PATH\\extras\\demo_project\\Binaries"
+        & cmd.exe /c "batchCompile.bat"
+        if ($LASTEXITCODE -ne 0) {
+            Write-Warn "Batch compile had issues, but HISE is installed"
+        } else {
+            Write-Success "Demo project compiled successfully"
+        }
+        Set-Location $HISE_PATH
+    } else {
+        Write-Warn "Batch compile script not found at $batchScript"
+    }
 }
 
 # ============================================

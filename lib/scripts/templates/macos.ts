@@ -191,7 +191,9 @@ cd "$HISE_PATH"
 # Extract SDKs
 step "Extracting SDKs..."
 if [ ! -d "tools/SDK/ASIOSDK2.3" ]; then
-    unzip -q tools/SDK/sdk.zip -d tools/SDK/
+    cd tools/SDK
+    tar -xf sdk.zip
+    cd "$HISE_PATH"
 fi
 
 # Verify
@@ -218,16 +220,14 @@ fi
 ` : ''}
 
 step "Running Projucer..."
-PROJUCER="$HISE_PATH/JUCE/extras/Projucer/Builds/MacOSX/build/Release/Projucer.app/Contents/MacOS/Projucer"
+PROJUCER="$HISE_PATH/JUCE/Projucer/Projucer.app/Contents/MacOS/Projucer"
 
-# Build Projucer if needed
+# Verify Projucer exists
 if [ ! -f "$PROJUCER" ]; then
-    step "Building Projucer..."
-    cd "$HISE_PATH/JUCE/extras/Projucer/Builds/MacOSX"
-    xcodebuild -project Projucer.xcodeproj -configuration Release -jobs $(sysctl -n hw.ncpu) | xcpretty 2>/dev/null || xcodebuild -project Projucer.xcodeproj -configuration Release -jobs $(sysctl -n hw.ncpu)
-    cd "$HISE_PATH/projects/standalone"
+    handle_error 7 "Projucer not found at $PROJUCER"
 fi
 
+chmod +x "$PROJUCER"
 "$PROJUCER" --resave "HISE Standalone.jucer"
 
 step "Compiling HISE (this will take 5-15 minutes)..."
@@ -244,9 +244,10 @@ BUILD_CONFIG="Release"
 `}
 
 # Try with xcbeautify first, fall back to plain xcodebuild
+# Use set -o pipefail to detect xcodebuild errors when piped
 XCBEAUTIFY="$HISE_PATH/tools/Projucer/xcbeautify"
 if [ -x "$XCBEAUTIFY" ]; then
-    xcodebuild -project "Builds/MacOSX/HISE Standalone.xcodeproj" -configuration "$BUILD_CONFIG" -jobs $CORES | "$XCBEAUTIFY" || handle_error 7 "HISE compilation failed"
+    set -o pipefail && xcodebuild -project "Builds/MacOSX/HISE Standalone.xcodeproj" -configuration "$BUILD_CONFIG" -jobs $CORES | "$XCBEAUTIFY" || handle_error 7 "HISE compilation failed"
 else
     xcodebuild -project "Builds/MacOSX/HISE Standalone.xcodeproj" -configuration "$BUILD_CONFIG" -jobs $CORES || handle_error 7 "HISE compilation failed"
 fi
@@ -300,10 +301,21 @@ phase "Phase 10: Test Project"
 step "Setting project folder..."
 "$HISE_BIN_PATH/HISE" set_project_folder -p:"$HISE_PATH/extras/demo_project"
 
-step "Compiling demo project..."
-"$HISE_BIN_PATH/HISE" export_ci "XmlPresetBackups/Demo.xml" -t:standalone -a:x64 || warn "Demo project compilation had issues, but HISE is installed"
+step "Exporting demo project (VST3 instrument)..."
+"$HISE_BIN_PATH/HISE" export_ci "XmlPresetBackups/Demo.xml" -t:instrument -p:VST3 -a:x64 -nolto || warn "Demo project export had issues, but HISE is installed"
 
-success "Demo project compiled successfully"
+success "Demo project exported successfully"
+
+# Run the generated batch compile script
+step "Running batch compile script..."
+BATCH_SCRIPT="$HISE_PATH/extras/demo_project/Binaries/batchCompileOSX"
+if [ -f "$BATCH_SCRIPT" ]; then
+    chmod +x "$BATCH_SCRIPT"
+    "$BATCH_SCRIPT" || warn "Batch compile had issues, but HISE is installed"
+    success "Demo project compiled successfully"
+else
+    warn "Batch compile script not found at $BATCH_SCRIPT"
+fi
 
 # ============================================
 # Phase 11: Success
