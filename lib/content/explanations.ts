@@ -88,7 +88,7 @@ export const components: Record<string, ComponentContent> = {
     label: 'C++ Compiler',
     description: {
       easy: 'Software that converts the HISE source code into a working application. On Windows this is Visual Studio, on macOS it\'s Xcode, and on Linux it\'s GCC.',
-      dev: 'Visual Studio 2022 (Windows), Xcode (macOS), or GCC (Linux)',
+      dev: 'Visual Studio 2026 (Windows), Xcode (macOS), or GCC (Linux)',
     },
   },
   hiseRepo: {
@@ -195,8 +195,8 @@ export const generatePage = {
   } as ModeContent,
   
   stepsExplanation: {
-    easy: 'The script will perform the following steps automatically. Steps marked with a green checkmark will be skipped because those components are already installed on your system.',
-    dev: 'The script will execute the following phases. Detected components will be skipped.',
+    easy: 'Before running the script, make sure to install the required development tools listed in the "Install Before Running Script" section above. Then the script will automatically perform the remaining steps. Items marked with a green checkmark will be skipped because those components are already installed.',
+    dev: 'Install manual prerequisites first, then run the script. Detected components will be skipped.',
   } as ModeContent,
   
   downloadButton: {
@@ -245,6 +245,16 @@ export const howToRun: Record<Exclude<Platform, null>, { steps: HowToRunStep[] }
     steps: [
       {
         title: {
+          easy: 'Install Visual Studio 2026 (if not already installed)',
+          dev: 'Install VS2026 prerequisites',
+        },
+        description: {
+          easy: 'Download and install Visual Studio 2026 Community from the link above. Make sure to select "Desktop development with C++" during installation.',
+          dev: 'Desktop development with C++ workload required',
+        },
+      },
+      {
+        title: {
           easy: 'Open PowerShell as Administrator',
           dev: 'Open PowerShell as Administrator',
         },
@@ -287,6 +297,16 @@ export const howToRun: Record<Exclude<Platform, null>, { steps: HowToRunStep[] }
   },
   macos: {
     steps: [
+      {
+        title: {
+          easy: 'Install Xcode Command Line Tools (if not already installed)',
+          dev: 'Install Xcode CLT',
+        },
+        description: {
+          easy: 'Open Terminal and run: xcode-select --install. Or download Xcode from the App Store.',
+          dev: 'Run: xcode-select --install',
+        },
+      },
       {
         title: {
           easy: 'Open Terminal',

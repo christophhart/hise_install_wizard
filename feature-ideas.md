@@ -97,16 +97,16 @@ Then the instruction list should be updated and tell the user to download & run 
 
 | # | Task | Status |
 |---|------|--------|
-| 2.1 | Define manual installation phases (VS2026, IPP, Xcode) with download URLs | Pending |
-| 2.2 | Add download URL configuration to phase definitions | Pending |
-| 2.3 | Update SetupSummary component with "Download" button variant for manual phases | Pending |
-| 2.4 | Create download link styling (match phase row styling with external link icon) | Pending |
-| 2.5 | Add IDE verification UI section on generate page | Pending |
-| 2.6 | Update Windows script template (remove VS installation, add pre-requisite check only) | Pending |
-| 2.7 | Update macOS script template (remove Xcode installation prompts, add check only) | Pending |
-| 2.8 | Update instructions text (tell user to install IDEs before running script) | Pending |
-| 2.9 | Add warning Alert for missing IDE (non-blocking) | Pending |
-| 2.10 | Update phase skip logic (manual phases don't appear in skipPhases array) | Pending |
+| 2.1 | Define manual installation phases (VS2022, IPP, Xcode) with download URLs | Done |
+| 2.2 | Add download URL configuration to phase definitions | Done |
+| 2.3 | Update SetupSummary component with "Download" button variant for manual phases | Done |
+| 2.4 | Create download link styling (match phase row styling with external link icon) | Done |
+| 2.5 | Add IDE verification UI section on generate page | Done |
+| 2.6 | Update Windows script template (remove VS installation, add pre-requisite check only) | Done |
+| 2.7 | Update macOS script template (remove Xcode installation prompts, add check only) | Done |
+| 2.8 | Update instructions text (tell user to install IDEs before running script) | Done |
+| 2.9 | Add warning Alert for missing IDE (non-blocking) | Done |
+| 2.10 | Update phase skip logic (manual phases don't appear in skipPhases array) | Done |
 
 ---
 

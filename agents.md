@@ -1,5 +1,17 @@
 # HISE Setup Wizard - Agent Documentation
 
+---
+
+## CRITICAL INFORMATION
+
+> **Visual Studio Version: VS2026 is the correct version for this project.**
+> 
+> Do NOT change references to Visual Studio 2026 to any other version (e.g., VS2022, VS2019).
+> The project targets VS2026 specifically. All paths, verification commands, and documentation
+> should reference `Visual Studio 2026` and the path `C:\Program Files\Microsoft Visual Studio\18\`.
+
+---
+
 ## Project Overview
 
 A web-based wizard application that generates platform-specific setup scripts for HISE (Hart Instrument Software Environment). Users configure their preferences and the app outputs customized bash/PowerShell scripts they can download and run.
@@ -51,7 +63,8 @@ hise-install-wizard/
 │   │   ├── ExplanationModeSelector.tsx # EZ/Dev mode toggle in header
 │   │   ├── PhaseStepper.tsx            # 2-step progress indicator (setup/update modes)
 │   │   ├── ScriptPreview.tsx           # Clean code display with line numbers
-│   │   ├── SetupSummary.tsx            # Shows all phases with run/skip status
+│   │   ├── SetupSummary.tsx            # Shows all phases with run/skip/download status
+│   │   ├── IDEVerification.tsx         # Verify IDE installation before script run
 │   │   ├── HisePathDetector.tsx        # Detect existing HISE installation from PATH
 │   │   └── CIStatusAlert.tsx           # Warning when CI build is failing
 │   ├── ui/
@@ -192,6 +205,33 @@ iOS-style toggles with inverted UX logic:
 
 **Note:** JUCE Submodule and SDKs are tracked internally but hidden from UI (assumed handled with repo setup).
 
+### IDE Toolset Workflow
+
+IDE tools (Visual Studio 2026, Xcode) require manual installation before running the setup script. This is handled via:
+
+**Manual Installation Phases:**
+- Phases marked as `type: 'manual'` display download buttons instead of "Will Run" status
+- Download URLs are platform-specific and appear inline in the SetupSummary
+- Linux is excluded from manual phases (uses `apt-get` which is automated)
+
+**IDE Verification (IDEVerification.tsx):**
+- Appears on the generate page for Windows and macOS
+- Provides verification commands to check if IDE is installed
+- Users paste verification output to confirm installation
+- Shows warning if IDE is not detected, but allows proceeding anyway
+- Verification status is passed to SetupSummary to update phase indicators
+
+**Script Behavior:**
+- Scripts now perform pre-requisite checks instead of attempting installation
+- If IDE is not found, script exits with helpful error message and download link
+- Intel IPP check is non-blocking (warns but continues)
+
+**Affected Files:**
+- `components/wizard/SetupSummary.tsx` - Phase type handling and download buttons
+- `components/wizard/IDEVerification.tsx` - Verification UI component
+- `lib/scripts/templates/windows.ts` - VS2026 pre-requisite check
+- `lib/scripts/templates/macos.ts` - Xcode pre-requisite check
+
 ### Auto-Detect Components
 
 Users can run a detection script to automatically check which components are installed:
@@ -217,17 +257,26 @@ const PATH_PATTERNS = {
 
 ### Generate Page Features
 
+- **IDE Verification**: Allows users to verify IDE installation before running script (Windows/macOS only)
 - **Install Path Display**: Shows selected folder with HISE repository checkbox indicator
 - **Steps Explanation**: Mode-aware text explaining what the script will do
-- **Setup Summary**: Visual list of all phases with status indicators
+- **Setup Summary**: Visual list of all phases with status indicators (including manual download phases)
 - **Download Button**: Unique timestamped filenames prevent conflicts
 - **How to Run**: Collapsible instructions with copy-able commands
 - **Script Preview**: Clean display with line numbers
 
 ### Setup Summary (SetupSummary.tsx)
 
-Shows all setup phases with status indicators:
+Shows all setup phases with status indicators. Separates manual installation phases from automatic script phases.
 
+**Manual Installation Section:**
+| Status | Icon | Meaning |
+|--------|------|---------|
+| Download | Orange download button | Tool needs to be installed manually |
+| Installed | Green check | Tool verified as installed |
+| Skipped | Gray arrow | Optional tool not selected |
+
+**Script Steps Section:**
 | Status | Icon | Meaning |
 |--------|------|---------|
 | Will Run | Orange circle | Phase will be executed |
@@ -355,7 +404,7 @@ Located in `lib/scripts/templates/`:
 | File | Output | Description |
 |------|--------|-------------|
 | `common.ts` | - | Shared utilities and script section generators |
-| `windows.ts` | PowerShell (.ps1) | Uses winget, MSBuild, VS2022 |
+| `windows.ts` | PowerShell (.ps1) | Uses winget, MSBuild, VS2026 |
 | `macos.ts` | Bash (.sh) | Uses Homebrew, xcodebuild |
 | `linux.ts` | Bash (.sh) | Uses apt/dnf, make |
 

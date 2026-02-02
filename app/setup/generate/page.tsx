@@ -21,23 +21,27 @@ import { useExplanation } from '@/hooks/useExplanation';
 import { generatePage, howToRun, alerts, regenerateInfo } from '@/lib/content/explanations';
 import { downloadAsFile, generateUniqueFilename } from '@/lib/utils/download';
 import InfoPopup from '@/components/ui/InfoPopup';
+import IDEVerification from '@/components/wizard/IDEVerification';
+import { getManualPhases } from '@/components/wizard/SetupSummary';
 
 // Commands for each step based on platform
 const stepCommands: Record<Exclude<Platform, null>, (string | ((filename: string) => string))[]> = {
   windows: [
-    '', // Step 1: no command
+    '', // Step 1: Install VS2026 - no command (manual)
+    '', // Step 2: Open PowerShell - no command
     'cd $HOME\\Downloads',
     'Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser',
     (filename: string) => `.\\"${filename}"`,
   ],
   macos: [
-    '', // Step 1: no command
+    'xcode-select --install', // Step 1: Install Xcode CLT
+    '', // Step 2: Open Terminal - no command
     'cd ~/Downloads',
     (filename: string) => `chmod +x "${filename}"`,
     (filename: string) => `./"${filename}"`,
   ],
   linux: [
-    '', // Step 1: no command
+    '', // Step 1: no command (GCC automated)
     'cd ~/Downloads',
     (filename: string) => `chmod +x "${filename}"`,
     (filename: string) => `./"${filename}"`,
@@ -103,6 +107,15 @@ export default function GeneratePage() {
   const [ciLoading, setCiLoading] = useState(true);
   const [ciError, setCiError] = useState<string | null>(null);
   const [useLatestOverride, setUseLatestOverride] = useState(false);
+  
+  // IDE verification state
+  const [ideVerified, setIdeVerified] = useState(false);
+  const [ippVerified, setIppVerified] = useState(false);
+  
+  // Check if platform has manual phases that need verification
+  const hasManualPhases = state.platform 
+    ? getManualPhases(state.platform, state.includeIPP).length > 0 
+    : false;
   
   // Fetch CI status on mount
   useEffect(() => {
@@ -258,6 +271,19 @@ export default function GeneratePage() {
                 </Alert>
               )}
               
+              {/* IDE Verification (for platforms with manual phases) */}
+              {hasManualPhases && state.platform !== 'linux' && (
+                <IDEVerification
+                  platform={state.platform}
+                  includeIPP={state.includeIPP}
+                  onVerificationChange={(ide, ipp) => {
+                    setIdeVerified(ide);
+                    setIppVerified(ipp);
+                  }}
+                  explanationMode={state.explanationMode}
+                />
+              )}
+              
               {/* Install Path Display */}
               <PathDisplay 
                 path={state.installPath}
@@ -293,6 +319,8 @@ export default function GeneratePage() {
                   skipPhases={getSkipPhases()}
                   includeFaust={state.includeFaust}
                   includeIPP={state.includeIPP}
+                  ideVerified={ideVerified}
+                  ippVerified={ippVerified}
                 />
               </div>
               

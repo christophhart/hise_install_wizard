@@ -127,11 +127,11 @@ const componentInfoList: ComponentInfo[] = [
   {
     key: 'compiler',
     label: 'C++ Compiler',
-    description: 'Visual Studio 2022 (Windows), Xcode (macOS), or GCC (Linux)',
+    description: 'Visual Studio 2026 (Windows), Xcode (macOS), or GCC (Linux)',
     getVerifyCommand: (_, platform) => {
       const commands = {
-        // Check for MSBuild in VS2022 installation directory
-        windows: 'Test-Path "C:\\Program Files\\Microsoft Visual Studio\\2022\\*\\MSBuild\\Current\\Bin\\MSBuild.exe"',
+        // Check for MSBuild in VS2026 installation directory (any edition)
+        windows: '(Test-Path "C:\\Program Files\\Microsoft Visual Studio\\18\\Community\\MSBuild\\Current\\Bin\\MSBuild.exe") -or (Test-Path "C:\\Program Files\\Microsoft Visual Studio\\18\\Professional\\MSBuild\\Current\\Bin\\MSBuild.exe") -or (Test-Path "C:\\Program Files\\Microsoft Visual Studio\\18\\Enterprise\\MSBuild\\Current\\Bin\\MSBuild.exe")',
         macos: 'xcode-select -p >/dev/null 2>&1 && echo "True" || echo "False"',
         linux: 'command -v gcc >/dev/null && echo "True" || echo "False"',
       };

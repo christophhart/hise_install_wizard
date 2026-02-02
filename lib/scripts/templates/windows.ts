@@ -113,47 +113,60 @@ Write-Success "Git setup complete"
 `}
 
 # ============================================
-# Phase 3: Visual Studio 2026
+# Phase 3: Visual Studio 2026 (Pre-requisite Check)
 # ============================================
-${skipPhases.includes(3) ? '# SKIPPED: Visual Studio already installed' : `
-Write-Phase "Phase 3: Visual Studio 2026"
+Write-Phase "Phase 3: Visual Studio 2026 Check"
 
-$vsPath = "C:\\Program Files\\Microsoft Visual Studio\\18\\Community\\MSBuild\\Current\\Bin\\MSBuild.exe"
-if (-not (Test-Path $vsPath)) {
+# Check for VS2026 in any edition (Community, Professional, Enterprise)
+$vsPath = $null
+$vsEditions = @("Community", "Professional", "Enterprise")
+foreach ($edition in $vsEditions) {
+    $testPath = "C:\\Program Files\\Microsoft Visual Studio\\18\\$edition\\MSBuild\\Current\\Bin\\MSBuild.exe"
+    if (Test-Path $testPath) {
+        $vsPath = $testPath
+        Write-Success "Visual Studio 2026 $edition detected"
+        break
+    }
+}
+
+if (-not $vsPath) {
     Write-Err "Visual Studio 2026 is not installed."
     Write-Host ""
-    Write-Host "Please install Visual Studio 2026 Community with 'Desktop development with C++' workload:" -ForegroundColor Yellow
-    Write-Host "https://visualstudio.microsoft.com/downloads/" -ForegroundColor Cyan
+    Write-Host "========================================" -ForegroundColor Red
+    Write-Host "  PREREQUISITE MISSING" -ForegroundColor Red
+    Write-Host "========================================" -ForegroundColor Red
+    Write-Host ""
+    Write-Host "Please install Visual Studio 2026 Community Edition before running this script." -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "Download: https://visualstudio.microsoft.com/downloads/" -ForegroundColor Cyan
+    Write-Host ""
+    Write-Host "During installation, make sure to select:" -ForegroundColor White
+    Write-Host "  - 'Desktop development with C++' workload" -ForegroundColor White
     Write-Host ""
     Write-Host "After installation, run this script again." -ForegroundColor Yellow
     exit 1
 }
 
-Write-Success "Visual Studio 2026 detected"
-`}
-
 # ============================================
-# Phase 4: Intel IPP (Optional)
+# Phase 4: Intel IPP (Optional - Pre-requisite Check)
 # ============================================
 ${!includeIPP || skipPhases.includes(4) ? '# SKIPPED: Intel IPP not selected or already installed' : `
-Write-Phase "Phase 4: Intel IPP"
+Write-Phase "Phase 4: Intel IPP Check"
 
 $ippPath = "C:\\Program Files (x86)\\Intel\\oneAPI\\ipp\\latest"
 if (-not (Test-Path $ippPath)) {
-    Write-Step "Downloading Intel IPP..."
-    $ippInstaller = "$env:TEMP\\intel-ipp-installer.exe"
-    Invoke-WebRequest -Uri "https://registrationcenter-download.intel.com/akdlm/IRC_NAS/9c651894-4548-491c-b69f-49e84b530c1d/intel-ipp-2022.3.1.10_offline.exe" -OutFile $ippInstaller
-    
-    Write-Step "Installing Intel IPP (this may take a few minutes)..."
-    Start-Process -FilePath $ippInstaller -Args "-s -a --silent --eula accept" -Wait
-    
-    if (Test-Path $ippPath) {
-        Write-Success "Intel IPP installed"
-    } else {
-        Write-Warn "Intel IPP installation may have failed. Continuing anyway..."
-    }
+    Write-Warn "Intel IPP is not installed."
+    Write-Host ""
+    Write-Host "Intel IPP provides optimized audio processing but is optional." -ForegroundColor Yellow
+    Write-Host "The build will continue without IPP optimization." -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "To install IPP later, download from:" -ForegroundColor White
+    Write-Host "https://www.intel.com/content/www/us/en/developer/tools/oneapi/ipp-download.html" -ForegroundColor Cyan
+    Write-Host ""
+    $IPP_INSTALLED = $false
 } else {
-    Write-Success "Intel IPP already installed"
+    Write-Success "Intel IPP detected"
+    $IPP_INSTALLED = $true
 }
 `}
 
@@ -245,7 +258,10 @@ if (-not (Test-Path $projucer)) {
 
 Write-Step "Compiling HISE (this will take 5-15 minutes)..."
 $env:PreferredToolArchitecture = "x64"
-$msbuild = "C:\\Program Files\\Microsoft Visual Studio\\18\\Community\\MSBuild\\Current\\Bin\\MSBuild.exe"
+
+# Use the detected MSBuild path
+$msbuild = $vsPath
+
 ${includeFaust ? `
 $buildConfig = if ($FAUST_INSTALLED) { "Release with Faust" } else { "Release" }
 ` : `

@@ -110,16 +110,24 @@ success "Git setup complete"
 `}
 
 # ============================================
-# Phase 3: Xcode
+# Phase 3: Xcode (Pre-requisite Check)
 # ============================================
-${skipPhases.includes(3) ? '# SKIPPED: Xcode already installed' : `
-phase "Phase 3: Xcode"
+phase "Phase 3: Xcode Command Line Tools Check"
 
 if ! command -v xcodebuild &> /dev/null; then
     err "Xcode Command Line Tools are not installed."
     echo ""
-    echo -e "\${YELLOW}Please install Xcode Command Line Tools:\${NC}"
-    echo -e "\${CYAN}xcode-select --install\${NC}"
+    echo -e "\${RED}========================================\${NC}"
+    echo -e "\${RED}  PREREQUISITE MISSING\${NC}"
+    echo -e "\${RED}========================================\${NC}"
+    echo ""
+    echo -e "\${YELLOW}Please install Xcode Command Line Tools before running this script.\${NC}"
+    echo ""
+    echo "Option 1: Install from the App Store"
+    echo -e "  - Download Xcode from: \${CYAN}https://developer.apple.com/xcode/\${NC}"
+    echo ""
+    echo "Option 2: Install Command Line Tools only"
+    echo -e "  - Run: \${CYAN}xcode-select --install\${NC}"
     echo ""
     echo "After installation, run this script again."
     exit 1
@@ -129,8 +137,7 @@ fi
 step "Checking Xcode license..."
 sudo xcodebuild -license accept 2>/dev/null || true
 
-success "Xcode detected"
-`}
+success "Xcode Command Line Tools detected"
 
 # ============================================
 # Phase 5: Faust (Optional)
