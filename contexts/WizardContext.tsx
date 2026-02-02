@@ -1,65 +1,126 @@
 'use client';
 
-import { createContext, useContext, useState, ReactNode } from 'react';
-import { PhaseStatus } from '@/lib/setup/phases';
+import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import { 
+  Platform, 
+  Architecture, 
+  DetectedComponents, 
+  WizardState,
+  DEFAULT_PATHS 
+} from '@/types/wizard';
 
-interface WizardPreferences {
-  installLocation: string;
-  includeIntelIPP: boolean;
-  includeFaust: boolean;
-}
+const initialDetectedComponents: DetectedComponents = {
+  git: false,
+  compiler: false,
+  faust: false,
+  intelIPP: false,
+  hiseRepo: false,
+  sdks: false,
+  juce: false,
+};
+
+const initialState: WizardState = {
+  platform: null,
+  architecture: null,
+  detectedComponents: initialDetectedComponents,
+  installPath: '',
+  includeFaust: false,
+  includeIPP: false,
+};
 
 interface WizardContextType {
-  currentPhase: number;
-  setCurrentPhase: (phase: number) => void;
-  completedPhases: number[];
-  completePhase: (phase: number) => void;
-  preferences: WizardPreferences;
-  setPreferences: (prefs: Partial<WizardPreferences>) => void;
-  phaseStatuses: Map<number, PhaseStatus>;
-  setPhaseStatus: (phase: number, status: PhaseStatus) => void;
+  state: WizardState;
+  setPlatform: (platform: Platform) => void;
+  setArchitecture: (arch: Architecture) => void;
+  setDetectedComponent: (key: keyof DetectedComponents, value: boolean) => void;
+  setInstallPath: (path: string) => void;
+  setIncludeFaust: (include: boolean) => void;
+  setIncludeIPP: (include: boolean) => void;
+  reset: () => void;
+  getSkipPhases: () => number[];
 }
 
 const WizardContext = createContext<WizardContextType | undefined>(undefined);
 
 export function WizardProvider({ children }: { children: ReactNode }) {
-  const [currentPhase, setCurrentPhase] = useState(0);
-  const [completedPhases, setCompletedPhases] = useState<number[]>([]);
-  const [preferences, setPreferencesState] = useState<WizardPreferences>({
-    installLocation: 'C:\\HISE',
-    includeIntelIPP: false,
-    includeFaust: false,
-  });
-  const [phaseStatuses, setPhaseStatuses] = useState<Map<number, PhaseStatus>>(new Map());
+  const [state, setState] = useState<WizardState>(initialState);
 
-  const completePhase = (phase: number) => {
-    setCompletedPhases(prev => {
-      if (!prev.includes(phase)) {
-        return [...prev, phase];
-      }
-      return prev;
-    });
-  };
+  const setPlatform = useCallback((platform: Platform) => {
+    setState(prev => ({
+      ...prev,
+      platform,
+      // Reset architecture when platform changes
+      architecture: platform === 'macos' ? null : 'x64',
+      // Set default install path for platform
+      installPath: platform ? DEFAULT_PATHS[platform] : '',
+      // Reset IPP if not Windows
+      includeIPP: platform === 'windows' ? prev.includeIPP : false,
+    }));
+  }, []);
 
-  const setPreferences = (prefs: Partial<WizardPreferences>) => {
-    setPreferencesState(prev => ({ ...prev, ...prefs }));
-  };
+  const setArchitecture = useCallback((architecture: Architecture) => {
+    setState(prev => ({ ...prev, architecture }));
+  }, []);
 
-  const setPhaseStatus = (phase: number, status: PhaseStatus) => {
-    setPhaseStatuses(prev => new Map(prev).set(phase, status));
-  };
+  const setDetectedComponent = useCallback((key: keyof DetectedComponents, value: boolean) => {
+    setState(prev => ({
+      ...prev,
+      detectedComponents: {
+        ...prev.detectedComponents,
+        [key]: value,
+      },
+    }));
+  }, []);
+
+  const setInstallPath = useCallback((installPath: string) => {
+    setState(prev => ({ ...prev, installPath }));
+  }, []);
+
+  const setIncludeFaust = useCallback((includeFaust: boolean) => {
+    setState(prev => ({ ...prev, includeFaust }));
+  }, []);
+
+  const setIncludeIPP = useCallback((includeIPP: boolean) => {
+    setState(prev => ({ ...prev, includeIPP }));
+  }, []);
+
+  const reset = useCallback(() => {
+    setState(initialState);
+  }, []);
+
+  // Determine which phases to skip based on detected components
+  const getSkipPhases = useCallback((): number[] => {
+    const skip: number[] = [];
+    const { detectedComponents } = state;
+    
+    if (detectedComponents.git && detectedComponents.hiseRepo) {
+      skip.push(2); // Git setup
+    }
+    if (detectedComponents.compiler) {
+      skip.push(3); // Compiler installation
+    }
+    if (detectedComponents.faust || !state.includeFaust) {
+      skip.push(5); // Faust installation
+    }
+    if (detectedComponents.sdks && detectedComponents.juce) {
+      skip.push(6); // Repository check
+    }
+    
+    return skip;
+  }, [state]);
 
   return (
     <WizardContext.Provider
       value={{
-        currentPhase,
-        setCurrentPhase,
-        completedPhases,
-        completePhase,
-        preferences,
-        setPreferences,
-        phaseStatuses,
-        setPhaseStatus,
+        state,
+        setPlatform,
+        setArchitecture,
+        setDetectedComponent,
+        setInstallPath,
+        setIncludeFaust,
+        setIncludeIPP,
+        reset,
+        getSkipPhases,
       }}
     >
       {children}

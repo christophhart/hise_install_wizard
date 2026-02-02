@@ -1,62 +1,28 @@
-@import url('https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700;900&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@400;600&display=swap');
-@import url('../styles/common.css');
+@import url('https://fonts.googleapis.com/css2?family=Lato:wght@400;700&family=Source+Code+Pro:wght@400;500&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  /* Colors */
-  --background: #222;
-  --surface: #333;
-  --border: #444;
-  --top-bar: #050505;
-  --accent: #90FFB1;
-  --error: #BB3434;
-  --success: #4E8E35;
-  --warning: #FFBA00;
-  --code-bg: #111;
-  --code-text: #999;
-  
-  /* Sizing */
-  --border-radius: 3px;
-  --spacing-xs: 0.25rem;
-  --spacing-sm: 0.5rem;
-  --spacing-md: 1rem;
-  --spacing-lg: 1.5rem;
-  --spacing-xl: 2rem;
-}
-
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
 body {
-  font-family: 'Lato', sans-serif;
-  color: #CCC;
+  @apply bg-background text-white;
 }
 
-h1, h2, h3, h4, h5, h6 {
-  color: #FFF;
+/* Custom scrollbar for code blocks */
+.code-block::-webkit-scrollbar {
+  height: 8px;
+  width: 8px;
 }
 
-button {
-  cursor: pointer;
+.code-block::-webkit-scrollbar-track {
+  @apply bg-code-bg;
 }
 
-code, pre {
-   font-family: 'Source Code Pro', monospace;
-   background-color: #111;
-   color: #999;
-   border-radius: 3px;
-   padding: 0.25rem 0.5rem;
+.code-block::-webkit-scrollbar-thumb {
+  @apply bg-border rounded;
 }
 
-pre {
-  padding: 1rem;
-  overflow-x: auto;
-  border: 1px solid #444;
+/* Selection highlight using accent color */
+::selection {
+  @apply bg-accent/30;
 }

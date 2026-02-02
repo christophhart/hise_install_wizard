@@ -1,43 +1,69 @@
 'use client';
 
-import { PHASES } from '@/lib/setup/phases';
-import { PhaseStatus } from '@/lib/setup/phases';
-import { useWizard } from '@/contexts/WizardContext';
+import { Check } from 'lucide-react';
+
+interface Phase {
+  id: number;
+  name: string;
+}
+
+const phases: Phase[] = [
+  { id: 0, name: 'System Detection' },
+  { id: 1, name: 'Configuration' },
+  { id: 2, name: 'Generate Script' },
+];
 
 interface PhaseStepperProps {
   currentPhase: number;
+  className?: string;
 }
 
-export default function PhaseStepper({ currentPhase }: PhaseStepperProps) {
-  const { completedPhases } = useWizard();
-  const activePhase = PHASES.find(p => p.id === currentPhase);
-
-  const getStatus = (phaseId: number): PhaseStatus => {
-    if (phaseId === currentPhase) return 'active';
-    if (completedPhases.includes(phaseId)) return 'completed';
-    return 'pending';
-  };
-
-  const progress = ((currentPhase + 1) / PHASES.length) * 100;
-
+export default function PhaseStepper({ currentPhase, className = '' }: PhaseStepperProps) {
   return (
-    <div className="mb-8 p-4 bg-surface border border-border" style={{ borderRadius: '3px' }}>
-      <div className="flex items-center justify-between mb-3">
-        <div>
-          <div className="text-sm text-gray-400">Phase {currentPhase}</div>
-          <div className="text-lg font-semibold">{activePhase?.name}</div>
+    <div className={`flex items-center justify-center ${className}`}>
+      {phases.map((phase, index) => (
+        <div key={phase.id} className="flex items-center">
+          {/* Step circle */}
+          <div className="flex flex-col items-center">
+            <div
+              className={`
+                w-10 h-10 rounded-full flex items-center justify-center
+                border-2 transition-colors duration-200
+                ${currentPhase > phase.id
+                  ? 'bg-success border-success text-white'
+                  : currentPhase === phase.id
+                    ? 'bg-accent border-accent text-background'
+                    : 'bg-transparent border-border text-gray-400'
+                }
+              `}
+            >
+              {currentPhase > phase.id ? (
+                <Check className="w-5 h-5" />
+              ) : (
+                <span className="text-sm font-medium">{phase.id + 1}</span>
+              )}
+            </div>
+            <span 
+              className={`
+                mt-2 text-xs font-medium
+                ${currentPhase >= phase.id ? 'text-white' : 'text-gray-500'}
+              `}
+            >
+              {phase.name}
+            </span>
+          </div>
+          
+          {/* Connector line */}
+          {index < phases.length - 1 && (
+            <div 
+              className={`
+                w-16 sm:w-24 h-0.5 mx-2
+                ${currentPhase > phase.id ? 'bg-success' : 'bg-border'}
+              `}
+            />
+          )}
         </div>
-        <div className="text-sm text-gray-400">
-          {currentPhase + 1} / {PHASES.length}
-        </div>
-      </div>
-      <div className="w-full h-2.5" style={{ backgroundColor: '#444', borderRadius: '3px', overflow: 'hidden' }}>
-        <div
-          className="h-2.5 transition-all duration-300"
-          style={{ width: `${progress}%`, backgroundColor: '#90FFB1', borderRadius: '3px' }}
-        ></div>
-      </div>
-      <div className="mt-2 text-sm text-gray-400">{activePhase?.description}</div>
+      ))}
     </div>
   );
 }

@@ -1,80 +1,118 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import PhaseStepper from '@/components/wizard/PhaseStepper';
-import { PHASES, PhaseStatus } from '@/lib/setup/phases';
 import { useWizard } from '@/contexts/WizardContext';
+import { Platform } from '@/types/wizard';
+import PageContainer from '@/components/layout/PageContainer';
+import PhaseStepper from '@/components/wizard/PhaseStepper';
+import PlatformSelector from '@/components/wizard/PlatformSelector';
+import ArchitectureSelector from '@/components/wizard/ArchitectureSelector';
+import ComponentChecklist from '@/components/wizard/ComponentChecklist';
+import Button from '@/components/ui/Button';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/Card';
+import Alert from '@/components/ui/Alert';
+import { ArrowRight } from 'lucide-react';
 
-export default function Phase0Page() {
+export default function SetupPage() {
   const router = useRouter();
-  const { setCurrentPhase } = useWizard();
-
+  const { 
+    state, 
+    setPlatform, 
+    setArchitecture, 
+    setDetectedComponent 
+  } = useWizard();
+  
+  const [detectedPlatform, setDetectedPlatform] = useState<Platform>(null);
+  
+  // Auto-detect platform on mount
   useEffect(() => {
-    setCurrentPhase(0);
-  }, [setCurrentPhase]);
-
-  const mockDetectedComponents = {
-    visualStudio: true,
-    git: false,
-    intelIPP: false,
-    faust: false,
-    hiseRepository: false,
-    sdks: false,
-    juceSubmodule: false,
-  };
-
+    const detectPlatform = (): Platform => {
+      if (typeof navigator === 'undefined') return null;
+      
+      const userAgent = navigator.userAgent.toLowerCase();
+      if (userAgent.includes('win')) return 'windows';
+      if (userAgent.includes('mac')) return 'macos';
+      if (userAgent.includes('linux')) return 'linux';
+      return null;
+    };
+    
+    const detected = detectPlatform();
+    setDetectedPlatform(detected);
+    
+    // Auto-select if not already selected
+    if (!state.platform && detected) {
+      setPlatform(detected);
+    }
+  }, [state.platform, setPlatform]);
+  
+  const canProceed = state.platform !== null && 
+    (state.platform !== 'macos' || state.architecture !== null);
+  
   const handleContinue = () => {
-    router.push('/setup/1');
+    router.push('/setup/configure');
   };
-
+  
   return (
-    <div className="min-h-screen bg-background p-4">
-      <div className="max-w-4xl mx-auto">
-        <PhaseStepper currentPhase={0} />
-
-        <div className="bg-surface p-8 rounded shadow-md border border-border">
-          <h1 className="text-2xl font-bold mb-2">Phase 0: System State Detection</h1>
-          <p className="text-gray-400 mb-6">
-            We've detected the current state of your system. Review which components are already installed.
-          </p>
-
-          <h2 className="text-xl font-semibold mb-4">Detected System Components</h2>
-          <div className="mb-6 grid grid-cols-2 gap-4">
-            <div className="p-4 bg-green-900/30 border border-accent rounded">
-              <div className="font-medium">Visual Studio 2026</div>
-              <div className="text-accent">Installed</div>
-            </div>
-            <div className="p-4 bg-surface border border-border rounded">
-              <div className="font-medium">Git</div>
-              <div className="text-red-400">Not installed</div>
-            </div>
-            <div className="p-4 bg-surface border border-border rounded">
-              <div className="font-medium">Intel IPP</div>
-              <div className="text-red-400">Not installed</div>
-            </div>
-            <div className="p-4 bg-surface border border-border rounded">
-              <div className="font-medium">Faust</div>
-              <div className="text-red-400">Not installed</div>
-            </div>
-            <div className="p-4 bg-surface border border-border rounded">
-              <div className="font-medium">HISE Repository</div>
-              <div className="text-red-400">Not found</div>
-            </div>
-            <div className="p-4 bg-surface border border-border rounded">
-              <div className="font-medium">SDKs</div>
-              <div className="text-red-400">Not extracted</div>
-            </div>
-          </div>
-
-          <button
-            onClick={handleContinue}
-            className="w-full px-6 py-3 bg-accent hover:bg-green-400 text-background font-semibold rounded border border-border"
-          >
-            Continue to Configuration
-          </button>
-        </div>
+    <PageContainer>
+      <PhaseStepper currentPhase={0} className="mb-8" />
+      
+      <Card>
+        <CardHeader>
+          <CardTitle>System Detection</CardTitle>
+          <CardDescription>
+            Tell us about your system so we can generate the right setup script for you.
+          </CardDescription>
+        </CardHeader>
+        
+        <CardContent className="space-y-8">
+          {/* Platform Selection */}
+          <PlatformSelector
+            value={state.platform}
+            onChange={setPlatform}
+            detectedPlatform={detectedPlatform}
+          />
+          
+          {/* Architecture Selection (macOS only) */}
+          {state.platform === 'macos' && (
+            <ArchitectureSelector
+              value={state.architecture}
+              onChange={setArchitecture}
+              platform={state.platform}
+            />
+          )}
+          
+          {/* Component Checklist */}
+          {state.platform && (
+            <>
+              <hr className="border-border" />
+              
+              <ComponentChecklist
+                platform={state.platform}
+                components={state.detectedComponents}
+                onChange={setDetectedComponent}
+              />
+              
+              <Alert variant="info">
+                Check any components you already have installed. This helps us skip 
+                unnecessary steps and create a shorter setup script.
+              </Alert>
+            </>
+          )}
+        </CardContent>
+      </Card>
+      
+      {/* Navigation */}
+      <div className="flex justify-end mt-6">
+        <Button 
+          onClick={handleContinue}
+          disabled={!canProceed}
+          size="lg"
+        >
+          Continue to Configuration
+          <ArrowRight className="w-4 h-4" />
+        </Button>
       </div>
-    </div>
+    </PageContainer>
   );
 }

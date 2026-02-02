@@ -99,15 +99,14 @@ hise-install-wizard/
 | 1 | User Configuration | - | Gather user preferences and configuration settings |
 | 2 | Git Setup | ✓ | Install Git, clone HISE repository, init JUCE submodule |
 | 3 | Visual Studio 2026 Installation | ✓ | Install Visual Studio 2026 Community with C++ workload |
-| 4 | JUCE Submodule Verification | ✓ | Verify JUCE is on juce6 branch |
-| 5 | SDK Installation | ✓ | Extract ASIO SDK 2.3 and VST3 SDK |
-| 6 | Intel IPP Installation | ○ | Optional: Install Intel IPP oneAPI for performance optimization |
-| 7 | Faust Installation | ○ | Optional: Install Faust DSP compiler |
-| 8 | HISE Compilation | ✓ | Compile HISE standalone application |
-| 9 | Add HISE to PATH | ✓ | Add HISE binary to system PATH |
-| 10 | Verify Build Configuration | ✓ | Run `HISE get_build_flags` to verify build |
-| 11 | Compile Test Project | ✓ | Compile demo project to verify setup |
-| 12 | Success Verification | ✓ | Final verification and completion |
+| 4 | Intel IPP Installation | ○ | Optional: Install Intel IPP oneAPI for performance optimization |
+| 5 | Faust Installation | ○ | Optional: Install Faust DSP compiler |
+| 6 | HISE Repository Structure Check | ✓ | Verify JUCE submodule and SDK installation |
+| 7 | Compile HISE Standalone | ✓ | Compile HISE standalone application |
+| 8 | Add HISE to PATH | ✓ | Add HISE binary to system PATH |
+| 9 | Verify Build Configuration | ✓ | Run `HISE get_build_flags` to verify build |
+| 10 | Compile Test Project | ✓ | Compile demo project to verify setup |
+| 11 | Success Verification | ✓ | Final verification and completion |
 
 ---
 
