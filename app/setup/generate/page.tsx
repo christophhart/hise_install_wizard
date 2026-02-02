@@ -96,7 +96,7 @@ export default function GeneratePage() {
   };
   
   const handleBack = () => {
-    router.push('/setup/configure');
+    router.push('/setup');
   };
   
   if (!state.platform) {
@@ -105,7 +105,7 @@ export default function GeneratePage() {
   
   return (
     <PageContainer>
-      <PhaseStepper currentPhase={2} className="mb-8" />
+      <PhaseStepper currentPhase={1} className="mb-8" />
       
       <Card>
         <CardHeader>

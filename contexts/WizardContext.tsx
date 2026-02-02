@@ -99,6 +99,11 @@ export function WizardProvider({ children }: { children: ReactNode }) {
     if (detectedComponents.compiler) {
       skip.push(3); // Compiler installation
     }
+    // Skip IPP if already installed OR user doesn't want to install
+    if (detectedComponents.intelIPP || !state.includeIPP) {
+      skip.push(4); // Intel IPP installation
+    }
+    // Skip Faust if already installed OR user doesn't want to install
     if (detectedComponents.faust || !state.includeFaust) {
       skip.push(5); // Faust installation
     }

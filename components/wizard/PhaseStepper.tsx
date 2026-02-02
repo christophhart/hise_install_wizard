@@ -8,9 +8,8 @@ interface Phase {
 }
 
 const phases: Phase[] = [
-  { id: 0, name: 'System Detection' },
-  { id: 1, name: 'Configuration' },
-  { id: 2, name: 'Generate Script' },
+  { id: 0, name: 'Setup' },
+  { id: 1, name: 'Generate Script' },
 ];
 
 interface PhaseStepperProps {
@@ -57,7 +56,7 @@ export default function PhaseStepper({ currentPhase, className = '' }: PhaseStep
           {index < phases.length - 1 && (
             <div 
               className={`
-                w-16 sm:w-24 h-0.5 mx-2
+                w-24 sm:w-32 h-0.5 mx-4
                 ${currentPhase > phase.id ? 'bg-success' : 'bg-border'}
               `}
             />

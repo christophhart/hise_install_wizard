@@ -8,6 +8,7 @@ import PageContainer from '@/components/layout/PageContainer';
 import PhaseStepper from '@/components/wizard/PhaseStepper';
 import PlatformSelector from '@/components/wizard/PlatformSelector';
 import ArchitectureSelector from '@/components/wizard/ArchitectureSelector';
+import PathInput, { validatePath } from '@/components/wizard/PathInput';
 import ComponentChecklist from '@/components/wizard/ComponentChecklist';
 import Button from '@/components/ui/Button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/Card';
@@ -19,8 +20,11 @@ export default function SetupPage() {
   const { 
     state, 
     setPlatform, 
-    setArchitecture, 
-    setDetectedComponent 
+    setArchitecture,
+    setInstallPath,
+    setDetectedComponent,
+    setIncludeFaust,
+    setIncludeIPP,
   } = useWizard();
   
   const [detectedPlatform, setDetectedPlatform] = useState<Platform>(null);
@@ -46,11 +50,14 @@ export default function SetupPage() {
     }
   }, [state.platform, setPlatform]);
   
+  // Validate that we have platform, valid path, and architecture (for macOS)
+  const pathValidation = state.platform ? validatePath(state.installPath, state.platform) : { valid: false };
   const canProceed = state.platform !== null && 
+    pathValidation.valid &&
     (state.platform !== 'macos' || state.architecture !== null);
   
-  const handleContinue = () => {
-    router.push('/setup/configure');
+  const handleGenerate = () => {
+    router.push('/setup/generate');
   };
   
   return (
@@ -59,43 +66,79 @@ export default function SetupPage() {
       
       <Card>
         <CardHeader>
-          <CardTitle>System Detection</CardTitle>
+          <CardTitle>Setup Configuration</CardTitle>
           <CardDescription>
-            Tell us about your system so we can generate the right setup script for you.
+            Configure your system and preferences to generate a customized setup script.
           </CardDescription>
         </CardHeader>
         
         <CardContent className="space-y-8">
-          {/* Platform Selection */}
-          <PlatformSelector
-            value={state.platform}
-            onChange={setPlatform}
-            detectedPlatform={detectedPlatform}
-          />
-          
-          {/* Architecture Selection (macOS only) */}
-          {state.platform === 'macos' && (
-            <ArchitectureSelector
-              value={state.architecture}
-              onChange={setArchitecture}
-              platform={state.platform}
+          {/* Section 1: Platform Selection */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-medium text-gray-300 flex items-center gap-2">
+              <span className="w-6 h-6 rounded-full bg-accent text-background text-xs font-bold flex items-center justify-center">1</span>
+              Platform
+            </h3>
+            <PlatformSelector
+              value={state.platform}
+              onChange={setPlatform}
+              detectedPlatform={detectedPlatform}
             />
-          )}
+            
+            {/* Architecture Selection (macOS only) */}
+            {state.platform === 'macos' && (
+              <ArchitectureSelector
+                value={state.architecture}
+                onChange={setArchitecture}
+                platform={state.platform}
+              />
+            )}
+          </div>
           
-          {/* Component Checklist */}
+          {/* Section 2: Installation Path */}
           {state.platform && (
             <>
               <hr className="border-border" />
               
-              <ComponentChecklist
-                platform={state.platform}
-                components={state.detectedComponents}
-                onChange={setDetectedComponent}
-              />
+              <div className="space-y-4">
+                <h3 className="text-sm font-medium text-gray-300 flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-full bg-accent text-background text-xs font-bold flex items-center justify-center">2</span>
+                  Installation Path
+                </h3>
+                <PathInput
+                  value={state.installPath}
+                  onChange={setInstallPath}
+                  platform={state.platform}
+                />
+              </div>
+            </>
+          )}
+          
+          {/* Section 3: Component Checklist */}
+          {state.platform && state.installPath && (
+            <>
+              <hr className="border-border" />
+              
+              <div className="space-y-4">
+                <h3 className="text-sm font-medium text-gray-300 flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-full bg-accent text-background text-xs font-bold flex items-center justify-center">3</span>
+                  Components
+                </h3>
+                <ComponentChecklist
+                  platform={state.platform}
+                  installPath={state.installPath}
+                  components={state.detectedComponents}
+                  onChange={setDetectedComponent}
+                  installFaust={state.includeFaust}
+                  installIPP={state.includeIPP}
+                  onInstallFaustChange={setIncludeFaust}
+                  onInstallIPPChange={setIncludeIPP}
+                />
+              </div>
               
               <Alert variant="info">
-                Check any components you already have installed. This helps us skip 
-                unnecessary steps and create a shorter setup script.
+                Check any components you already have installed. The script will skip those steps.
+                For optional components (Faust, Intel IPP), check &quot;Install during setup&quot; if you want them included.
               </Alert>
             </>
           )}
@@ -105,11 +148,11 @@ export default function SetupPage() {
       {/* Navigation */}
       <div className="flex justify-end mt-6">
         <Button 
-          onClick={handleContinue}
+          onClick={handleGenerate}
           disabled={!canProceed}
           size="lg"
         >
-          Continue to Configuration
+          Generate Script
           <ArrowRight className="w-4 h-4" />
         </Button>
       </div>
