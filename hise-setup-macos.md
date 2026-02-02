@@ -16,11 +16,11 @@ Setup guide for HISE (Hart Instrument Software Environment) on macOS 10.13+ (Int
 | 3 | Xcode | Yes | Install with Command Line Tools |
 | 4 | Intel IPP | No | Not available on macOS |
 | 5 | Faust | No | Optional DSP compiler |
-| 6 | Repository Check | Yes | Verify JUCE submodule and SDKs |
+| 6 | Repository Check | Yes | Verify JUCE submodule and SDKs (including VST3 SDK) |
 | 7 | Compile HISE | Yes | Build standalone application |
 | 8 | Add to PATH | Yes | Add HISE binary to shell config |
 | 9 | Verify Build | Yes | Run `HISE get_build_flags` |
-| 10 | Test Project | Yes | Compile demo project |
+| 10 | Test Project | Yes | Compile demo project as VST3 plugin (CI config) |
 | 11 | Success | Yes | Final verification |
 
 ---
@@ -156,19 +156,31 @@ cd {hisePath}
 git submodule update --init
 cd JUCE && git checkout juce6 && cd ..
 
-# Extract SDKs
-unzip tools/SDK/sdk.zip -d tools/SDK/
+# Extract SDKs (contains VST3 SDK required for plugin builds)
+cd tools/SDK
+tar -xf sdk.zip
+cd ../..
 
-# Verify
+# Verify SDKs
 [ -d "tools/SDK/ASIOSDK2.3" ] && echo "ASIO SDK OK" || echo "WARNING: ASIO SDK not found"
-[ -d "tools/SDK/VST3 SDK" ] && echo "VST3 SDK OK" || echo "WARNING: VST3 SDK not found"
+[ -d "tools/SDK/VST3 SDK" ] && echo "VST3 SDK OK" || echo "WARNING: VST3 SDK not found - required for VST3 plugin builds"
+
+# Verify Projucer
+[ -f "JUCE/Projucer/Projucer.app/Contents/MacOS/Projucer" ] && echo "Projucer OK" || echo "ERROR: Projucer not found"
+
+# Make Projucer executable
+chmod +x "JUCE/Projucer/Projucer.app/Contents/MacOS/Projucer"
 ```
+
+> **Note:** The VST3 SDK is required for building VST3 plugins (used in Phase 10 test). It is included in `sdk.zip`.
 
 ---
 
 ## Phase 7: Compile HISE
 
 > **Build Timeout:** Compilation takes 5-15 minutes. Set timeout to 600000ms minimum.
+
+> **Projucer Location:** `{hisePath}/JUCE/Projucer/Projucer.app/Contents/MacOS/Projucer`
 
 **Configure Architecture (if Faust installed):**
 ```bash
@@ -187,18 +199,24 @@ sed -i '' "s/xcodeValidArchs=\"[^\"]*\"/xcodeValidArchs=\"$ARCH_SETTING\"/" \
 **Without Faust:**
 ```bash
 cd {hisePath}/projects/standalone
+chmod +x "{hisePath}/JUCE/Projucer/Projucer.app/Contents/MacOS/Projucer"
 "{hisePath}/JUCE/Projucer/Projucer.app/Contents/MacOS/Projucer" --resave "HISE Standalone.jucer"
+
 CORES=$(sysctl -n hw.ncpu)
-xcodebuild -project "Builds/MacOSX/HISE Standalone.xcodeproj" -configuration Release -jobs $CORES | "{hisePath}/tools/Projucer/xcbeautify"
+set -o pipefail && xcodebuild -project "Builds/MacOSX/HISE Standalone.xcodeproj" -configuration Release -jobs $CORES | "{hisePath}/tools/Projucer/xcbeautify"
 ```
 
 **With Faust:**
 ```bash
 cd {hisePath}/projects/standalone
+chmod +x "{hisePath}/JUCE/Projucer/Projucer.app/Contents/MacOS/Projucer"
 "{hisePath}/JUCE/Projucer/Projucer.app/Contents/MacOS/Projucer" --resave "HISE Standalone.jucer"
+
 CORES=$(sysctl -n hw.ncpu)
-xcodebuild -project "Builds/MacOSX/HISE Standalone.xcodeproj" -configuration "Release with Faust" -jobs $CORES | "{hisePath}/tools/Projucer/xcbeautify"
+set -o pipefail && xcodebuild -project "Builds/MacOSX/HISE Standalone.xcodeproj" -configuration "Release with Faust" -jobs $CORES | "{hisePath}/tools/Projucer/xcbeautify"
 ```
+
+> **Note:** The `set -o pipefail` ensures xcodebuild errors are properly detected even when piped through xcbeautify.
 
 ---
 
@@ -238,9 +256,21 @@ Validates:
 
 ## Phase 10: Test Project
 
+> **Note:** Uses CI configuration with `-nolto` for faster test builds. Builds a VST3 instrument plugin which requires the VST3 SDK (extracted in Phase 6).
+
 ```bash
 HISE set_project_folder -p:"{hisePath}/extras/demo_project"
-HISE export_ci "XmlPresetBackups/Demo.xml" -t:standalone -a:x64
+HISE export_ci "XmlPresetBackups/Demo.xml" -t:instrument -p:VST3 -a:x64 -nolto
+```
+
+**Expected Output:**
+- Build files generated in `{hisePath}/extras/demo_project/Binaries/`
+- Batch compile script created: `batchCompileOSX`
+
+**Run the generated compile script:**
+```bash
+chmod +x "{hisePath}/extras/demo_project/Binaries/batchCompileOSX"
+"{hisePath}/extras/demo_project/Binaries/batchCompileOSX"
 ```
 
 ---
@@ -302,7 +332,10 @@ Criteria:
 - **JUCE Branch:** juce6 (fixed)
 - **Build Timeout:** 600000ms (10 minutes) recommended
 - **Compiler:** Clang via Xcode
-- **Output Formatter:** xcbeautify (included in HISE repo)
+- **Output Formatter:** xcbeautify (included in HISE repo at `tools/Projucer/xcbeautify`)
+- **Projucer Path:** `{hisePath}/JUCE/Projucer/Projucer.app/Contents/MacOS/Projucer`
+- **Test Build Config:** CI configuration with `-nolto` flag for faster test builds
+- **Build Output:** `projects/standalone/Builds/MacOSX/build/Release/HISE.app`
 
 ---
 

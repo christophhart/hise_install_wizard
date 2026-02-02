@@ -2,7 +2,7 @@
 
 ## Overview
 
-Setup guide for HISE (Hart Instrument Software Environment) on Windows 7+ (64-bit x64 only).
+Setup guide for HISE (Hart Instrument Software Environment) on Windows 10+ (64-bit x64 only).
 
 ---
 
@@ -16,11 +16,11 @@ Setup guide for HISE (Hart Instrument Software Environment) on Windows 7+ (64-bi
 | 3 | Visual Studio 2026 | Yes | Install with "Desktop development with C++" workload |
 | 4 | Intel IPP | No | Optional performance optimization |
 | 5 | Faust | No | Optional DSP compiler |
-| 6 | Repository Check | Yes | Verify JUCE submodule and SDKs |
+| 6 | Repository Check | Yes | Verify JUCE submodule and SDKs (including VST3 SDK) |
 | 7 | Compile HISE | Yes | Build standalone application |
 | 8 | Add to PATH | Yes | Add HISE binary to system PATH |
 | 9 | Verify Build | Yes | Run `HISE get_build_flags` |
-| 10 | Test Project | Yes | Compile demo project |
+| 10 | Test Project | Yes | Compile demo project as VST3 plugin (CI config) |
 | 11 | Success | Yes | Final verification |
 
 ---
@@ -166,13 +166,20 @@ cd {hisePath}
 git submodule update --init
 cd JUCE && git checkout juce6 && cd ..
 
-REM Extract SDKs
-unzip tools/SDK/sdk.zip -d tools/SDK/
+REM Extract SDKs (contains ASIO SDK, VST3 SDK required for plugin builds)
+cd tools\SDK
+tar -xf sdk.zip
+cd ..\..
 
-REM Verify
-if exist "tools/SDK/ASIOSDK2.3" (echo ASIO SDK OK) else (echo WARNING: ASIO SDK not found)
-if exist "tools/SDK/VST3 SDK" (echo VST3 SDK OK) else (echo WARNING: VST3 SDK not found)
+REM Verify SDKs
+if exist "tools\SDK\ASIOSDK2.3" (echo ASIO SDK OK) else (echo WARNING: ASIO SDK not found)
+if exist "tools\SDK\VST3 SDK" (echo VST3 SDK OK) else (echo WARNING: VST3 SDK not found - required for VST3 plugin builds)
+
+REM Verify Projucer
+if exist "JUCE\Projucer\Projucer.exe" (echo Projucer OK) else (echo ERROR: Projucer not found)
 ```
+
+> **Note:** The VST3 SDK is required for building VST3 plugins (used in Phase 10 test). It is included in `sdk.zip`.
 
 ---
 
@@ -180,23 +187,28 @@ if exist "tools/SDK/VST3 SDK" (echo VST3 SDK OK) else (echo WARNING: VST3 SDK no
 
 > **Build Timeout:** Compilation takes 5-15 minutes. Set timeout to 600000ms minimum.
 
+> **Projucer Location:** `{hisePath}\JUCE\Projucer\Projucer.exe` (case-sensitive path)
+
 **Without Faust:**
 ```batch
 cd {hisePath}\projects\standalone
 "{hisePath}\JUCE\Projucer\Projucer.exe" --resave "HISE Standalone.jucer"
-"C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\MsBuild.exe" "Builds\VisualStudio2026\HISE Standalone.sln" /p:Configuration=Release /p:PreferredToolArchitecture=x64 /verbosity:minimal
+set PreferredToolArchitecture=x64
+"C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\MsBuild.exe" "Builds\VisualStudio2026\HISE Standalone.sln" /p:Configuration=Release /p:Platform=x64 /verbosity:minimal
 ```
 
 **With Faust:**
 ```batch
 cd {hisePath}\projects\standalone
 "{hisePath}\JUCE\Projucer\Projucer.exe" --resave "HISE Standalone.jucer"
-"C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\MsBuild.exe" "Builds\VisualStudio2026\HISE Standalone.sln" /p:Configuration="Release with Faust" /p:PreferredToolArchitecture=x64 /verbosity:minimal
+set PreferredToolArchitecture=x64
+"C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\MsBuild.exe" "Builds\VisualStudio2026\HISE Standalone.sln" /p:Configuration="Release with Faust" /p:Platform=x64 /verbosity:minimal
 ```
 
 **Post-build verification:** HISE.exe must be > 10MB (corrupted builds are ~2MB)
 
 ```batch
+cd Builds\VisualStudio2026\x64\Release\App
 for %%A in ("HISE.exe") do set HISE_SIZE=%%~zA
 if %HISE_SIZE% LSS 10485760 (
     echo ERROR: HISE.exe appears corrupted - size less than 10MB
@@ -235,9 +247,20 @@ Validates:
 
 ## Phase 10: Test Project
 
+> **Note:** Uses CI configuration with `-nolto` for faster test builds. Builds a VST3 instrument plugin which requires the VST3 SDK (extracted in Phase 6).
+
 ```batch
-HISE set_project_folder -p:"{hisePath}\extras\demo_project"
-HISE export_ci "XmlPresetBackups\Demo.xml" -t:standalone -a:x64
+HISE set_project_folder "-p:{hisePath}\extras\demo_project"
+HISE export_ci "XmlPresetBackups\Demo.xml" -t:instrument -p:VST3 -a:x64 -nolto
+```
+
+**Expected Output:**
+- Build files generated in `{hisePath}\extras\demo_project\Binaries\`
+- Batch compile script created: `batchCompile.bat`
+
+**Run the generated compile script:**
+```batch
+call "{hisePath}\extras\demo_project\Binaries\batchCompile.bat"
 ```
 
 ---
@@ -296,8 +319,11 @@ Criteria:
 - **C++ Standard:** C++17
 - **JUCE Branch:** juce6 (fixed)
 - **Build Timeout:** 600000ms (10 minutes) recommended
-- **64-bit Linker:** Use `/p:PreferredToolArchitecture=x64` to avoid out-of-memory errors
+- **64-bit Linker:** Set `PreferredToolArchitecture=x64` environment variable to avoid out-of-memory errors
 - **Intel IPP Silent Install:** `-s -a --silent --eula accept` includes VS integration by default
+- **MSBuild Path (VS2026):** `C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\MsBuild.exe`
+- **Projucer Path:** `{hisePath}\JUCE\Projucer\Projucer.exe`
+- **Test Build Config:** CI configuration with `-nolto` flag for faster test builds
 
 ---
 

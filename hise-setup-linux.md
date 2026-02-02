@@ -16,11 +16,11 @@ Setup guide for HISE (Hart Instrument Software Environment) on Linux (Ubuntu 16.
 | 3 | GCC/Clang | Yes | Install build-essential and dependencies (GCC ≤11 required) |
 | 4 | Intel IPP | No | Not available on Linux |
 | 5 | Faust | No | Optional DSP compiler |
-| 6 | Repository Check | Yes | Verify JUCE submodule and SDKs |
+| 6 | Repository Check | Yes | Verify JUCE submodule and SDKs (including VST3 SDK) |
 | 7 | Compile HISE | Yes | Build standalone application |
-| 8 | Add to PATH | Yes | Add HISE binary to shell config |
+| 8 | Add to PATH | Yes | Add HISE binary to shell config + create symlink |
 | 9 | Verify Build | Yes | Run `HISE get_build_flags` |
-| 10 | Test Project | Yes | Compile demo project |
+| 10 | Test Project | Yes | Compile demo project as VST3 plugin (CI config) |
 | 11 | Success | Yes | Final verification |
 
 ---
@@ -165,13 +165,23 @@ cd {hisePath}
 git submodule update --init
 cd JUCE && git checkout juce6 && cd ..
 
-# Extract SDKs
-unzip tools/SDK/sdk.zip -d tools/SDK/
+# Extract SDKs (contains VST3 SDK required for plugin builds)
+cd tools/SDK
+tar -xf sdk.zip
+cd ../..
 
-# Verify
+# Verify SDKs
 [ -d "tools/SDK/ASIOSDK2.3" ] && echo "ASIO SDK OK" || echo "WARNING: ASIO SDK not found"
-[ -d "tools/SDK/VST3 SDK" ] && echo "VST3 SDK OK" || echo "WARNING: VST3 SDK not found"
+[ -d "tools/SDK/VST3 SDK" ] && echo "VST3 SDK OK" || echo "WARNING: VST3 SDK not found - required for VST3 plugin builds"
+
+# Verify Projucer (note: case-sensitive path on Linux)
+[ -f "JUCE/Projucer/Projucer" ] && echo "Projucer OK" || echo "ERROR: Projucer not found"
+
+# Make Projucer executable
+chmod +x "JUCE/Projucer/Projucer"
 ```
+
+> **Note:** The VST3 SDK is required for building VST3 plugins (used in Phase 10 test). It is included in `sdk.zip`.
 
 ---
 
@@ -179,9 +189,14 @@ unzip tools/SDK/sdk.zip -d tools/SDK/
 
 > **Build Timeout:** Compilation takes 5-15 minutes. Set timeout to 600000ms minimum.
 
+> **Projucer Location:** `{hisePath}/JUCE/Projucer/Projucer` (case-sensitive on Linux)
+
+> **Output Binary:** The compiled binary is named `HISE Standalone` (with space).
+
 **Without Faust:**
 ```bash
 cd {hisePath}/projects/standalone
+chmod +x "{hisePath}/JUCE/Projucer/Projucer"
 "{hisePath}/JUCE/Projucer/Projucer" --resave "HISE Standalone.jucer"
 cd Builds/LinuxMakefile
 make CONFIG=Release AR=gcc-ar -j$(nproc --ignore=2)
@@ -190,6 +205,7 @@ make CONFIG=Release AR=gcc-ar -j$(nproc --ignore=2)
 **With Faust:**
 ```bash
 cd {hisePath}/projects/standalone
+chmod +x "{hisePath}/JUCE/Projucer/Projucer"
 "{hisePath}/JUCE/Projucer/Projucer" --resave "HISE Standalone.jucer"
 cd Builds/LinuxMakefile
 make CONFIG=ReleaseWithFaust AR=gcc-ar -j$(nproc --ignore=2)
@@ -197,11 +213,23 @@ make CONFIG=ReleaseWithFaust AR=gcc-ar -j$(nproc --ignore=2)
 
 > **Note:** Linux uses `ReleaseWithFaust` (no spaces), while Windows/macOS use `"Release with Faust"` (with spaces).
 
+**Post-build verification:**
+```bash
+# Check binary exists
+[ -f "build/HISE Standalone" ] && echo "Build successful" || echo "ERROR: Build failed"
+```
+
 ---
 
 ## Phase 8: Add to PATH
 
+> **Important:** The Linux binary is named `HISE Standalone` (with space). A symlink `HISE` is created for convenience.
+
 ```bash
+# Create symlink for convenience (binary has space in name)
+cd {hisePath}/projects/standalone/Builds/LinuxMakefile/build
+ln -sf "HISE Standalone" HISE
+
 # Detect shell
 if [ "$(basename "$SHELL")" = "zsh" ]; then
     SHELL_CONFIG="$HOME/.zshrc"
@@ -211,10 +239,15 @@ fi
 
 HISE_PATH="{hisePath}/projects/standalone/Builds/LinuxMakefile/build"
 
+# Clean up existing entries
+sed -i '/LinuxMakefile\/build/d' "$SHELL_CONFIG"
+
 # Add to PATH
 echo 'export PATH="$PATH:'"$HISE_PATH"'"' >> "$SHELL_CONFIG"
 source "$SHELL_CONFIG"
 ```
+
+> **Note:** After creating the symlink, you can use `HISE` command directly instead of `"HISE Standalone"` (with quotes).
 
 ---
 
@@ -232,9 +265,21 @@ Validates:
 
 ## Phase 10: Test Project
 
+> **Note:** Uses CI configuration with `-nolto` for faster test builds. Builds a VST3 instrument plugin which requires the VST3 SDK (extracted in Phase 6).
+
 ```bash
 HISE set_project_folder -p:"{hisePath}/extras/demo_project"
-HISE export_ci "XmlPresetBackups/Demo.xml" -t:standalone -a:x64
+HISE export_ci "XmlPresetBackups/Demo.xml" -t:instrument -p:VST3 -a:x64 -nolto
+```
+
+**Expected Output:**
+- Build files generated in `{hisePath}/extras/demo_project/Binaries/`
+- Batch compile script created: `batchCompileLinux.sh`
+
+**Run the generated compile script:**
+```bash
+chmod +x "{hisePath}/extras/demo_project/Binaries/batchCompileLinux.sh"
+"{hisePath}/extras/demo_project/Binaries/batchCompileLinux.sh"
 ```
 
 ---
@@ -268,10 +313,10 @@ Criteria:
 
 | Configuration | Path |
 |---------------|------|
-| Release | `projects/standalone/Builds/LinuxMakefile/build/HISE` |
-| ReleaseWithFaust | `projects/standalone/Builds/LinuxMakefile/build/HISE` |
+| Release | `projects/standalone/Builds/LinuxMakefile/build/HISE Standalone` |
+| ReleaseWithFaust | `projects/standalone/Builds/LinuxMakefile/build/HISE Standalone` |
 
-> **Note:** Both configurations output to the same `build` directory. Use `HISE get_build_flags` to verify Faust support.
+> **Note:** Both configurations output to the same `build` directory. The binary is named `HISE Standalone` (with space). A symlink `HISE` should be created for convenience (see Phase 8). Use `HISE get_build_flags` to verify Faust support.
 
 ---
 
@@ -281,11 +326,14 @@ Criteria:
 |-------|----------|
 | Git not found | `sudo apt-get install git` |
 | GCC >11 | Install GCC 11: `sudo apt-get install gcc-11 g++-11` and set as default via `update-alternatives` - ABORT if not resolved |
-| Projucer not found | Run `git submodule update --init --recursive` |
+| Projucer not found | Run `git submodule update --init --recursive` and check path case-sensitivity |
+| Projucer permission denied | Run `chmod +x "JUCE/Projucer/Projucer"` |
 | Faust not found | `sudo apt-get install faust libfaust-dev` or build from source |
 | libfaust not found | Run `sudo ldconfig` after Faust installation |
 | Faust version too old | Requires 2.54.0+ or enable `HI_FAUST_NO_WARNING_MESSAGES` flag |
 | HISE not in PATH | Check shell config file (`.bashrc` or `.zshrc`) and restart terminal |
+| HISE command not found | Create symlink: `ln -sf "HISE Standalone" HISE` in the build directory |
+| Binary name has space | Use quotes: `"HISE Standalone"` or use the `HISE` symlink |
 
 ---
 
@@ -296,6 +344,10 @@ Criteria:
 - **Build Timeout:** 600000ms (10 minutes) recommended
 - **Compiler:** GCC ≤11 or Clang (GCC >11 incompatible)
 - **Parallel Build:** Uses `nproc --ignore=2` to leave 2 cores free
+- **Projucer Path:** `{hisePath}/JUCE/Projucer/Projucer` (case-sensitive)
+- **Binary Name:** `HISE Standalone` (with space) - create symlink `HISE` for convenience
+- **Test Build Config:** CI configuration with `-nolto` flag for faster test builds
+- **Build Output:** `projects/standalone/Builds/LinuxMakefile/build/HISE Standalone`
 
 ---
 
