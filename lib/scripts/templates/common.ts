@@ -357,3 +357,177 @@ Write-Host "  - Documentation: https://docs.hise.dev" -ForegroundColor Cyan
 Write-Host "  - Forum: https://forum.hise.audio" -ForegroundColor Cyan
 Write-Host ""`;
 }
+
+// ============================================
+// Commit-Aware Git Operations
+// ============================================
+
+/**
+ * Generate a comment block noting when a specific commit is being used
+ */
+export function generateCommitNoteBash(targetCommit: string): string {
+  return `# NOTE: Using specific commit ${targetCommit.substring(0, 7)} instead of latest
+# This commit was chosen because the CI build is currently failing on newer commits.
+# For the latest code (which may not build), remove the 'git checkout' line below.`;
+}
+
+export function generateCommitNotePS(targetCommit: string): string {
+  return `# NOTE: Using specific commit ${targetCommit.substring(0, 7)} instead of latest
+# This commit was chosen because the CI build is currently failing on newer commits.
+# For the latest code (which may not build), remove the 'git checkout' line below.`;
+}
+
+/**
+ * Generate git clone with optional checkout to specific commit (Bash)
+ */
+export function generateGitCloneWithCommitBash(installPath: string, targetCommit?: string): string {
+  const commitNote = targetCommit ? `\n${generateCommitNoteBash(targetCommit)}\n` : '';
+  const checkoutLine = targetCommit ? `\ngit checkout ${targetCommit} || handle_error 2 "Failed to checkout commit ${targetCommit.substring(0, 7)}"` : '';
+  
+  return `${commitNote}step "Cloning HISE repository..."
+git clone https://github.com/christophhart/HISE.git "$INSTALL_PATH/HISE" || handle_error 2 "Failed to clone HISE repository"
+cd "$INSTALL_PATH/HISE"${checkoutLine}
+
+step "Initializing submodules..."
+git submodule update --init || handle_error 2 "Failed to initialize submodules"
+
+step "Switching JUCE to juce6 branch..."
+cd JUCE && git checkout juce6 && cd ..
+
+success "HISE repository cloned"`;
+}
+
+/**
+ * Generate git clone with optional checkout to specific commit (PowerShell)
+ */
+export function generateGitCloneWithCommitPS(installPath: string, targetCommit?: string): string {
+  const commitNote = targetCommit ? `\n${generateCommitNotePS(targetCommit)}\n` : '';
+  const checkoutLine = targetCommit 
+    ? `\ngit checkout ${targetCommit}\nif ($LASTEXITCODE -ne 0) { Handle-Error 2 "Failed to checkout commit ${targetCommit.substring(0, 7)}" }` 
+    : '';
+  
+  return `${commitNote}Write-Step "Cloning HISE repository..."
+git clone https://github.com/christophhart/HISE.git "$INSTALL_PATH\\HISE"
+if ($LASTEXITCODE -ne 0) { Handle-Error 2 "Failed to clone HISE repository" }
+Set-Location "$INSTALL_PATH\\HISE"${checkoutLine}
+
+Write-Step "Initializing submodules..."
+git submodule update --init
+if ($LASTEXITCODE -ne 0) { Handle-Error 2 "Failed to initialize submodules" }
+
+Write-Step "Switching JUCE to juce6 branch..."
+Set-Location JUCE
+git checkout juce6
+Set-Location "$INSTALL_PATH\\HISE"
+
+Write-Success "HISE repository cloned"`;
+}
+
+/**
+ * Generate git pull/fetch with optional checkout to specific commit (Bash)
+ * Used for update scripts
+ */
+export function generateGitUpdateWithCommitBash(hisePath: string, targetCommit?: string): string {
+  const commitNote = targetCommit ? `\n${generateCommitNoteBash(targetCommit)}\n` : '';
+  
+  if (targetCommit) {
+    // Fetch and checkout specific commit
+    return `${commitNote}phase "Updating HISE Repository"
+
+cd "$HISE_PATH"
+
+step "Fetching latest changes..."
+git fetch origin || handle_error 1 "Failed to fetch from origin"
+
+step "Checking out known working commit..."
+git checkout ${targetCommit} || handle_error 1 "Failed to checkout commit ${targetCommit.substring(0, 7)}"
+
+step "Updating submodules..."
+git submodule update --init || handle_error 1 "Failed to update submodules"
+
+step "Switching JUCE to juce6 branch..."
+cd JUCE && git checkout juce6 && cd ..
+
+success "Repository updated to commit ${targetCommit.substring(0, 7)}"`;
+  }
+  
+  // Standard pull (no specific commit)
+  return `phase "Updating HISE Repository"
+
+cd "$HISE_PATH"
+
+step "Fetching latest changes..."
+git fetch origin || handle_error 1 "Failed to fetch from origin"
+
+step "Pulling develop branch..."
+git checkout develop || handle_error 1 "Failed to checkout develop branch"
+git pull origin develop || handle_error 1 "Failed to pull latest changes"
+
+step "Updating submodules..."
+git submodule update --init || handle_error 1 "Failed to update submodules"
+
+step "Switching JUCE to juce6 branch..."
+cd JUCE && git checkout juce6 && cd ..
+
+success "Repository updated"`;
+}
+
+/**
+ * Generate git pull/fetch with optional checkout to specific commit (PowerShell)
+ * Used for update scripts
+ */
+export function generateGitUpdateWithCommitPS(hisePath: string, targetCommit?: string): string {
+  const commitNote = targetCommit ? `\n${generateCommitNotePS(targetCommit)}\n` : '';
+  
+  if (targetCommit) {
+    // Fetch and checkout specific commit
+    return `${commitNote}Write-Phase "Updating HISE Repository"
+
+Set-Location $HISE_PATH
+
+Write-Step "Fetching latest changes..."
+git fetch origin
+if ($LASTEXITCODE -ne 0) { Handle-Error 1 "Failed to fetch from origin" }
+
+Write-Step "Checking out known working commit..."
+git checkout ${targetCommit}
+if ($LASTEXITCODE -ne 0) { Handle-Error 1 "Failed to checkout commit ${targetCommit.substring(0, 7)}" }
+
+Write-Step "Updating submodules..."
+git submodule update --init
+if ($LASTEXITCODE -ne 0) { Handle-Error 1 "Failed to update submodules" }
+
+Write-Step "Switching JUCE to juce6 branch..."
+Set-Location JUCE
+git checkout juce6
+Set-Location $HISE_PATH
+
+Write-Success "Repository updated to commit ${targetCommit.substring(0, 7)}"`;
+  }
+  
+  // Standard pull (no specific commit)
+  return `Write-Phase "Updating HISE Repository"
+
+Set-Location $HISE_PATH
+
+Write-Step "Fetching latest changes..."
+git fetch origin
+if ($LASTEXITCODE -ne 0) { Handle-Error 1 "Failed to fetch from origin" }
+
+Write-Step "Pulling develop branch..."
+git checkout develop
+if ($LASTEXITCODE -ne 0) { Handle-Error 1 "Failed to checkout develop branch" }
+git pull origin develop
+if ($LASTEXITCODE -ne 0) { Handle-Error 1 "Failed to pull latest changes" }
+
+Write-Step "Updating submodules..."
+git submodule update --init
+if ($LASTEXITCODE -ne 0) { Handle-Error 1 "Failed to update submodules" }
+
+Write-Step "Switching JUCE to juce6 branch..."
+Set-Location JUCE
+git checkout juce6
+Set-Location $HISE_PATH
+
+Write-Success "Repository updated"`;
+}

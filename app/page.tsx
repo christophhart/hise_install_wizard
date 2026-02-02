@@ -51,7 +51,7 @@ export default function HomePage() {
               <RefreshCw className="w-5 h-5" />
             </Button>
             <p className="text-xs text-gray-500 max-w-[180px] text-center group-hover:text-gray-400 transition-colors">
-              Pull latest changes and recompile existing installation
+              Pull latest working changes and recompile existing installation
             </p>
           </Link>
         </div>

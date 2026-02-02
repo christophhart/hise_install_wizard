@@ -4,10 +4,12 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUpdate } from '@/contexts/UpdateContext';
 import { UpdateScriptResponse, Platform } from '@/types/wizard';
+import { CIStatus, CIStatusResponse } from '@/lib/github';
 import PageContainer from '@/components/layout/PageContainer';
 import PhaseStepper from '@/components/wizard/PhaseStepper';
 import ScriptPreview from '@/components/wizard/ScriptPreview';
 import PathDisplay from '@/components/wizard/PathDisplay';
+import CIStatusAlert from '@/components/wizard/CIStatusAlert';
 import Button from '@/components/ui/Button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/Card';
 import Alert from '@/components/ui/Alert';
@@ -89,7 +91,7 @@ function renderHowToRunInstructions(
 export default function UpdateGeneratePage() {
   const router = useRouter();
   const { state, canGenerate } = useUpdate();
-  const { get } = useExplanation();
+  const { get, isEasyMode } = useExplanation();
   
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -97,21 +99,59 @@ export default function UpdateGeneratePage() {
   const [uniqueFilename, setUniqueFilename] = useState<string>('');
   const [hasDownloaded, setHasDownloaded] = useState(false);
   
-  // Redirect if no valid detection
+  // CI status state
+  const [ciStatus, setCiStatus] = useState<CIStatus | null>(null);
+  const [ciLoading, setCiLoading] = useState(true);
+  const [ciError, setCiError] = useState<string | null>(null);
+  const [useLatestOverride, setUseLatestOverride] = useState(false);
+  
+  // Fetch CI status on mount
+  useEffect(() => {
+    async function checkCIStatus() {
+      try {
+        setCiLoading(true);
+        const response = await fetch('/api/check-ci-status');
+        const data: CIStatusResponse = await response.json();
+        
+        if (data.status === 'ok' && data.data) {
+          setCiStatus(data.data);
+        } else if (data.status === 'error') {
+          setCiError(data.message || 'Failed to check CI status');
+        }
+      } catch (err) {
+        setCiError('Could not check CI status');
+      } finally {
+        setCiLoading(false);
+      }
+    }
+    
+    checkCIStatus();
+  }, []);
+  
+  // Redirect if no valid detection, generate script when CI check completes
   useEffect(() => {
     if (!canGenerate) {
       router.push('/update');
       return;
     }
     
-    generateScript();
-  }, [canGenerate, router]);
+    // Wait for CI status check to complete before generating
+    if (!ciLoading) {
+      generateScript();
+    }
+  }, [canGenerate, router, ciLoading, useLatestOverride]);
   
   const generateScript = async () => {
     if (!state.platform || !state.hisePath) return;
     
     setLoading(true);
     setError(null);
+    
+    // Determine which commit to use
+    let targetCommit: string | undefined;
+    if (ciStatus && !ciStatus.isLatestPassing && !useLatestOverride && ciStatus.lastPassingCommit) {
+      targetCommit = ciStatus.lastPassingCommit.sha;
+    }
     
     try {
       const response = await fetch('/api/generate-update-script', {
@@ -122,6 +162,7 @@ export default function UpdateGeneratePage() {
           architecture: state.architecture || 'x64',
           hisePath: state.hisePath,
           hasFaust: state.hasFaust,
+          targetCommit,
         }),
       });
       
@@ -172,10 +213,12 @@ export default function UpdateGeneratePage() {
         </CardHeader>
         
         <CardContent className="space-y-6">
-          {loading && (
+          {(loading || ciLoading) && (
             <div className="flex items-center justify-center py-12">
               <RefreshCw className="w-8 h-8 text-accent animate-spin" />
-              <span className="ml-3 text-gray-400">Generating script...</span>
+              <span className="ml-3 text-gray-400">
+                {ciLoading ? 'Checking CI status...' : 'Generating script...'}
+              </span>
             </div>
           )}
           
@@ -196,6 +239,23 @@ export default function UpdateGeneratePage() {
           
           {result && !loading && (
             <>
+              {/* CI Status Alert */}
+              {ciStatus && !ciStatus.isLatestPassing && (
+                <CIStatusAlert
+                  ciStatus={ciStatus}
+                  useLatestOverride={useLatestOverride}
+                  onOverrideChange={setUseLatestOverride}
+                  isEasyMode={isEasyMode}
+                />
+              )}
+              
+              {/* CI Error (non-blocking) */}
+              {ciError && (
+                <Alert variant="info">
+                  Could not check CI status: {ciError}. Proceeding with latest commit.
+                </Alert>
+              )}
+              
               {/* HISE Path Display */}
               <PathDisplay 
                 path={state.hisePath}

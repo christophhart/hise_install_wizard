@@ -35,6 +35,7 @@ export async function POST(request: NextRequest) {
       architecture: body.architecture,
       hisePath: body.hisePath,
       hasFaust: body.hasFaust ?? false,
+      targetCommit: body.targetCommit,
     });
     
     return NextResponse.json(result);

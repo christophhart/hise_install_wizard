@@ -6,20 +6,26 @@ import {
   generateUpdateHeader,
   generatePowerShellUtilities,
   generatePowerShellErrorHandler,
-  generateGitPullSectionPS,
   generateCompileSectionWindows,
   generateVerifySectionPS,
   generateUpdateSuccessMessagePS,
+  generateGitCloneWithCommitPS,
+  generateGitUpdateWithCommitPS,
+  generateCommitNotePS,
 } from './common';
 
 export function generateWindowsScript(config: ScriptConfig): string {
-  const { installPath, includeFaust, includeIPP, skipPhases } = config;
+  const { installPath, includeFaust, includeIPP, skipPhases, targetCommit } = config;
   
   // Escape backslashes for PowerShell
   const escapedPath = installPath.replace(/\\/g, '\\');
   
-  const script = `# ${generateHeader(config).split('\n').join('\n# ')}
-
+  // Generate commit note if using specific commit
+  const commitHeaderNote = targetCommit 
+    ? `\n# NOTE: Using specific commit ${targetCommit.substring(0, 7)} (CI build failing on latest)\n`
+    : '';
+  
+  const script = `# ${generateHeader(config).split('\n').join('\n# ')}${commitHeaderNote}
 # ============================================
 # HISE Setup Script for Windows
 # ============================================
@@ -91,11 +97,13 @@ if (-not (Test-Path "$HISE_PATH\\.git")) {
     Write-Step "Updating HISE repository..."
     Set-Location $HISE_PATH
     git fetch origin
-    git pull origin develop
 }
 
 Set-Location $HISE_PATH
-git checkout develop
+${targetCommit ? `# Using specific commit due to CI build failure on latest
+git checkout ${targetCommit}
+if ($LASTEXITCODE -ne 0) { Handle-Error 2 "Failed to checkout commit ${targetCommit.substring(0, 7)}" }` : `git checkout develop
+git pull origin develop`}
 git submodule update --init
 Set-Location JUCE
 git checkout juce6
@@ -350,14 +358,18 @@ Write-Host ""
 // ============================================
 
 export function generateWindowsUpdateScript(config: UpdateScriptConfig): string {
-  const { hisePath, hasFaust } = config;
+  const { hisePath, hasFaust, targetCommit } = config;
   
   // Escape backslashes for PowerShell
   const escapedPath = hisePath.replace(/\\/g, '\\');
   const buildConfig = hasFaust ? 'Release with Faust' : 'Release';
   
-  const script = `# ${generateUpdateHeader(config).split('\n').join('\n# ')}
-
+  // Generate commit note if using specific commit
+  const commitHeaderNote = targetCommit 
+    ? `\n# NOTE: Using specific commit ${targetCommit.substring(0, 7)} (CI build failing on latest)\n`
+    : '';
+  
+  const script = `# ${generateUpdateHeader(config).split('\n').join('\n# ')}${commitHeaderNote}
 # ============================================
 # HISE Update Script for Windows
 # ============================================
@@ -406,7 +418,7 @@ Write-Success "HISE installation validated"
 # ============================================
 # Phase 2: Update Repository
 # ============================================
-${generateGitPullSectionPS(escapedPath)}
+${generateGitUpdateWithCommitPS(escapedPath, targetCommit)}
 
 # ============================================
 # Phase 3: Compile HISE

@@ -6,23 +6,27 @@ import {
   generateUpdateHeader,
   generateBashUtilities,
   generateBashErrorHandler,
-  generateGitPullSectionBash,
   generateCompileSectionMacOS,
   generateVerifySectionBash,
   generateUpdateSuccessMessageBash,
+  generateGitUpdateWithCommitBash,
 } from './common';
 
 export function generateMacOSScript(config: ScriptConfig): string {
-  const { installPath, includeFaust, architecture, skipPhases } = config;
+  const { installPath, includeFaust, architecture, skipPhases, targetCommit } = config;
   
   // Expand ~ for home directory
   const expandedPath = installPath.startsWith('~') 
     ? installPath.replace('~', '$HOME')
     : installPath;
   
+  // Generate commit note if using specific commit
+  const commitHeaderNote = targetCommit 
+    ? `\n# NOTE: Using specific commit ${targetCommit.substring(0, 7)} (CI build failing on latest)\n`
+    : '';
+  
   const script = `#!/bin/bash
-# ${generateHeader(config).split('\n').join('\n# ')}
-
+# ${generateHeader(config).split('\n').join('\n# ')}${commitHeaderNote}
 # ============================================
 # HISE Setup Script for macOS
 # ============================================
@@ -93,11 +97,12 @@ else
     step "Updating HISE repository..."
     cd "$HISE_PATH"
     git fetch origin
-    git pull origin develop
 fi
 
 cd "$HISE_PATH"
-git checkout develop
+${targetCommit ? `# Using specific commit due to CI build failure on latest
+git checkout ${targetCommit} || handle_error 2 "Failed to checkout commit ${targetCommit.substring(0, 7)}"` : `git checkout develop
+git pull origin develop`}
 git submodule update --init
 cd JUCE && git checkout juce6 && cd ..
 
@@ -345,7 +350,7 @@ echo ""
 // ============================================
 
 export function generateMacOSUpdateScript(config: UpdateScriptConfig): string {
-  const { hisePath, hasFaust, architecture } = config;
+  const { hisePath, hasFaust, architecture, targetCommit } = config;
   
   // Expand ~ for home directory
   const expandedPath = hisePath.startsWith('~') 
@@ -354,9 +359,13 @@ export function generateMacOSUpdateScript(config: UpdateScriptConfig): string {
   
   const buildConfig = hasFaust ? 'Release with Faust' : 'Release';
   
+  // Generate commit note if using specific commit
+  const commitHeaderNote = targetCommit 
+    ? `\n# NOTE: Using specific commit ${targetCommit.substring(0, 7)} (CI build failing on latest)\n`
+    : '';
+  
   const script = `#!/bin/bash
-# ${generateUpdateHeader(config).split('\n').join('\n# ')}
-
+# ${generateUpdateHeader(config).split('\n').join('\n# ')}${commitHeaderNote}
 # ============================================
 # HISE Update Script for macOS
 # ============================================
@@ -398,7 +407,7 @@ success "HISE installation validated"
 # ============================================
 # Phase 2: Update Repository
 # ============================================
-${generateGitPullSectionBash(expandedPath)}
+${generateGitUpdateWithCommitBash(expandedPath, targetCommit)}
 
 # ============================================
 # Phase 3: Compile HISE

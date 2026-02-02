@@ -4,11 +4,13 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useWizard } from '@/contexts/WizardContext';
 import { GenerateScriptResponse, Platform } from '@/types/wizard';
+import { CIStatus, CIStatusResponse } from '@/lib/github';
 import PageContainer from '@/components/layout/PageContainer';
 import PhaseStepper from '@/components/wizard/PhaseStepper';
 import ScriptPreview from '@/components/wizard/ScriptPreview';
 import SetupSummary from '@/components/wizard/SetupSummary';
 import PathDisplay from '@/components/wizard/PathDisplay';
+import CIStatusAlert from '@/components/wizard/CIStatusAlert';
 import Button from '@/components/ui/Button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/Card';
 import Alert from '@/components/ui/Alert';
@@ -96,21 +98,59 @@ export default function GeneratePage() {
   const [uniqueFilename, setUniqueFilename] = useState<string>('');
   const [hasDownloaded, setHasDownloaded] = useState(false);
   
-  // Redirect if no platform selected
+  // CI status state
+  const [ciStatus, setCiStatus] = useState<CIStatus | null>(null);
+  const [ciLoading, setCiLoading] = useState(true);
+  const [ciError, setCiError] = useState<string | null>(null);
+  const [useLatestOverride, setUseLatestOverride] = useState(false);
+  
+  // Fetch CI status on mount
+  useEffect(() => {
+    async function checkCIStatus() {
+      try {
+        setCiLoading(true);
+        const response = await fetch('/api/check-ci-status');
+        const data: CIStatusResponse = await response.json();
+        
+        if (data.status === 'ok' && data.data) {
+          setCiStatus(data.data);
+        } else if (data.status === 'error') {
+          setCiError(data.message || 'Failed to check CI status');
+        }
+      } catch (err) {
+        setCiError('Could not check CI status');
+      } finally {
+        setCiLoading(false);
+      }
+    }
+    
+    checkCIStatus();
+  }, []);
+  
+  // Redirect if no platform selected, generate script when CI check completes
   useEffect(() => {
     if (!state.platform) {
       router.push('/setup');
       return;
     }
     
-    generateScript();
-  }, [state.platform]);
+    // Wait for CI status check to complete before generating
+    if (!ciLoading) {
+      generateScript();
+    }
+  }, [state.platform, ciLoading, useLatestOverride]);
   
   const generateScript = async () => {
     if (!state.platform) return;
     
     setLoading(true);
     setError(null);
+    
+    // Determine which commit to use
+    let targetCommit: string | undefined;
+    if (ciStatus && !ciStatus.isLatestPassing && !useLatestOverride && ciStatus.lastPassingCommit) {
+      targetCommit = ciStatus.lastPassingCommit.sha;
+    }
     
     try {
       const response = await fetch('/api/generate-script', {
@@ -123,6 +163,7 @@ export default function GeneratePage() {
           includeFaust: state.includeFaust,
           includeIPP: state.includeIPP,
           skipPhases: getSkipPhases(),
+          targetCommit,
         }),
       });
       
@@ -174,10 +215,12 @@ export default function GeneratePage() {
         </CardHeader>
         
         <CardContent className="space-y-6">
-          {loading && (
+          {(loading || ciLoading) && (
             <div className="flex items-center justify-center py-12">
               <RefreshCw className="w-8 h-8 text-accent animate-spin" />
-              <span className="ml-3 text-gray-400">Generating script...</span>
+              <span className="ml-3 text-gray-400">
+                {ciLoading ? 'Checking CI status...' : 'Generating script...'}
+              </span>
             </div>
           )}
           
@@ -198,6 +241,23 @@ export default function GeneratePage() {
           
           {result && !loading && (
             <>
+              {/* CI Status Alert */}
+              {ciStatus && !ciStatus.isLatestPassing && (
+                <CIStatusAlert
+                  ciStatus={ciStatus}
+                  useLatestOverride={useLatestOverride}
+                  onOverrideChange={setUseLatestOverride}
+                  isEasyMode={isEasyMode}
+                />
+              )}
+              
+              {/* CI Error (non-blocking) */}
+              {ciError && (
+                <Alert variant="info">
+                  Could not check CI status: {ciError}. Proceeding with latest commit.
+                </Alert>
+              )}
+              
               {/* Install Path Display */}
               <PathDisplay 
                 path={state.installPath}

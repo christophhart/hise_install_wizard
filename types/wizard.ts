@@ -34,6 +34,7 @@ export interface GenerateScriptRequest {
   includeFaust: boolean;
   includeIPP: boolean;
   skipPhases: number[];
+  targetCommit?: string; // If provided, checkout this specific commit instead of latest
 }
 
 // Alias for internal script generation use
@@ -90,6 +91,7 @@ export interface UpdateScriptConfig {
   architecture: Exclude<Architecture, null>;
   hisePath: string;
   hasFaust: boolean;
+  targetCommit?: string; // If provided, checkout this specific commit instead of latest
 }
 
 export interface UpdateScriptResponse {
