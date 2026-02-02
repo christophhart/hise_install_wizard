@@ -531,12 +531,32 @@ export const updateHowToRun: Record<Exclude<Platform, null>, { steps: UpdateHowT
       },
       {
         title: {
-          easy: 'Navigate to Downloads and run the script',
+          easy: 'Navigate to Downloads',
+          dev: 'Navigate',
+        },
+        command: {
+          easy: 'cd $HOME\\Downloads',
+          dev: 'cd $HOME\\Downloads',
+        },
+      },
+      {
+        title: {
+          easy: 'Allow script execution for this session',
+          dev: 'Set execution policy',
+        },
+        command: {
+          easy: 'Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process',
+          dev: 'Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process',
+        },
+      },
+      {
+        title: {
+          easy: 'Run the script',
           dev: 'Run script',
         },
         command: {
-          easy: 'cd $HOME\\Downloads; .\\"hise-update.ps1"',
-          dev: 'cd $HOME\\Downloads; .\\"hise-update.ps1"',
+          easy: '.\\"hise-update.ps1"',
+          dev: '.\\"hise-update.ps1"',
         },
       },
     ],

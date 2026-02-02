@@ -91,7 +91,10 @@ if (-not $gitPath) {
 # Clone or update HISE repository
 if (-not (Test-Path "$HISE_PATH\\.git")) {
     Write-Step "Cloning HISE repository..."
-    New-Item -ItemType Directory -Force -Path (Split-Path $HISE_PATH -Parent) | Out-Null
+    $parentPath = Split-Path $HISE_PATH -Parent
+    if ($parentPath -and $parentPath -ne "" -and $parentPath -notmatch '^[A-Za-z]:$') {
+        New-Item -ItemType Directory -Force -Path $parentPath | Out-Null
+    }
     git clone https://github.com/christophhart/HISE.git "$HISE_PATH"
     if ($LASTEXITCODE -ne 0) { Handle-Error 2 "Failed to clone HISE repository" }
 } else {

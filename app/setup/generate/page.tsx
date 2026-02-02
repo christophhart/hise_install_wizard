@@ -28,7 +28,7 @@ const runCommands: Record<Exclude<Platform, null>, { steps: { title: string; com
     steps: [
       { title: 'Open PowerShell as Administrator' },
       { title: 'Navigate to Downloads', command: 'cd $HOME\\Downloads' },
-      { title: 'Allow script execution', command: 'Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser' },
+      { title: 'Allow script execution for this session', command: 'Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process' },
       { title: 'Run the script', command: (filename: string) => `.\\"${filename}"` },
     ],
   },
