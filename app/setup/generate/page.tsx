@@ -5,96 +5,60 @@ import { useRouter } from 'next/navigation';
 import { useWizard } from '@/contexts/WizardContext';
 import { GenerateScriptResponse, Platform } from '@/types/wizard';
 import { CIStatus, CIStatusResponse } from '@/lib/github';
+import { VerifiableTool } from '@/lib/verification';
 import PageContainer from '@/components/layout/PageContainer';
 import PhaseStepper from '@/components/wizard/PhaseStepper';
 import ScriptPreview from '@/components/wizard/ScriptPreview';
-import SetupSummary from '@/components/wizard/SetupSummary';
-import PathDisplay from '@/components/wizard/PathDisplay';
+import SetupSummary, { getManualPhases } from '@/components/wizard/SetupSummary';
 import CIStatusAlert from '@/components/wizard/CIStatusAlert';
 import Button from '@/components/ui/Button';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/Card';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import Alert from '@/components/ui/Alert';
 import InlineCopy from '@/components/ui/InlineCopy';
-import { ArrowLeft, Download, RefreshCw, Terminal } from 'lucide-react';
 import Collapsible from '@/components/ui/Collapsible';
+import { ArrowLeft, Download, RefreshCw, Terminal, Folder, Check, AlertTriangle, Code } from 'lucide-react';
 import { useExplanation } from '@/hooks/useExplanation';
-import { generatePage, howToRun, alerts, regenerateInfo } from '@/lib/content/explanations';
+import { generatePage, alerts, regenerateInfo } from '@/lib/content/explanations';
 import { downloadAsFile, generateUniqueFilename } from '@/lib/utils/download';
 import InfoPopup from '@/components/ui/InfoPopup';
-import IDEVerification from '@/components/wizard/IDEVerification';
-import { getManualPhases } from '@/components/wizard/SetupSummary';
 
-// Commands for each step based on platform
-const stepCommands: Record<Exclude<Platform, null>, (string | ((filename: string) => string))[]> = {
-  windows: [
-    '', // Step 1: Install VS2026 - no command (manual)
-    '', // Step 2: Open PowerShell - no command
-    'cd $HOME\\Downloads',
-    'Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser',
-    (filename: string) => `.\\"${filename}"`,
-  ],
-  macos: [
-    'xcode-select --install', // Step 1: Install Xcode CLT
-    '', // Step 2: Open Terminal - no command
-    'cd ~/Downloads',
-    (filename: string) => `chmod +x "${filename}"`,
-    (filename: string) => `./"${filename}"`,
-  ],
-  linux: [
-    '', // Step 1: no command (GCC automated)
-    'cd ~/Downloads',
-    (filename: string) => `chmod +x "${filename}"`,
-    (filename: string) => `./"${filename}"`,
-  ],
+// Commands for running the script (simplified - no IDE installation steps)
+const runCommands: Record<Exclude<Platform, null>, { steps: { title: string; command?: string | ((filename: string) => string) }[] }> = {
+  windows: {
+    steps: [
+      { title: 'Open PowerShell as Administrator' },
+      { title: 'Navigate to Downloads', command: 'cd $HOME\\Downloads' },
+      { title: 'Allow script execution', command: 'Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser' },
+      { title: 'Run the script', command: (filename: string) => `.\\"${filename}"` },
+    ],
+  },
+  macos: {
+    steps: [
+      { title: 'Open Terminal' },
+      { title: 'Navigate to Downloads', command: 'cd ~/Downloads' },
+      { title: 'Make executable', command: (filename: string) => `chmod +x "${filename}"` },
+      { title: 'Run the script', command: (filename: string) => `./"${filename}"` },
+    ],
+  },
+  linux: {
+    steps: [
+      { title: 'Open Terminal' },
+      { title: 'Navigate to Downloads', command: 'cd ~/Downloads' },
+      { title: 'Make executable', command: (filename: string) => `chmod +x "${filename}"` },
+      { title: 'Run the script', command: (filename: string) => `./"${filename}"` },
+    ],
+  },
 };
 
-// Render how-to-run instructions based on explanation mode
-function renderHowToRunInstructions(
-  platform: Platform,
-  filename: string,
-  get: (content: { easy: string; dev: string }) => string,
-  getOptional: (content: { easy: string; dev: string | null }) => string,
-  isEasyMode: boolean
-) {
-  if (!platform) return null;
-  
-  const steps = howToRun[platform].steps;
-  const commands = stepCommands[platform];
-  
-  return (
-    <div className="text-sm text-gray-400 space-y-3">
-      {/* Windows admin alert */}
-      {platform === 'windows' && (
-        <Alert variant="info">
-          {get(alerts.windowsAdmin)}
-        </Alert>
-      )}
-      
-      {steps.map((step, index) => {
-        const command = commands[index];
-        const commandStr = typeof command === 'function' ? command(filename) : command;
-        const description = step.description ? getOptional(step.description) : null;
-        
-        return (
-          <div key={index}>
-            <p className="mb-2">
-              {index + 1}. {get(step.title)}
-              {isEasyMode && description && (
-                <span className="text-gray-500 ml-1">- {description}</span>
-              )}
-            </p>
-            {commandStr && <InlineCopy text={commandStr} />}
-          </div>
-        );
-      })}
-    </div>
-  );
+interface VerificationStatus {
+  ide: boolean | null;
+  ipp: boolean | null;
 }
 
 export default function GeneratePage() {
   const router = useRouter();
   const { state, getSkipPhases } = useWizard();
-  const { get, getOptional, isEasyMode } = useExplanation();
+  const { get, isEasyMode } = useExplanation();
   
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -108,14 +72,24 @@ export default function GeneratePage() {
   const [ciError, setCiError] = useState<string | null>(null);
   const [useLatestOverride, setUseLatestOverride] = useState(false);
   
-  // IDE verification state
-  const [ideVerified, setIdeVerified] = useState(false);
-  const [ippVerified, setIppVerified] = useState(false);
+  // Verification state
+  const [verificationStatus, setVerificationStatus] = useState<VerificationStatus>({
+    ide: null,
+    ipp: null,
+  });
   
-  // Check if platform has manual phases that need verification
+  // Check if platform has manual phases
   const hasManualPhases = state.platform 
     ? getManualPhases(state.platform, state.includeIPP).length > 0 
     : false;
+  
+  // Check if any required tools are unverified
+  const hasUnverifiedTools = state.platform && hasManualPhases && (
+    // IDE is required and not verified (except on Linux)
+    (state.platform !== 'linux' && verificationStatus.ide !== true) ||
+    // IPP is selected but not verified (Windows only)
+    (state.platform === 'windows' && state.includeIPP && verificationStatus.ipp !== true)
+  );
   
   // Fetch CI status on mount
   useEffect(() => {
@@ -147,7 +121,6 @@ export default function GeneratePage() {
       return;
     }
     
-    // Wait for CI status check to complete before generating
     if (!ciLoading) {
       generateScript();
     }
@@ -159,7 +132,6 @@ export default function GeneratePage() {
     setLoading(true);
     setError(null);
     
-    // Determine which commit to use
     let targetCommit: string | undefined;
     if (ciStatus && !ciStatus.isLatestPassing && !useLatestOverride && ciStatus.lastPassingCommit) {
       targetCommit = ciStatus.lastPassingCommit.sha;
@@ -186,7 +158,6 @@ export default function GeneratePage() {
       
       const data: GenerateScriptResponse = await response.json();
       setResult(data);
-      // Generate unique filename for this download
       setUniqueFilename(generateUniqueFilename(data.filename));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');
@@ -197,7 +168,6 @@ export default function GeneratePage() {
   
   const handleDownload = () => {
     if (!result) return;
-    
     downloadAsFile(result.script, uniqueFilename);
     setHasDownloaded(true);
   };
@@ -205,6 +175,10 @@ export default function GeneratePage() {
   const handleRegenerate = async () => {
     await generateScript();
     setHasDownloaded(false);
+  };
+  
+  const handleVerificationChange = (tool: VerifiableTool, verified: boolean) => {
+    setVerificationStatus(prev => ({ ...prev, [tool]: verified }));
   };
   
   const handleBack = () => {
@@ -215,6 +189,8 @@ export default function GeneratePage() {
     return null;
   }
   
+  const commands = runCommands[state.platform];
+  
   return (
     <PageContainer>
       <PhaseStepper currentPhase={1} className="mb-8" />
@@ -222,12 +198,40 @@ export default function GeneratePage() {
       <Card>
         <CardHeader>
           <CardTitle>{get(generatePage.title)}</CardTitle>
-          <CardDescription>
-            {get(generatePage.description)}
-          </CardDescription>
+          
+          {/* Integrated path display in header */}
+          <div className="mt-3">
+            <p className="text-sm text-gray-400 mb-2">
+              {isEasyMode 
+                ? 'Your script is configured to install HISE to:'
+                : 'Target directory:'}
+            </p>
+            <div className="flex items-center gap-3 bg-background border border-border rounded-lg px-4 py-3">
+              <Folder className="w-5 h-5 text-accent flex-shrink-0" />
+              <span className="font-mono text-sm text-gray-200 truncate flex-1" title={state.installPath}>
+                {state.installPath}
+              </span>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <div 
+                  className={`
+                    w-5 h-5 rounded border flex items-center justify-center
+                    ${state.detectedComponents.hiseRepo 
+                      ? 'bg-success/20 border-success' 
+                      : 'bg-transparent border-border'}
+                  `}
+                >
+                  {state.detectedComponents.hiseRepo && (
+                    <Check className="w-3 h-3 text-success" />
+                  )}
+                </div>
+                <span className="text-xs text-gray-500">HISE Repository</span>
+              </div>
+            </div>
+          </div>
         </CardHeader>
         
         <CardContent className="space-y-6">
+          {/* Loading state */}
           {(loading || ciLoading) && (
             <div className="flex items-center justify-center py-12">
               <RefreshCw className="w-8 h-8 text-accent animate-spin" />
@@ -237,6 +241,7 @@ export default function GeneratePage() {
             </div>
           )}
           
+          {/* Error state */}
           {error && (
             <Alert variant="error" title="Generation Failed">
               {error}
@@ -271,32 +276,7 @@ export default function GeneratePage() {
                 </Alert>
               )}
               
-              {/* IDE Verification (for platforms with manual phases) */}
-              {hasManualPhases && state.platform !== 'linux' && (
-                <IDEVerification
-                  platform={state.platform}
-                  includeIPP={state.includeIPP}
-                  onVerificationChange={(ide, ipp) => {
-                    setIdeVerified(ide);
-                    setIppVerified(ipp);
-                  }}
-                  explanationMode={state.explanationMode}
-                />
-              )}
-              
-              {/* Install Path Display */}
-              <PathDisplay 
-                path={state.installPath}
-                label="Installation Folder"
-                indicator={{
-                  label: 'HISE Repository',
-                  active: state.detectedComponents.hiseRepo,
-                  colorScheme: 'success',
-                }}
-                className="mb-6"
-              />
-              
-              {/* Warnings */}
+              {/* Warnings from script generation */}
               {result.warnings.length > 0 && (
                 <div className="space-y-2">
                   {result.warnings.map((warning, i) => (
@@ -307,76 +287,129 @@ export default function GeneratePage() {
                 </div>
               )}
               
-              {/* Steps Explanation */}
-              <p className="text-sm text-gray-400">
-                {get(generatePage.stepsExplanation)}
-              </p>
-              
-              {/* Setup Summary */}
-              <div className="bg-background border border-border rounded-lg p-4">
+              {/* Setup Summary with Steps 1 & 2 */}
+              <div className="bg-background border border-border rounded-lg p-5">
                 <SetupSummary
                   platform={state.platform}
                   skipPhases={getSkipPhases()}
                   includeFaust={state.includeFaust}
                   includeIPP={state.includeIPP}
-                  ideVerified={ideVerified}
-                  ippVerified={ippVerified}
+                  isEasyMode={isEasyMode}
+                  verificationStatus={verificationStatus}
+                  onVerificationChange={handleVerificationChange}
                 />
               </div>
               
-              {/* Download & Regenerate Buttons */}
-              <div className="flex items-center justify-center gap-3">
-                <Button 
-                  onClick={handleDownload} 
-                  size="lg"
-                  disabled={hasDownloaded}
-                >
-                  <Download className="w-5 h-5" />
-                  Download {uniqueFilename}
-                </Button>
+              {/* Step 3: Download & Run */}
+              <div className="bg-background border border-border rounded-lg p-5">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="flex items-center justify-center w-7 h-7 rounded-full bg-accent text-background text-sm font-bold">
+                    {hasManualPhases ? 3 : 2}
+                  </div>
+                  <h4 className="font-medium text-white">
+                    {isEasyMode ? 'Download & Run' : 'Download'}
+                  </h4>
+                </div>
                 
-                {hasDownloaded && (
-                  <>
-                    <Button 
-                      onClick={handleRegenerate}
-                      variant="secondary"
-                      size="lg"
-                    >
-                      <RefreshCw className="w-4 h-4" />
-                      Regenerate
-                    </Button>
-                    
-                    <InfoPopup>
-                      <div className="space-y-1">
-                        <span className="text-sm font-medium text-accent">
-                          {get(regenerateInfo.title)}
-                        </span>
-                        <p className="text-xs text-gray-400 leading-relaxed">
-                          {get(regenerateInfo.description)}
+                {/* Unverified warning */}
+                {hasUnverifiedTools && (
+                  <Alert variant="warning" className="mb-4">
+                    <div className="flex items-start gap-2">
+                      <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-sm font-medium">
+                          {isEasyMode 
+                            ? 'Some required tools have not been verified'
+                            : 'Prerequisites not verified'}
+                        </p>
+                        <p className="text-xs text-gray-400 mt-1">
+                          {isEasyMode
+                            ? 'The setup script may fail if they are not installed correctly. Use the Verify buttons above to check your installation.'
+                            : 'Script may fail. Verify prerequisites above.'}
                         </p>
                       </div>
-                    </InfoPopup>
-                  </>
+                    </div>
+                  </Alert>
                 )}
+                
+                {/* Download Button */}
+                <div className="flex items-center justify-center gap-3 py-4">
+                  <Button 
+                    onClick={handleDownload} 
+                    size="lg"
+                    disabled={hasDownloaded}
+                  >
+                    <Download className="w-5 h-5" />
+                    Download {uniqueFilename}
+                  </Button>
+                  
+                  {hasDownloaded && (
+                    <>
+                      <Button 
+                        onClick={handleRegenerate}
+                        variant="secondary"
+                        size="lg"
+                      >
+                        <RefreshCw className="w-4 h-4" />
+                        Regenerate
+                      </Button>
+                      
+                      <InfoPopup>
+                        <div className="space-y-1">
+                          <span className="text-sm font-medium text-accent">
+                            {get(regenerateInfo.title)}
+                          </span>
+                          <p className="text-xs text-gray-400 leading-relaxed">
+                            {get(regenerateInfo.description)}
+                          </p>
+                        </div>
+                      </InfoPopup>
+                    </>
+                  )}
+                </div>
+                
+                {/* Windows admin alert */}
+                {state.platform === 'windows' && (
+                  <Alert variant="info" className="mb-4">
+                    {get(alerts.windowsAdmin)}
+                  </Alert>
+                )}
+                
+                {/* How to Run */}
+                <Collapsible
+                  title={isEasyMode ? "How to run the script" : "Run instructions"}
+                  icon={<Terminal className="w-4 h-4 text-accent" />}
+                  defaultOpen={true}
+                >
+                  <div className="space-y-3 text-sm text-gray-400">
+                    {commands.steps.map((step, index) => {
+                      const command = step.command;
+                      const commandStr = typeof command === 'function' 
+                        ? command(uniqueFilename) 
+                        : command;
+                      
+                      return (
+                        <div key={index}>
+                          <p className="mb-2">{index + 1}. {step.title}</p>
+                          {commandStr && <InlineCopy text={commandStr} />}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </Collapsible>
               </div>
               
-              {/* Instructions */}
+              {/* Script Preview (collapsed) */}
               <Collapsible
-                title="How to run the script"
-                icon={<Terminal className="w-4 h-4 text-accent" />}
-                defaultOpen={true}
+                title="Script Preview"
+                icon={<Code className="w-4 h-4 text-accent" />}
+                defaultOpen={false}
               >
-                {renderHowToRunInstructions(state.platform, uniqueFilename, get, getOptional, isEasyMode)}
-              </Collapsible>
-              
-              {/* Script Preview */}
-              <div className="space-y-2">
-                <h4 className="font-medium text-gray-300">Script Preview</h4>
                 <ScriptPreview 
                   script={result.script} 
                   filename={result.filename}
                 />
-              </div>
+              </Collapsible>
             </>
           )}
         </CardContent>
