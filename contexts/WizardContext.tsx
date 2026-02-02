@@ -9,9 +9,7 @@ import {
   ExplanationMode,
   DEFAULT_PATHS 
 } from '@/types/wizard';
-
-// Local storage key for shared explanation mode preference
-const EXPLANATION_MODE_KEY = 'hise-wizard-explanation-mode';
+import { EXPLANATION_MODE_KEY, EXPLANATION_MODE_CHANGE_EVENT } from '@/lib/constants';
 
 const initialDetectedComponents: DetectedComponents = {
   git: false,
@@ -67,8 +65,8 @@ export function WizardProvider({ children }: { children: ReactNode }) {
       setState(prev => ({ ...prev, explanationMode: e.detail }));
     };
     
-    window.addEventListener('explanationModeChange', handleModeChange as EventListener);
-    return () => window.removeEventListener('explanationModeChange', handleModeChange as EventListener);
+    window.addEventListener(EXPLANATION_MODE_CHANGE_EVENT, handleModeChange as EventListener);
+    return () => window.removeEventListener(EXPLANATION_MODE_CHANGE_EVENT, handleModeChange as EventListener);
   }, []);
 
   const setPlatform = useCallback((platform: Platform) => {

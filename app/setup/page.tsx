@@ -11,10 +11,12 @@ import ArchitectureSelector from '@/components/wizard/ArchitectureSelector';
 import PathInput, { validatePath } from '@/components/wizard/PathInput';
 import ComponentChecklist from '@/components/wizard/ComponentChecklist';
 import Button from '@/components/ui/Button';
+import SectionBadge from '@/components/ui/SectionBadge';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/Card';
 import { ArrowRight } from 'lucide-react';
 import { useExplanation } from '@/hooks/useExplanation';
 import { setupPage } from '@/lib/content/explanations';
+import { detectPlatform } from '@/lib/utils/platform';
 
 export default function SetupPage() {
   const router = useRouter();
@@ -33,16 +35,6 @@ export default function SetupPage() {
   
   // Auto-detect platform on mount
   useEffect(() => {
-    const detectPlatform = (): Platform => {
-      if (typeof navigator === 'undefined') return null;
-      
-      const userAgent = navigator.userAgent.toLowerCase();
-      if (userAgent.includes('win')) return 'windows';
-      if (userAgent.includes('mac')) return 'macos';
-      if (userAgent.includes('linux')) return 'linux';
-      return null;
-    };
-    
     const detected = detectPlatform();
     setDetectedPlatform(detected);
     
@@ -78,7 +70,7 @@ export default function SetupPage() {
           {/* Section 1: Platform Selection */}
           <div className="space-y-4">
             <h3 className="text-sm font-medium text-gray-300 flex items-center gap-2">
-              <span className="w-6 h-6 rounded-full bg-accent text-background text-xs font-bold flex items-center justify-center">1</span>
+              <SectionBadge number={1} />
               Platform
             </h3>
             <PlatformSelector
@@ -104,7 +96,7 @@ export default function SetupPage() {
               
               <div className="space-y-4">
                 <h3 className="text-sm font-medium text-gray-300 flex items-center gap-2">
-                  <span className="w-6 h-6 rounded-full bg-accent text-background text-xs font-bold flex items-center justify-center">2</span>
+                  <SectionBadge number={2} />
                   Installation Path
                 </h3>
                 <PathInput
@@ -123,7 +115,7 @@ export default function SetupPage() {
               
               <div className="space-y-4">
                 <h3 className="text-sm font-medium text-gray-300 flex items-center gap-2">
-                  <span className="w-6 h-6 rounded-full bg-accent text-background text-xs font-bold flex items-center justify-center">3</span>
+                  <SectionBadge number={3} />
                   Components
                 </h3>
                 

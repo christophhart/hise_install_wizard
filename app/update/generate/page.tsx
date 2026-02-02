@@ -7,64 +7,16 @@ import { UpdateScriptResponse, Platform } from '@/types/wizard';
 import PageContainer from '@/components/layout/PageContainer';
 import PhaseStepper from '@/components/wizard/PhaseStepper';
 import ScriptPreview from '@/components/wizard/ScriptPreview';
+import PathDisplay from '@/components/wizard/PathDisplay';
 import Button from '@/components/ui/Button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/Card';
 import Alert from '@/components/ui/Alert';
 import InlineCopy from '@/components/ui/InlineCopy';
 import Collapsible from '@/components/ui/Collapsible';
-import { ArrowLeft, Download, RefreshCw, Terminal, Folder, Check, Zap } from 'lucide-react';
+import { ArrowLeft, Download, RefreshCw, Terminal, Check } from 'lucide-react';
 import { useExplanation } from '@/hooks/useExplanation';
-import { updateGeneratePage, updateHowToRun, updatePhases, updatePage } from '@/lib/content/explanations';
-
-// Generate unique filename with timestamp
-function generateUniqueFilename(baseFilename: string): string {
-  const timestamp = new Date().toISOString()
-    .replace(/[:.]/g, '-')
-    .replace('T', '_')
-    .slice(0, 19);
-  const ext = baseFilename.split('.').pop();
-  const name = baseFilename.replace(`.${ext}`, '');
-  return `${name}_${timestamp}.${ext}`;
-}
-
-// Install path display component
-function HisePathDisplay({ 
-  path, 
-  hasFaust,
-}: { 
-  path: string; 
-  hasFaust: boolean;
-}) {
-  return (
-    <div className="bg-background border border-border rounded-lg p-4 mb-6">
-      <div className="flex items-center gap-3">
-        <Folder className="w-5 h-5 text-accent flex-shrink-0" />
-        <div className="flex-1 min-w-0">
-          <p className="text-xs text-gray-500 mb-1">HISE Installation</p>
-          <p className="font-mono text-sm text-gray-200 truncate" title={path}>
-            {path}
-          </p>
-        </div>
-        <div className="flex items-center gap-2 flex-shrink-0">
-          <div 
-            className={`
-              w-5 h-5 rounded border flex items-center justify-center
-              ${hasFaust 
-                ? 'bg-accent/20 border-accent' 
-                : 'bg-transparent border-border'
-              }
-            `}
-          >
-            {hasFaust && <Zap className="w-3 h-3 text-accent" />}
-          </div>
-          <span className="text-xs text-gray-500">
-            {hasFaust ? 'Faust Build' : 'Standard Build'}
-          </span>
-        </div>
-      </div>
-    </div>
-  );
-}
+import { updateGeneratePage, updateHowToRun, updatePhases } from '@/lib/content/explanations';
+import { downloadAsFile, generateUniqueFilename } from '@/lib/utils/download';
 
 // Update summary component
 function UpdateSummary({ 
@@ -188,15 +140,7 @@ export default function UpdateGeneratePage() {
   const handleDownload = () => {
     if (!result) return;
     
-    const blob = new Blob([result.script], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = uniqueFilename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    downloadAsFile(result.script, uniqueFilename);
     
     // Generate new unique filename for next download
     setUniqueFilename(generateUniqueFilename(result.filename));
@@ -248,9 +192,15 @@ export default function UpdateGeneratePage() {
           {result && !loading && (
             <>
               {/* HISE Path Display */}
-              <HisePathDisplay 
-                path={state.hisePath} 
-                hasFaust={state.hasFaust} 
+              <PathDisplay 
+                path={state.hisePath}
+                label="HISE Installation"
+                indicator={{
+                  label: state.hasFaust ? 'Faust Build' : 'Standard Build',
+                  active: state.hasFaust,
+                  colorScheme: 'accent',
+                }}
+                className="mb-6"
               />
               
               {/* Warnings */}

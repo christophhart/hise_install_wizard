@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
 import { Copy, Check } from 'lucide-react';
+import { useClipboard } from '@/hooks/useClipboard';
 
 interface CodeBlockProps {
   code: string;
@@ -16,13 +16,7 @@ export default function CodeBlock({
   filename,
   className = '' 
 }: CodeBlockProps) {
-  const [copied, setCopied] = useState(false);
-
-  const handleCopy = async () => {
-    await navigator.clipboard.writeText(code);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
+  const { copied, copy } = useClipboard();
 
   return (
     <div className={`rounded border border-border overflow-hidden ${className}`}>
@@ -39,7 +33,7 @@ export default function CodeBlock({
           </code>
         </pre>
         <button
-          onClick={handleCopy}
+          onClick={() => copy(code)}
           className={`
             absolute top-2 right-2 p-2 rounded
             transition-colors duration-200

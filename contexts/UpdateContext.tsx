@@ -7,6 +7,8 @@ import {
   ExplanationMode,
   DetectionResult,
 } from '@/types/wizard';
+import { EXPLANATION_MODE_KEY, EXPLANATION_MODE_CHANGE_EVENT } from '@/lib/constants';
+import { detectPlatform } from '@/lib/utils/platform';
 
 interface UpdateState {
   platform: Platform;
@@ -38,9 +40,6 @@ interface UpdateContextType {
 
 const UpdateContext = createContext<UpdateContextType | undefined>(undefined);
 
-// Local storage key for shared explanation mode preference
-const EXPLANATION_MODE_KEY = 'hise-wizard-explanation-mode';
-
 export function UpdateProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<UpdateState>(initialState);
 
@@ -60,22 +59,12 @@ export function UpdateProvider({ children }: { children: ReactNode }) {
       setState(prev => ({ ...prev, explanationMode: e.detail }));
     };
     
-    window.addEventListener('explanationModeChange', handleModeChange as EventListener);
-    return () => window.removeEventListener('explanationModeChange', handleModeChange as EventListener);
+    window.addEventListener(EXPLANATION_MODE_CHANGE_EVENT, handleModeChange as EventListener);
+    return () => window.removeEventListener(EXPLANATION_MODE_CHANGE_EVENT, handleModeChange as EventListener);
   }, []);
 
   // Auto-detect platform on mount
   useEffect(() => {
-    const detectPlatform = (): Platform => {
-      if (typeof navigator === 'undefined') return null;
-      
-      const userAgent = navigator.userAgent.toLowerCase();
-      if (userAgent.includes('win')) return 'windows';
-      if (userAgent.includes('mac')) return 'macos';
-      if (userAgent.includes('linux')) return 'linux';
-      return null;
-    };
-    
     const detected = detectPlatform();
     if (detected && !state.platform) {
       setState(prev => ({

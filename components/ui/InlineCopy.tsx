@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
 import { Copy, Check } from 'lucide-react';
+import { useClipboard } from '@/hooks/useClipboard';
 
 interface InlineCopyProps {
   text: string;
@@ -9,13 +9,7 @@ interface InlineCopyProps {
 }
 
 export default function InlineCopy({ text, className = '' }: InlineCopyProps) {
-  const [copied, setCopied] = useState(false);
-
-  const handleCopy = async () => {
-    await navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
+  const { copied, copy } = useClipboard();
 
   return (
     <div className={`flex items-center gap-2 group ${className}`}>
@@ -23,7 +17,7 @@ export default function InlineCopy({ text, className = '' }: InlineCopyProps) {
         {text}
       </code>
       <button
-        onClick={handleCopy}
+        onClick={() => copy(text)}
         className={`
           p-2 rounded transition-all duration-200
           ${copied 

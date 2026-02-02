@@ -2,6 +2,8 @@
 
 import { useState, useMemo } from 'react';
 import { Copy, Check, Download, ChevronDown, ChevronUp } from 'lucide-react';
+import { useClipboard } from '@/hooks/useClipboard';
+import { downloadAsFile } from '@/lib/utils/download';
 
 interface ScriptPreviewProps {
   script: string;
@@ -29,7 +31,7 @@ function highlightLine(line: string): React.ReactNode {
 }
 
 export default function ScriptPreview({ script, filename, className = '' }: ScriptPreviewProps) {
-  const [copied, setCopied] = useState(false);
+  const { copied, copy } = useClipboard();
   const [expanded, setExpanded] = useState(false);
   
   const isPowerShell = filename.endsWith('.ps1');
@@ -46,22 +48,8 @@ export default function ScriptPreview({ script, filename, className = '' }: Scri
     }));
   }, [previewLines]);
 
-  const handleCopy = async () => {
-    await navigator.clipboard.writeText(script);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
   const handleDownload = () => {
-    const blob = new Blob([script], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    downloadAsFile(script, filename);
   };
 
   return (
@@ -76,7 +64,7 @@ export default function ScriptPreview({ script, filename, className = '' }: Scri
         </div>
         <div className="flex items-center gap-2">
           <button
-            onClick={handleCopy}
+            onClick={() => copy(script)}
             className={`
               p-2 rounded transition-colors duration-200
               ${copied 

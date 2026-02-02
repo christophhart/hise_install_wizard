@@ -1,22 +1,11 @@
 // Common script generation utilities
 
-export interface ScriptConfig {
-  platform: 'windows' | 'macos' | 'linux';
-  architecture: 'x64' | 'arm64';
-  installPath: string;
-  includeFaust: boolean;
-  includeIPP: boolean;
-  skipPhases: number[];
-}
+// Re-export types from the central types file
+import { ScriptConfig, UpdateScriptConfig } from '@/types/wizard';
+export type { ScriptConfig, UpdateScriptConfig };
 
-export interface UpdateScriptConfig {
-  platform: 'windows' | 'macos' | 'linux';
-  architecture: 'x64' | 'arm64';
-  hisePath: string;
-  hasFaust: boolean;
-}
-
-export const HELP_URL = 'https://hise-setup.app/help';
+import { HELP_URL } from '@/lib/constants';
+export { HELP_URL };
 
 // Color codes for terminal output
 export const colors = {

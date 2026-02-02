@@ -8,64 +8,16 @@ import PageContainer from '@/components/layout/PageContainer';
 import PhaseStepper from '@/components/wizard/PhaseStepper';
 import ScriptPreview from '@/components/wizard/ScriptPreview';
 import SetupSummary from '@/components/wizard/SetupSummary';
+import PathDisplay from '@/components/wizard/PathDisplay';
 import Button from '@/components/ui/Button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/Card';
 import Alert from '@/components/ui/Alert';
 import InlineCopy from '@/components/ui/InlineCopy';
-import { ArrowLeft, Download, RefreshCw, Terminal, Info, Folder, Check } from 'lucide-react';
+import { ArrowLeft, Download, RefreshCw, Terminal } from 'lucide-react';
 import Collapsible from '@/components/ui/Collapsible';
 import { useExplanation } from '@/hooks/useExplanation';
 import { generatePage, howToRun, alerts } from '@/lib/content/explanations';
-
-// Install path display component
-function InstallPathDisplay({ 
-  path, 
-  isHiseRepo 
-}: { 
-  path: string; 
-  isHiseRepo: boolean;
-}) {
-  return (
-    <div className="bg-background border border-border rounded-lg p-4 mb-6">
-      <div className="flex items-center gap-3">
-        <Folder className="w-5 h-5 text-accent flex-shrink-0" />
-        <div className="flex-1 min-w-0">
-          <p className="text-xs text-gray-500 mb-1">Installation Folder</p>
-          <p className="font-mono text-sm text-gray-200 truncate" title={path}>
-            {path}
-          </p>
-        </div>
-        <div className="flex items-center gap-2 flex-shrink-0">
-          <div 
-            className={`
-              w-5 h-5 rounded border flex items-center justify-center
-              ${isHiseRepo 
-                ? 'bg-success/20 border-success' 
-                : 'bg-transparent border-border'
-              }
-            `}
-          >
-            {isHiseRepo && <Check className="w-3 h-3 text-success" />}
-          </div>
-          <span className="text-xs text-gray-500">
-            HISE Repository
-          </span>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// Generate unique filename with timestamp
-function generateUniqueFilename(baseFilename: string): string {
-  const timestamp = new Date().toISOString()
-    .replace(/[:.]/g, '-')
-    .replace('T', '_')
-    .slice(0, 19);
-  const ext = baseFilename.split('.').pop();
-  const name = baseFilename.replace(`.${ext}`, '');
-  return `${name}_${timestamp}.${ext}`;
-}
+import { downloadAsFile, generateUniqueFilename } from '@/lib/utils/download';
 
 // Commands for each step based on platform
 const stepCommands: Record<Exclude<Platform, null>, (string | ((filename: string) => string))[]> = {
@@ -190,15 +142,7 @@ export default function GeneratePage() {
   const handleDownload = () => {
     if (!result) return;
     
-    const blob = new Blob([result.script], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = uniqueFilename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    downloadAsFile(result.script, uniqueFilename);
     
     // Generate new unique filename for next download
     setUniqueFilename(generateUniqueFilename(result.filename));
@@ -250,9 +194,15 @@ export default function GeneratePage() {
           {result && !loading && (
             <>
               {/* Install Path Display */}
-              <InstallPathDisplay 
-                path={state.installPath} 
-                isHiseRepo={state.detectedComponents.hiseRepo} 
+              <PathDisplay 
+                path={state.installPath}
+                label="Installation Folder"
+                indicator={{
+                  label: 'HISE Repository',
+                  active: state.detectedComponents.hiseRepo,
+                  colorScheme: 'success',
+                }}
+                className="mb-6"
               />
               
               {/* Warnings */}

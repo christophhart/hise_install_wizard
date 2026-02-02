@@ -8,10 +8,12 @@ import PageContainer from '@/components/layout/PageContainer';
 import PhaseStepper from '@/components/wizard/PhaseStepper';
 import HisePathDetector from '@/components/wizard/HisePathDetector';
 import Button from '@/components/ui/Button';
+import SectionBadge from '@/components/ui/SectionBadge';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/Card';
 import { ArrowRight, Monitor, Apple, Terminal } from 'lucide-react';
 import { useExplanation } from '@/hooks/useExplanation';
 import { updatePage } from '@/lib/content/explanations';
+import { detectPlatform } from '@/lib/utils/platform';
 
 // Platform icons
 const PlatformIcon = ({ platform }: { platform: Exclude<Platform, null> }) => {
@@ -38,16 +40,6 @@ export default function UpdatePage() {
   
   // Auto-detect platform on mount (redundant with context but ensures consistency)
   useEffect(() => {
-    const detectPlatform = (): Platform => {
-      if (typeof navigator === 'undefined') return null;
-      
-      const userAgent = navigator.userAgent.toLowerCase();
-      if (userAgent.includes('win')) return 'windows';
-      if (userAgent.includes('mac')) return 'macos';
-      if (userAgent.includes('linux')) return 'linux';
-      return null;
-    };
-    
     setDetectedPlatform(detectPlatform());
   }, []);
   
@@ -82,7 +74,7 @@ export default function UpdatePage() {
           {/* Platform Display */}
           <div className="space-y-4">
             <h3 className="text-sm font-medium text-gray-300 flex items-center gap-2">
-              <span className="w-6 h-6 rounded-full bg-accent text-background text-xs font-bold flex items-center justify-center">1</span>
+              <SectionBadge number={1} />
               Platform
             </h3>
             
@@ -104,7 +96,7 @@ export default function UpdatePage() {
           {/* HISE Path Detection */}
           <div className="space-y-4">
             <h3 className="text-sm font-medium text-gray-300 flex items-center gap-2">
-              <span className="w-6 h-6 rounded-full bg-accent text-background text-xs font-bold flex items-center justify-center">2</span>
+              <SectionBadge number={2} />
               HISE Installation
             </h3>
             
@@ -124,7 +116,7 @@ export default function UpdatePage() {
               
               <div className="space-y-4">
                 <h3 className="text-sm font-medium text-gray-300 flex items-center gap-2">
-                  <span className="w-6 h-6 rounded-full bg-accent text-background text-xs font-bold flex items-center justify-center">3</span>
+                  <SectionBadge number={3} />
                   Architecture
                 </h3>
                 
