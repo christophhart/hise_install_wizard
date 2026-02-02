@@ -211,6 +211,22 @@ export const generatePage = {
 };
 
 // ============================================================================
+// Regenerate Info (for Download button area)
+// ============================================================================
+
+export const regenerateInfo = {
+  title: {
+    easy: 'Why Regenerate?',
+    dev: 'Regenerate Script',
+  } as ModeContent,
+  
+  description: {
+    easy: 'Each download creates a file with a unique timestamp in its name. If you need to download the script again (for example, to try on another computer or after making configuration changes), click Regenerate first. This creates a fresh script with a new filename so your downloads stay organized and you always know which version is which.',
+    dev: 'Generates a new script with a fresh timestamp. Click before re-downloading to avoid filename conflicts.',
+  } as ModeContent,
+};
+
+// ============================================================================
 // How to Run Instructions
 // ============================================================================
 

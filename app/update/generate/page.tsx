@@ -15,8 +15,9 @@ import InlineCopy from '@/components/ui/InlineCopy';
 import Collapsible from '@/components/ui/Collapsible';
 import { ArrowLeft, Download, RefreshCw, Terminal, Check } from 'lucide-react';
 import { useExplanation } from '@/hooks/useExplanation';
-import { updateGeneratePage, updateHowToRun, updatePhases } from '@/lib/content/explanations';
+import { updateGeneratePage, updateHowToRun, updatePhases, regenerateInfo } from '@/lib/content/explanations';
 import { downloadAsFile, generateUniqueFilename } from '@/lib/utils/download';
+import InfoPopup from '@/components/ui/InfoPopup';
 
 // Update summary component
 function UpdateSummary({ 
@@ -94,6 +95,7 @@ export default function UpdateGeneratePage() {
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<UpdateScriptResponse | null>(null);
   const [uniqueFilename, setUniqueFilename] = useState<string>('');
+  const [hasDownloaded, setHasDownloaded] = useState(false);
   
   // Redirect if no valid detection
   useEffect(() => {
@@ -141,9 +143,12 @@ export default function UpdateGeneratePage() {
     if (!result) return;
     
     downloadAsFile(result.script, uniqueFilename);
-    
-    // Generate new unique filename for next download
-    setUniqueFilename(generateUniqueFilename(result.filename));
+    setHasDownloaded(true);
+  };
+  
+  const handleRegenerate = async () => {
+    await generateScript();
+    setHasDownloaded(false);
   };
   
   const handleBack = () => {
@@ -224,12 +229,40 @@ export default function UpdateGeneratePage() {
                 <UpdateSummary get={get} />
               </div>
               
-              {/* Download Button */}
-              <div className="flex justify-center">
-                <Button onClick={handleDownload} size="lg">
+              {/* Download & Regenerate Buttons */}
+              <div className="flex items-center justify-center gap-3">
+                <Button 
+                  onClick={handleDownload} 
+                  size="lg"
+                  disabled={hasDownloaded}
+                >
                   <Download className="w-5 h-5" />
                   Download {uniqueFilename}
                 </Button>
+                
+                {hasDownloaded && (
+                  <>
+                    <Button 
+                      onClick={handleRegenerate}
+                      variant="secondary"
+                      size="lg"
+                    >
+                      <RefreshCw className="w-4 h-4" />
+                      Regenerate
+                    </Button>
+                    
+                    <InfoPopup>
+                      <div className="space-y-1">
+                        <span className="text-sm font-medium text-accent">
+                          {get(regenerateInfo.title)}
+                        </span>
+                        <p className="text-xs text-gray-400 leading-relaxed">
+                          {get(regenerateInfo.description)}
+                        </p>
+                      </div>
+                    </InfoPopup>
+                  </>
+                )}
               </div>
               
               {/* Instructions */}
@@ -255,7 +288,7 @@ export default function UpdateGeneratePage() {
       </Card>
       
       {/* Navigation */}
-      <div className="flex justify-between mt-6">
+      <div className="flex justify-start mt-6">
         <Button 
           onClick={handleBack}
           variant="secondary"
@@ -264,17 +297,6 @@ export default function UpdateGeneratePage() {
           <ArrowLeft className="w-4 h-4" />
           Back
         </Button>
-        
-        {result && (
-          <Button 
-            onClick={generateScript}
-            variant="ghost"
-            size="lg"
-          >
-            <RefreshCw className="w-4 h-4" />
-            Regenerate
-          </Button>
-        )}
       </div>
     </PageContainer>
   );
