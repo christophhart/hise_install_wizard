@@ -305,7 +305,16 @@ export default function ComponentChecklist({
     
     // Determine what the script will actually do
     const willInstallOptional = component.isOptional && !isInstalled && (isFaust ? installFaust : isIPP ? installIPP : false);
-    const willSkip = isInstalled || (component.isOptional && !willInstallOptional);
+    
+    // Determine skip reason for more descriptive status badges
+    type SkipReason = 'installed' | 'not-requested' | null;
+    let skipReason: SkipReason = null;
+    
+    if (isInstalled) {
+      skipReason = 'installed';
+    } else if (component.isOptional && !willInstallOptional) {
+      skipReason = 'not-requested';
+    }
     
     return (
       <div key={component.key} className="space-y-2">
@@ -349,10 +358,15 @@ export default function ComponentChecklist({
           
           {/* Status badge */}
           <div className="flex-shrink-0 mt-0.5">
-            {willSkip ? (
+            {skipReason === 'installed' ? (
               <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs bg-gray-500/10 text-gray-400 border border-gray-500/20">
                 <CheckCircle className="w-3 h-3" />
                 Already Installed
+              </span>
+            ) : skipReason === 'not-requested' ? (
+              <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs bg-gray-500/10 text-gray-400 border border-gray-500/20">
+                <CheckCircle className="w-3 h-3" />
+                Optional - Skipped
               </span>
             ) : (
               <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs bg-accent/10 text-accent border border-accent/20">
