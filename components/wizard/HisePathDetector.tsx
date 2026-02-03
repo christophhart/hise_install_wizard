@@ -21,8 +21,8 @@ interface HisePathDetectorProps {
 // Detection scripts for each platform
 const detectionScripts: Record<Exclude<Platform, null>, string> = {
   windows: `$h=(Get-Command HISE -EA SilentlyContinue).Source;if($h){$p=Split-Path $h;$f=if($p -match 'Faust'){'faust'}else{'nofaust'};$r=(Get-Item $h).Directory.Parent.Parent.Parent.Parent.Parent.Parent.Parent.FullName;if(Test-Path "$r\\.git"){"$r,valid,$f"}else{"$r,invalid,$f"}}else{"not_found"}`,
-  macos: `h=$(which HISE 2>/dev/null);if [ -n "$h" ];then p=$(dirname "$(realpath "$h")");f=$([[ "$p" == *"Faust"* ]] && echo faust || echo nofaust);r=$(dirname "$(dirname "$(dirname "$(dirname "$(dirname "$(dirname "$(dirname "$(dirname "$(dirname "$(dirname "$(realpath "$h")")")")")")")")")")");r=$(echo "$r" | sed "s|^$HOME|~|");a=$(uname -m);[ -d "${r/#\\~/$HOME}/.git" ] && echo "$r,valid,$f,$a" || echo "$r,invalid,$f,$a";else echo "not_found";fi`,
-  linux: `h=$(which HISE 2>/dev/null);if [ -n "$h" ];then p=$(dirname "$(realpath "$h")");f=$([[ "$p" == *"Faust"* ]] && echo faust || echo nofaust);r=$(dirname "$(dirname "$(dirname "$(dirname "$(dirname "$(dirname "$(realpath "$h")")")")")")");r=$(echo "$r" | sed "s|^$HOME|~|");[ -d "${r/#\\~/$HOME}/.git" ] && echo "$r,valid,$f" || echo "$r,invalid,$f";else echo "not_found";fi`,
+  macos: `h=$(which HISE 2>/dev/null);if [ -n "$h" ];then p=$(dirname "$(realpath "$h")");f=$([[ "$p" == *"Faust"* ]] && echo faust || echo nofaust);ra=$(dirname "$(dirname "$(dirname "$(dirname "$(dirname "$(dirname "$(dirname "$(dirname "$(dirname "$(dirname "$(realpath "$h")")")")")")")")")")");r=$(echo "$ra" | sed "s|^$HOME|~|");a=$(uname -m);[ -d "$ra/.git" ] && echo "$r,valid,$f,$a" || echo "$r,invalid,$f,$a";else echo "not_found";fi`,
+  linux: `h=$(which HISE 2>/dev/null);if [ -n "$h" ];then p=$(dirname "$(realpath "$h")");f=$([[ "$p" == *"Faust"* ]] && echo faust || echo nofaust);ra=$(dirname "$(dirname "$(dirname "$(dirname "$(dirname "$(dirname "$(realpath "$h")")")")")")");r=$(echo "$ra" | sed "s|^$HOME|~|");[ -d "$ra/.git" ] && echo "$r,valid,$f" || echo "$r,invalid,$f";else echo "not_found";fi`,
 };
 
 export default function HisePathDetector({
