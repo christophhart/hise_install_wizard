@@ -40,8 +40,8 @@ export default function Footer() {
             </Link>
           </div>
           
-          <div className="text-gray-500">
-            HISE is open source (GPL v3)
+<div className="text-gray-500">
+            {process.env.NEXT_PUBLIC_COMMIT_MESSAGE}
           </div>
         </div>
       </div>

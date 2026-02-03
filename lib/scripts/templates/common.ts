@@ -517,10 +517,16 @@ Write-Success "Repository updated"`;
 export function generateCompileSectionMacOS(hisePath: string, architecture: string, hasFaust: boolean): string {
   const buildConfig = hasFaust ? 'Release with Faust' : 'Release';
   
+  // Architecture configuration for Faust builds (Faust libs are single-arch, not Universal Binary)
+  const archConfigSection = hasFaust ? `
+step "Configuring single architecture for Faust build..."
+sed -i '' "s/xcodeValidArchs=\\"[^\\"]*\\"/xcodeValidArchs=\\"${architecture}\\"/" "HISE Standalone.jucer"
+` : '';
+  
   return `phase "Compiling HISE"
 
 cd "$HISE_PATH/projects/standalone"
-
+${archConfigSection}
 step "Running Projucer..."
 PROJUCER="$HISE_PATH/JUCE/Projucer/Projucer.app/Contents/MacOS/Projucer"
 
