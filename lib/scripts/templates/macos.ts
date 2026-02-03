@@ -85,31 +85,10 @@ echo "Architecture: $ARCH"
 echo ""
 
 # ============================================
-# Pre-flight: Xcode Check & License Accept
-# ============================================
-# This runs first so password prompt happens at the start
-phase "Pre-flight: Xcode Check"
-
-if ! command -v xcodebuild &> /dev/null; then
-    err "Xcode Command Line Tools are not installed."
-    echo ""
-    echo -e "Install from: ${CYAN}https://developer.apple.com/xcode/${NC}"
-    echo -e "Or run: ${CYAN}xcode-select --install${NC}"
-    echo ""
-    exit 1
-fi
-
-# Accept Xcode license if needed (password prompt happens here at the start)
-step "Accepting Xcode license (you may be prompted for your password)..."
-sudo xcodebuild -license accept 2>/dev/null || true
-
-success "Xcode ready"
-
-# ============================================
-# Phase 2: Git Setup
+# Phase 1: Git Setup
 # ============================================
 ${skipPhases.includes(2) ? '# SKIPPED: Git already configured' : `
-phase "Phase 2: Git Setup"
+phase "Phase 1: Git Setup"
 
 # Check if Git is installed
 if ! command -v git &> /dev/null; then
@@ -127,7 +106,7 @@ success "Git installed"
 if [ ! -d "$HISE_PATH/.git" ]; then
     step "Cloning HISE repository..."
     mkdir -p "$(dirname "$HISE_PATH")"
-    git clone https://github.com/christophhart/HISE.git "$HISE_PATH" || handle_error 2 "Failed to clone HISE repository"
+    git clone https://github.com/christophhart/HISE.git "$HISE_PATH" || handle_error 1 "Failed to clone HISE repository"
 else
     step "Updating HISE repository..."
     cd "$HISE_PATH"
@@ -136,7 +115,7 @@ fi
 
 cd "$HISE_PATH"
 ${targetCommit ? `# Using specific commit due to CI build failure on latest
-git checkout ${targetCommit} || handle_error 2 "Failed to checkout commit ${targetCommit.substring(0, 7)}"` : `git checkout develop
+git checkout ${targetCommit} || handle_error 1 "Failed to checkout commit ${targetCommit.substring(0, 7)}"` : `git checkout develop
 git pull origin develop`}
 git submodule update --init
 cd JUCE && git checkout juce6 && cd ..
@@ -145,18 +124,10 @@ success "Git setup complete"
 `}
 
 # ============================================
-# Phase 3: Xcode (Pre-requisite Check)
-# ============================================
-phase "Phase 3: Xcode Command Line Tools Check"
-
-# Xcode was already verified and license accepted in pre-flight
-success "Xcode Command Line Tools verified"
-
-# ============================================
-# Phase 5: Faust (Optional)
+# Phase 2: Faust (Optional)
 # ============================================
 ${!includeFaust || skipPhases.includes(5) ? '# SKIPPED: Faust not selected or already installed' : `
-phase "Phase 5: Faust (Optional, fully automated)"
+phase "Phase 2: Faust (Optional, fully automated)"
 
 FAUST_LIB="$HISE_PATH/tools/faust/lib/libfaust.dylib"
 
@@ -172,10 +143,10 @@ if [ ! -f "$FAUST_LIB" ]; then
     FAUST_URL="https://github.com/grame-cncm/faust/releases/download/${faustVersion || '2.75.7'}/$FAUST_DMG"
     DOWNLOAD_PATH="/tmp/$FAUST_DMG"
     
-    curl -L -o "$DOWNLOAD_PATH" "$FAUST_URL" || handle_error 5 "Failed to download Faust from GitHub"
+    curl -L -o "$DOWNLOAD_PATH" "$FAUST_URL" || handle_error 2 "Failed to download Faust from GitHub"
     
     step "Mounting DMG..."
-    hdiutil attach "$DOWNLOAD_PATH" -readonly -nobrowse -mountpoint /tmp/faust-mount || handle_error 5 "Failed to mount DMG"
+    hdiutil attach "$DOWNLOAD_PATH" -readonly -nobrowse -mountpoint /tmp/faust-mount || handle_error 2 "Failed to mount DMG"
     
     step "Extracting Faust to $HISE_PATH/tools/faust/..."
     mkdir -p "$HISE_PATH/tools/faust"
@@ -184,10 +155,10 @@ if [ ! -f "$FAUST_LIB" ]; then
     FAUST_FOLDER=$(find /tmp/faust-mount -maxdepth 1 -type d -name "Faust*" | head -1)
     if [ -n "$FAUST_FOLDER" ] && [ -d "$FAUST_FOLDER" ]; then
         # Copy contents of the Faust folder (lib, bin, include, share)
-        cp -R "$FAUST_FOLDER"/* "$HISE_PATH/tools/faust/" || handle_error 5 "Failed to copy Faust files"
+        cp -R "$FAUST_FOLDER"/* "$HISE_PATH/tools/faust/" || handle_error 2 "Failed to copy Faust files"
     else
         # Fallback: copy everything from mount root
-        cp -R /tmp/faust-mount/* "$HISE_PATH/tools/faust/" || handle_error 5 "Failed to copy Faust files"
+        cp -R /tmp/faust-mount/* "$HISE_PATH/tools/faust/" || handle_error 2 "Failed to copy Faust files"
     fi
     
     step "Removing quarantine attributes to avoid Gatekeeper issues..."
@@ -202,7 +173,7 @@ if [ ! -f "$FAUST_LIB" ]; then
     
     # Verify installation
     if [ ! -f "$FAUST_LIB" ]; then
-        handle_error 5 "Faust installation failed - libfaust.dylib not found at $FAUST_LIB"
+        handle_error 2 "Faust installation failed - libfaust.dylib not found at $FAUST_LIB"
     fi
     
     success "Faust ${faustVersion || '2.75.7'} installed successfully"
@@ -214,10 +185,10 @@ fi
 `}
 
 # ============================================
-# Phase 6: Repository Structure Check
+# Phase 3: Repository Structure Check
 # ============================================
 ${skipPhases.includes(6) ? '# SKIPPED: Repository structure already verified' : `
-phase "Phase 6: Repository Structure Check"
+phase "Phase 3: Repository Structure Check"
 
 cd "$HISE_PATH"
 
@@ -245,14 +216,14 @@ fi
 if [ -d "tools/SDK/ASIOSDK2.3" ] && [ -d "tools/SDK/VST3 SDK" ]; then
     success "SDKs verified"
 else
-    handle_error 6 "SDK extraction failed"
+    handle_error 3 "SDK extraction failed"
 fi
 `}
 
 # ============================================
-# Phase 7: Compile HISE
+# Phase 4: Compile HISE
 # ============================================
-phase "Phase 7: Compile HISE"
+phase "Phase 4: Compile HISE"
 
 cd "$HISE_PATH/projects/standalone"
 
@@ -269,7 +240,7 @@ PROJUCER="$HISE_PATH/JUCE/Projucer/Projucer.app/Contents/MacOS/Projucer"
 
 # Verify Projucer exists
 if [ ! -f "$PROJUCER" ]; then
-    handle_error 7 "Projucer not found at $PROJUCER"
+    handle_error 4 "Projucer not found at $PROJUCER"
 fi
 
 chmod +x "$PROJUCER"
@@ -292,23 +263,23 @@ BUILD_CONFIG="Release"
 # Use set -o pipefail to detect xcodebuild errors when piped
 XCBEAUTIFY="$HISE_PATH/tools/Projucer/xcbeautify"
 if [ -x "$XCBEAUTIFY" ]; then
-    set -o pipefail && xcodebuild -project "Builds/MacOSX/HISE Standalone.xcodeproj" -configuration "$BUILD_CONFIG" -jobs $CORES | "$XCBEAUTIFY" || handle_error 7 "HISE compilation failed"
+    set -o pipefail && xcodebuild -project "Builds/MacOSX/HISE Standalone.xcodeproj" -configuration "$BUILD_CONFIG" -jobs $CORES | "$XCBEAUTIFY" || handle_error 4 "HISE compilation failed"
 else
-    xcodebuild -project "Builds/MacOSX/HISE Standalone.xcodeproj" -configuration "$BUILD_CONFIG" -jobs $CORES || handle_error 7 "HISE compilation failed"
+    xcodebuild -project "Builds/MacOSX/HISE Standalone.xcodeproj" -configuration "$BUILD_CONFIG" -jobs $CORES || handle_error 4 "HISE compilation failed"
 fi
 
 # Verify build
 HISE_BIN="Builds/MacOSX/build/Release/HISE.app/Contents/MacOS/HISE"
 if [ ! -f "$HISE_BIN" ]; then
-    handle_error 7 "HISE binary not found after build"
+    handle_error 4 "HISE binary not found after build"
 fi
 
 success "HISE compiled successfully"
 
 # ============================================
-# Phase 8: Add to PATH
+# Phase 5: Add to PATH
 # ============================================
-phase "Phase 8: Add HISE to PATH"
+phase "Phase 5: Add HISE to PATH"
 
 HISE_BIN_PATH="$HISE_PATH/projects/standalone/Builds/MacOSX/build/Release/HISE.app/Contents/MacOS"
 
@@ -329,9 +300,9 @@ success "HISE added to PATH"
 echo "  (Restart your terminal or run: source $SHELL_CONFIG)"
 
 # ============================================
-# Phase 9: Verify Build
+# Phase 6: Verify Build
 # ============================================
-phase "Phase 9: Verify Build"
+phase "Phase 6: Verify Build"
 
 step "Checking build flags..."
 "$HISE_BIN_PATH/HISE" get_build_flags || warn "Could not verify build flags"
@@ -339,9 +310,9 @@ step "Checking build flags..."
 success "Build verified"
 
 # ============================================
-# Phase 10: Test Project
+# Phase 7: Test Project
 # ============================================
-phase "Phase 10: Test Project"
+phase "Phase 7: Test Project"
 
 step "Configuring HISE compiler settings..."
 
@@ -375,7 +346,7 @@ else
 fi
 
 # ============================================
-# Phase 11: Success
+# Success
 # ============================================
 echo ""
 echo -e "${GREEN}========================================${NC}"
@@ -535,26 +506,6 @@ echo "Architecture: $ARCH"
 echo "Build config: ${buildConfig}"
 echo "Keep backup: ${keepBackupStr}"
 echo ""
-
-# ============================================
-# Pre-flight: Xcode Check & License Accept
-# ============================================
-phase "Pre-flight: Xcode Check"
-
-if ! command -v xcodebuild &> /dev/null; then
-    err "Xcode Command Line Tools are not installed."
-    echo ""
-    echo -e "Install from: ${CYAN}https://developer.apple.com/xcode/${NC}"
-    echo -e "Or run: ${CYAN}xcode-select --install${NC}"
-    echo ""
-    exit 1
-fi
-
-# Accept Xcode license if needed (password prompt happens here at the start)
-step "Accepting Xcode license (you may be prompted for your password)..."
-sudo xcodebuild -license accept 2>/dev/null || true
-
-success "Xcode ready"
 
 # ============================================
 # Phase 1: Check Git
