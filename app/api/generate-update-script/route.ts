@@ -41,8 +41,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(result);
   } catch (error) {
     console.error('Error generating update script:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Failed to generate update script' },
+      { error: `Failed to generate update script: ${errorMessage}` },
       { status: 500 }
     );
   }
