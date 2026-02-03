@@ -702,8 +702,8 @@ export function generateGitCloneWithCommitBash(installPath: string, targetCommit
   const checkoutLine = targetCommit ? `\ngit checkout ${targetCommit} || handle_error 2 "Failed to checkout commit ${targetCommit.substring(0, 7)}"` : '';
   
   return `${commitNote}step "Cloning HISE repository..."
-git clone https://github.com/christophhart/HISE.git "$INSTALL_PATH/HISE" || handle_error 2 "Failed to clone HISE repository"
-cd "$INSTALL_PATH/HISE"${checkoutLine}
+git clone https://github.com/christophhart/HISE.git "$HISE_PATH" || handle_error 2 "Failed to clone HISE repository"
+cd "$HISE_PATH"${checkoutLine}
 
 step "Initializing submodules..."
 git submodule update --init || handle_error 2 "Failed to initialize submodules"
@@ -724,9 +724,9 @@ export function generateGitCloneWithCommitPS(installPath: string, targetCommit?:
     : '';
   
   return `${commitNote}Write-Step "Cloning HISE repository..."
-git clone https://github.com/christophhart/HISE.git "$INSTALL_PATH\\HISE"
+git clone https://github.com/christophhart/HISE.git "$HISE_PATH"
 if ($LASTEXITCODE -ne 0) { Handle-Error 2 "Failed to clone HISE repository" }
-Set-Location "$INSTALL_PATH\\HISE"${checkoutLine}
+Set-Location "$HISE_PATH"${checkoutLine}
 
 Write-Step "Initializing submodules..."
 git submodule update --init
@@ -735,7 +735,7 @@ if ($LASTEXITCODE -ne 0) { Handle-Error 2 "Failed to initialize submodules" }
 Write-Step "Switching JUCE to juce6 branch..."
 Set-Location JUCE
 git checkout juce6
-Set-Location "$INSTALL_PATH\\HISE"
+Set-Location "$HISE_PATH"
 
 Write-Success "HISE repository cloned"`;
 }

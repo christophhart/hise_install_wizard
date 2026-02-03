@@ -478,9 +478,6 @@ export function generateLinuxMigrationScript(config: MigrationScriptConfig): str
     ? `\n# NOTE: Using specific commit ${targetCommit.substring(0, 7)} (CI build failing on latest)\n`
     : '';
   
-  // Get parent path for cloning
-  const parentPath = expandedPath.replace(/\/[^\/]+$/, '');
-  
   const script = `#!/bin/bash
 # ${generateMigrationHeader(config).split('\n').join('\n# ')}${commitHeaderNote}
 # ============================================
@@ -494,7 +491,6 @@ ${generateBashUtilities()}
 ${generateBashErrorHandler('migration')}
 
 HISE_PATH="${expandedPath}"
-INSTALL_PATH="${parentPath}"
 
 echo ""
 echo -e "${CYAN}========================================${NC}"
@@ -521,10 +517,10 @@ ${generateBackupSectionBash(keepBackup)}
 # ============================================
 phase "Clone HISE Repository"
 
-# Create parent directory if needed
-mkdir -p "$INSTALL_PATH"
+# Create parent directory if needed (dirname gets parent of HISE_PATH)
+mkdir -p "$(dirname "$HISE_PATH")"
 
-${generateGitCloneWithCommitBash(parentPath, targetCommit)}
+${generateGitCloneWithCommitBash(expandedPath, targetCommit)}
 
 # ============================================
 # Phase 4: Compile HISE

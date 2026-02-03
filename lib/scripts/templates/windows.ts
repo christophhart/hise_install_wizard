@@ -528,9 +528,6 @@ export function generateWindowsMigrationScript(config: MigrationScriptConfig): s
     ? `\n# NOTE: Using specific commit ${targetCommit.substring(0, 7)} (CI build failing on latest)\n`
     : '';
   
-  // Get parent path for cloning
-  const parentPath = escapedPath.replace(/\\[^\\]+$/, '');
-  
   const script = `# ${generateMigrationHeader(config).split('\n').join('\n# ')}${commitHeaderNote}
 # ============================================
 # HISE Migration Script for Windows (ZIP to Git)
@@ -552,7 +549,6 @@ if (-not $isAdmin) {
 }
 
 $HISE_PATH = "${escapedPath}"
-$INSTALL_PATH = "${parentPath}"
 
 Write-Host ""
 Write-Host "========================================" -ForegroundColor Cyan
@@ -579,7 +575,13 @@ ${generateBackupSectionPS(keepBackup)}
 # ============================================
 Write-Phase "Clone HISE Repository"
 
-${generateGitCloneWithCommitPS(parentPath, targetCommit)}
+# Create parent directory if needed
+$parentDir = Split-Path $HISE_PATH -Parent
+if ($parentDir -and $parentDir.Length -gt 3) {
+    New-Item -ItemType Directory -Force -Path $parentDir | Out-Null
+}
+
+${generateGitCloneWithCommitPS(escapedPath, targetCommit)}
 
 # ============================================
 # Phase 4: Compile HISE
