@@ -12,7 +12,7 @@ import {
   PackagePlus,
   Shield,
   SearchCheck,
-  LifeBuoy
+  ArrowRightLeft
 } from 'lucide-react';
 
 export default function HomePage() {
@@ -102,15 +102,15 @@ export default function HomePage() {
               </div>
             </div>
             
-            {/* Built-in Error Handling */}
+{/* ZIP to Git Migration */}
             <div className="flex gap-4 items-start">
               <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0">
-                <LifeBuoy className="w-5 h-5 text-accent" />
+                <ArrowRightLeft className="w-5 h-5 text-accent" />
               </div>
               <div>
-                <h3 className="font-bold mb-1">Built-in Error Handling</h3>
+                <h3 className="font-bold mb-1">ZIP to Git Migration</h3>
                 <p className="text-gray-400 text-sm">
-                  Scripts include error detection with colored output and links to troubleshooting resources.
+                  Easily migrate from a ZIP-based HISE installation to a Git workflow. Your Faust installation is automatically preserved.
                 </p>
               </div>
             </div>
