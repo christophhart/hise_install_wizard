@@ -545,8 +545,8 @@ export const updateHowToRun: Record<Exclude<Platform, null>, { steps: UpdateHowT
           dev: 'Run script',
         },
         command: {
-          easy: 'cd $HOME\\Downloads; .\\"hise-update.ps1"',
-          dev: 'cd $HOME\\Downloads; .\\"hise-update.ps1"',
+          easy: (filename: string) => `cd $HOME\\Downloads; .\\"${filename}"`,
+          dev: (filename: string) => `cd $HOME\\Downloads; .\\"${filename}"`,
         },
       },
     ],
@@ -565,8 +565,8 @@ export const updateHowToRun: Record<Exclude<Platform, null>, { steps: UpdateHowT
           dev: 'Run script',
         },
         command: {
-          easy: 'cd ~/Downloads && chmod +x hise-update.sh && ./hise-update.sh',
-          dev: 'cd ~/Downloads && chmod +x hise-update.sh && ./hise-update.sh',
+          easy: (filename: string) => `cd ~/Downloads && chmod +x "${filename}" && ./"${filename}"`,
+          dev: (filename: string) => `cd ~/Downloads && chmod +x "${filename}" && ./"${filename}"`,
         },
       },
     ],
@@ -585,8 +585,8 @@ export const updateHowToRun: Record<Exclude<Platform, null>, { steps: UpdateHowT
           dev: 'Run script',
         },
         command: {
-          easy: 'cd ~/Downloads && chmod +x hise-update.sh && ./hise-update.sh',
-          dev: 'cd ~/Downloads && chmod +x hise-update.sh && ./hise-update.sh',
+          easy: (filename: string) => `cd ~/Downloads && chmod +x "${filename}" && ./"${filename}"`,
+          dev: (filename: string) => `cd ~/Downloads && chmod +x "${filename}" && ./"${filename}"`,
         },
       },
     ],

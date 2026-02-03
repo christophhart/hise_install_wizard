@@ -73,7 +73,7 @@ function renderHowToRunInstructions(
       )}
       
       {steps.map((step, index) => {
-        const commandContent = step.command ? get(step.command).replace('hise-update', filename.replace('.ps1', '').replace('.sh', '')) : null;
+        const commandContent = step.command && typeof step.command === 'function' ? get(step.command)(filename) : null;
         
         return (
           <div key={index}>
