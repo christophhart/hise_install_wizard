@@ -119,9 +119,12 @@ export default function SetupPage() {
                   Components
                 </h3>
                 
-                <p className="text-sm text-gray-400">
-                  {get(setupPage.componentsSection.description)}
-                </p>
+                {/* Only show description in Dev mode - EZ mode has its own intro in ComponentChecklist */}
+                {state.explanationMode === 'dev' && (
+                  <p className="text-sm text-gray-400">
+                    {get(setupPage.componentsSection.description)}
+                  </p>
+                )}
                 
                 <ComponentChecklist
                   platform={state.platform}

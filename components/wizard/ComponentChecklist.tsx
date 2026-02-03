@@ -504,15 +504,15 @@ export default function ComponentChecklist({
     
     return (
       <div className="space-y-6">
-        {/* Intro text explaining script handles everything */}
+        {/* Intro text explaining script handles everything - platform specific */}
         <p className="text-sm text-gray-300">
-          {componentsSectionEzMode.intro.easy}
+          {componentsSectionEzMode.intro[platform]}
         </p>
         
         {/* Optional Enhancements section */}
         <div className="pt-4 border-t border-border">
           <p className="text-xs text-gray-500 uppercase tracking-wide font-medium mb-4">
-            {componentsSectionEzMode.optionalHeader.easy}
+            {componentsSectionEzMode.optionalHeader}
           </p>
           
           <div className="space-y-4">

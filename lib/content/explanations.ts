@@ -68,14 +68,13 @@ export const setupPage = {
   
   // EZ Mode simplified components section
   componentsSectionEzMode: {
+    // Platform-specific intro text
     intro: {
-      easy: 'The setup script will install all required tools: Git, your platform\'s C++ compiler, and clone the HISE repository with all dependencies.',
-      dev: '',
-    } as ModeContent,
-    optionalHeader: {
-      easy: 'Optional Enhancements',
-      dev: '',
-    } as ModeContent,
+      windows: 'The setup script will install all required tools: Git, Visual Studio 2026, and clone the HISE repository with all dependencies.',
+      macos: 'The setup script will install all required tools: Git, Xcode Command Line Tools, and clone the HISE repository with all dependencies.',
+      linux: 'The setup script will install all required tools: Git, GCC, and clone the HISE repository with all dependencies.',
+    } as Record<Exclude<Platform, null>, string>,
+    optionalHeader: 'Optional Enhancements',
   },
   
   // Optional component toggles for EZ mode
