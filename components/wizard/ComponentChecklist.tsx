@@ -87,7 +87,9 @@ function generateCombinedVerifyCommand(
   }
 }
 
-// Generate a detection script that outputs comma-separated list of installed components
+// Generate a detection script that outputs comma-separated list of installed components.
+// Windows and macOS copy output to clipboard automatically.
+// Linux shows visual markers for manual copying.
 function generateDetectionScript(
   platform: Exclude<Platform, null>,
   installPath: string
@@ -96,21 +98,29 @@ function generateDetectionScript(
   const platformComponents = componentInfoList.filter((c) => c.platforms.includes(platform));
   
   if (platform === 'windows') {
-    // PowerShell script
+    // PowerShell script with clipboard copy
     const checks = platformComponents.map((c) => {
       const cmd = c.getVerifyCommand(installPath, platform);
       return `if (${cmd}) { $r += "${c.key}," }`;
     }).join('\n');
     
-    return `$r = ""\n${checks}\nif ($r) { $r.TrimEnd(",") } else { "none" }`;
-  } else {
-    // Bash script for macOS/Linux
+    return `$r = ""\n${checks}\n$out = if ($r) { $r.TrimEnd(",") } else { "none" }; Set-Clipboard $out; "Copied to clipboard: $out"`;
+  } else if (platform === 'macos') {
+    // Bash script for macOS with clipboard copy via pbcopy
     const checks = platformComponents.map((c) => {
       const cmd = c.getVerifyCommand(installPath, platform);
       return `[ "$(${cmd})" = "True" ] && r="\${r}${c.key},"`;
     }).join('\n');
     
-    return `r=""\n${checks}\n[ -n "$r" ] && echo "\${r%,}" || echo "none"`;
+    return `r=""\n${checks}\nout=$([ -n "$r" ] && echo "\${r%,}" || echo "none"); echo "$out" | pbcopy; echo "Copied to clipboard: $out"`;
+  } else {
+    // Linux: show visual markers for manual copying
+    const checks = platformComponents.map((c) => {
+      const cmd = c.getVerifyCommand(installPath, platform);
+      return `[ "$(${cmd})" = "True" ] && r="\${r}${c.key},"`;
+    }).join('\n');
+    
+    return `r=""\n${checks}\necho "==== COPY BELOW ===="; [ -n "$r" ] && echo "\${r%,}" || echo "none"; echo "==== COPY ABOVE ===="`;
   }
 }
 

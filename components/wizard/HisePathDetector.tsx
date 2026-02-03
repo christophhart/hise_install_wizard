@@ -18,11 +18,16 @@ interface HisePathDetectorProps {
   hasFaust: boolean;
 }
 
-// Detection scripts for each platform
+// Detection scripts for each platform.
+// Windows and macOS copy output to clipboard automatically.
+// Linux shows visual markers for manual copying.
 const detectionScripts: Record<Exclude<Platform, null>, string> = {
-  windows: `$h=(Get-Command HISE -EA SilentlyContinue).Source;if($h){$p=Split-Path $h;$f=if($p -match 'Faust'){'faust'}else{'nofaust'};$r=(Get-Item $h).Directory.Parent.Parent.Parent.Parent.Parent.Parent.Parent.FullName;if(Test-Path "$r\\.git"){"$r,valid,$f"}else{"$r,invalid,$f"}}else{"not_found"}`,
-  macos: `h=$(which HISE 2>/dev/null);if [ -n "$h" ];then p=$(dirname "$(realpath "$h")");f=$([[ "$p" == *"Faust"* ]] && echo faust || echo nofaust);ra=$(dirname "$(dirname "$(dirname "$(dirname "$(dirname "$(dirname "$(dirname "$(dirname "$(dirname "$(dirname "$(realpath "$h")")")")")")")")")")");r=$(echo "$ra" | sed "s|^$HOME|~|");a=$(uname -m);[ -d "$ra/.git" ] && echo "$r,valid,$f,$a" || echo "$r,invalid,$f,$a";else echo "not_found";fi`,
-  linux: `h=$(which HISE 2>/dev/null);if [ -n "$h" ];then p=$(dirname "$(realpath "$h")");f=$([[ "$p" == *"Faust"* ]] && echo faust || echo nofaust);ra=$(dirname "$(dirname "$(dirname "$(dirname "$(dirname "$(dirname "$(realpath "$h")")")")")")");r=$(echo "$ra" | sed "s|^$HOME|~|");[ -d "$ra/.git" ] && echo "$r,valid,$f" || echo "$r,invalid,$f";else echo "not_found";fi`,
+  // PowerShell: copy to clipboard + show confirmation
+  windows: `$h=(Get-Command HISE -EA SilentlyContinue).Source;if($h){$p=Split-Path $h;$f=if($p -match 'Faust'){'faust'}else{'nofaust'};$r=(Get-Item $h).Directory.Parent.Parent.Parent.Parent.Parent.Parent.Parent.FullName;$out=if(Test-Path "$r\\.git"){"$r,valid,$f"}else{"$r,invalid,$f"}}else{$out="not_found"};Set-Clipboard $out;"Copied to clipboard: $out"`,
+  // macOS: copy to clipboard with pbcopy + show confirmation
+  macos: `h=$(which HISE 2>/dev/null);if [ -n "$h" ];then p=$(dirname "$(realpath "$h")");f=$([[ "$p" == *"Faust"* ]] && echo faust || echo nofaust);ra=$(dirname "$(dirname "$(dirname "$(dirname "$(dirname "$(dirname "$(dirname "$(dirname "$(dirname "$(dirname "$(realpath "$h")")")")")")")")")")");r=$(echo "$ra" | sed "s|^$HOME|~|");a=$(uname -m);out=$([ -d "$ra/.git" ] && echo "$r,valid,$f,$a" || echo "$r,invalid,$f,$a");else out="not_found";fi;echo "$out" | pbcopy;echo "Copied to clipboard: $out"`,
+  // Linux: show visual markers for manual copying
+  linux: `h=$(which HISE 2>/dev/null);if [ -n "$h" ];then p=$(dirname "$(realpath "$h")");f=$([[ "$p" == *"Faust"* ]] && echo faust || echo nofaust);ra=$(dirname "$(dirname "$(dirname "$(dirname "$(dirname "$(dirname "$(realpath "$h")")")")")")");r=$(echo "$ra" | sed "s|^$HOME|~|");out=$([ -d "$ra/.git" ] && echo "$r,valid,$f" || echo "$r,invalid,$f");else out="not_found";fi;echo "==== COPY BELOW ====";echo "$out";echo "==== COPY ABOVE ===="`,
 };
 
 export default function HisePathDetector({

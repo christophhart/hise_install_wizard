@@ -33,7 +33,9 @@ export function getToolName(platform: Exclude<Platform, null>, tool: VerifiableT
 }
 
 /**
- * Get the verification command for a specific tool on a given platform
+ * Get the verification command for a specific tool on a given platform.
+ * Windows and macOS commands copy output to clipboard automatically.
+ * Linux shows visual markers for manual copying.
  */
 export function getVerificationCommand(
   platform: Exclude<Platform, null>,
@@ -42,17 +44,21 @@ export function getVerificationCommand(
   if (tool === 'ipp') {
     // IPP is Windows only
     if (platform !== 'windows') return '';
-    return 'if (Test-Path "C:\\Program Files (x86)\\Intel\\oneAPI\\ipp\\latest") { "ipp" } else { "none" }';
+    // PowerShell: copy to clipboard + show confirmation
+    return '$r = if (Test-Path "C:\\Program Files (x86)\\Intel\\oneAPI\\ipp\\latest") { "ipp" } else { "none" }; Set-Clipboard $r; "Copied to clipboard: $r"';
   }
   
   // IDE verification
   switch (platform) {
     case 'windows':
-      return 'if (Test-Path "C:\\Program Files\\Microsoft Visual Studio\\18\\*\\MSBuild\\Current\\Bin\\MSBuild.exe") { "vs" } else { "none" }';
+      // PowerShell: copy to clipboard + show confirmation
+      return '$r = if (Test-Path "C:\\Program Files\\Microsoft Visual Studio\\18\\*\\MSBuild\\Current\\Bin\\MSBuild.exe") { "vs" } else { "none" }; Set-Clipboard $r; "Copied to clipboard: $r"';
     case 'macos':
-      return 'if xcode-select -p &>/dev/null; then echo "xcode"; else echo "none"; fi';
+      // Bash: copy to clipboard with pbcopy + show confirmation
+      return 'r=$(if xcode-select -p &>/dev/null; then echo "xcode"; else echo "none"; fi); echo "$r" | pbcopy; echo "Copied to clipboard: $r"';
     case 'linux':
-      return 'if command -v gcc &>/dev/null; then echo "gcc"; else echo "none"; fi';
+      // Linux: show visual markers for manual copying
+      return 'echo "==== COPY BELOW ===="; if command -v gcc &>/dev/null; then echo "gcc"; else echo "none"; fi; echo "==== COPY ABOVE ===="';
     default:
       return '';
   }
