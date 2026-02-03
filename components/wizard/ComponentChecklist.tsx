@@ -36,6 +36,7 @@ interface ComponentInfo {
 }
 
 // Helper to format path for different platforms
+// Also expands ~ to $HOME for Unix platforms (tilde doesn't expand inside quotes in bash)
 function formatPath(basePath: string, subPath: string, platform: Exclude<Platform, null>): string {
   if (platform === 'windows') {
     // Ensure Windows-style paths
@@ -43,8 +44,13 @@ function formatPath(basePath: string, subPath: string, platform: Exclude<Platfor
     const winSub = subPath.replace(/\//g, '\\');
     return `${winBase}${winSub}`;
   }
-  // Unix-style paths
-  const unixBase = basePath.replace(/\\/g, '/');
+  // Unix-style paths - expand ~ to $HOME for bash compatibility
+  let unixBase = basePath.replace(/\\/g, '/');
+  if (unixBase.startsWith('~/')) {
+    unixBase = '$HOME' + unixBase.slice(1);
+  } else if (unixBase === '~') {
+    unixBase = '$HOME';
+  }
   const unixSub = subPath.replace(/\\/g, '/');
   return `${unixBase}${unixSub}`;
 }
@@ -149,7 +155,7 @@ const componentInfoList: ComponentInfo[] = [
       if (platform === 'windows') {
         return `Test-Path "${gitPath}"`;
       }
-      return `test -d "${path}/.git" && echo "True" || echo "False"`;
+      return `test -d "${gitPath}" && echo "True" || echo "False"`;
     },
     platforms: ['windows', 'macos', 'linux'],
     category: 'required',
