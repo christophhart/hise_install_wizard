@@ -332,8 +332,8 @@ export const howToRun: Record<Exclude<Platform, null>, { steps: HowToRunStep[] }
           dev: 'Install Xcode CLT',
         },
         description: {
-          easy: 'Open Terminal and run: xcode-select --install. Or download Xcode from the App Store.',
-          dev: 'Run: xcode-select --install',
+          easy: 'Install Xcode from the App Store, or run xcode-select --install in Terminal for Command Line Tools only.',
+          dev: 'Install Xcode or run: xcode-select --install',
         },
       },
       {

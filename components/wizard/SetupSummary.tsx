@@ -51,7 +51,7 @@ const setupPhases: SetupPhase[] = [
     },
     downloadInstructions: {
       windows: 'Install Visual Studio 2026 Community with "Desktop development with C++" workload',
-      macos: 'Install Xcode from App Store, then run: xcode-select --install',
+      macos: 'Install Xcode from the App Store, or run: xcode-select --install',
     },
   },
   {

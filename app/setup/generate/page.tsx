@@ -336,7 +336,7 @@ export default function GeneratePage() {
                 {/* Prerequisites status message - only show on Windows/macOS */}
                 {state.platform !== 'linux' && (
                   hasUnverifiedTools ? (
-                    <Alert variant={isEasyMode ? "error" : "warning"} className="mb-4">
+                    <Alert variant="warning" className="mb-4">
                       <div className="flex items-start gap-2">
                         <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
                         <div>
