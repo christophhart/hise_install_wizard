@@ -335,14 +335,17 @@ success "Build verified"
 phase "Phase 10: Test Project"
 
 step "Configuring HISE compiler settings..."
-"$HISE_BIN_PATH/HISE" set_hise_settings -hisepath:"$HISE_PATH"
 
-${includeFaust ? `# Configure FaustPath if Faust was installed
+# Build the set_hise_settings command (conditionally include faustpath)
+SET_HISE_SETTINGS_CMD="$HISE_BIN_PATH/HISE set_hise_settings -hisepath:\"$HISE_PATH\""
+
 if [ "\${FAUST_INSTALLED:-0}" = "1" ]; then
     step "Setting FaustPath to $HISE_PATH/tools/faust/..."
-    "$HISE_BIN_PATH/HISE" set_hise_settings -faustpath:"$HISE_PATH/tools/faust/" || warn "Failed to configure FaustPath"
+    SET_HISE_SETTINGS_CMD="$SET_HISE_SETTINGS_CMD -faustpath:\"$HISE_PATH/tools/faust/\""
 fi
-` : ''}
+
+# Execute the command once
+$SET_HISE_SETTINGS_CMD || warn "Failed to configure HISE settings"
 step "Setting project folder..."
 "$HISE_BIN_PATH/HISE" set_project_folder -p:"$HISE_PATH/extras/demo_project"
 
