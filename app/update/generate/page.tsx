@@ -53,11 +53,16 @@ function UpdateSummary({
   );
 }
 
+// Type for command content that can be string or function
+type CommandContent = string | ((filename: string) => string);
+type CommandModeContent = { easy: CommandContent; dev: CommandContent };
+
 // Render how-to-run instructions
 function renderHowToRunInstructions(
   platform: Platform,
   filename: string,
-  get: (content: { easy: string; dev: string }) => string
+  get: (content: { easy: string; dev: string }) => string,
+  mode: 'easy' | 'dev'
 ) {
   if (!platform) return null;
   
@@ -73,10 +78,11 @@ function renderHowToRunInstructions(
       )}
       
       {steps.map((step, index) => {
-        const commandValue = step.command ? get(step.command) : null;
-        const commandContent = typeof commandValue === 'function' 
-          ? commandValue(filename) 
-          : commandValue;
+        // Get the raw command value based on mode (may be string or function)
+        const rawCommandValue = step.command ? (step.command as CommandModeContent)[mode] : null;
+        const commandContent = typeof rawCommandValue === 'function' 
+          ? rawCommandValue(filename) 
+          : rawCommandValue;
         
         return (
           <div key={index}>
@@ -94,7 +100,7 @@ function renderHowToRunInstructions(
 export default function UpdateGeneratePage() {
   const router = useRouter();
   const { state, canGenerate } = useUpdate();
-  const { get, isEasyMode } = useExplanation();
+  const { get, isEasyMode, mode } = useExplanation();
   
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -142,6 +148,7 @@ export default function UpdateGeneratePage() {
     if (!ciLoading) {
       generateScript();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canGenerate, router, ciLoading, useLatestOverride]);
   
   const generateScript = async () => {
@@ -334,7 +341,7 @@ export default function UpdateGeneratePage() {
                 icon={<Terminal className="w-4 h-4 text-accent" />}
                 defaultOpen={true}
               >
-                {renderHowToRunInstructions(state.platform, uniqueFilename, get)}
+                {renderHowToRunInstructions(state.platform, uniqueFilename, get, mode)}
               </Collapsible>
               
               {/* Script Preview */}

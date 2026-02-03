@@ -515,9 +515,16 @@ export const updateGeneratePage = {
 };
 
 // Simplified "How to Run" for update mode
+// Command content can be either a string or a function that takes filename
+type CommandValue = string | ((filename: string) => string);
+interface CommandModeContent {
+  easy: CommandValue;
+  dev: CommandValue;
+}
+
 interface UpdateHowToRunStep {
   title: ModeContent;
-  command?: ModeContent;
+  command?: CommandModeContent;
 }
 
 export const updateHowToRun: Record<Exclude<Platform, null>, { steps: UpdateHowToRunStep[] }> = {

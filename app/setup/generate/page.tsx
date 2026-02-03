@@ -119,6 +119,7 @@ export default function GeneratePage() {
     if (!ciLoading) {
       generateScript();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.platform, ciLoading, useLatestOverride]);
   
   const generateScript = async () => {
