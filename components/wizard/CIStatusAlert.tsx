@@ -89,7 +89,7 @@ export default function CIStatusAlert({
               <span className="text-gray-500">Latest: </span>
               <span className="text-red-400">{latestCommit.shortSha}</span>
               <span className="text-gray-500"> ({formatDate(latestCommit.date)}) </span>
-              <span className="text-gray-400 truncate block">"{latestCommit.message}"</span>
+              <span className="text-gray-400 truncate block">&quot;{latestCommit.message}&quot;</span>
             </div>
           </div>
 
@@ -100,7 +100,7 @@ export default function CIStatusAlert({
               <span className="text-gray-500">Using: </span>
               <span className="text-green-400">{lastPassingCommit.shortSha}</span>
               <span className="text-gray-500"> ({formatDate(lastPassingCommit.date)}) </span>
-              <span className="text-gray-400 truncate block">"{lastPassingCommit.message}"</span>
+              <span className="text-gray-400 truncate block">&quot;{lastPassingCommit.message}&quot;</span>
             </div>
           </div>
 

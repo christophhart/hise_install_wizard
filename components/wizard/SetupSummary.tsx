@@ -359,7 +359,7 @@ export default function SetupSummary({
                               onChange={(e) => setIppOverrideAcknowledged(e.target.checked)}
                               className="w-3 h-3 rounded border-border bg-background text-accent focus:ring-accent"
                             />
-                            <span className="text-xs text-gray-400">I've installed VS2026, proceed anyway</span>
+                            <span className="text-xs text-gray-400">I&apos;ve installed VS2026, proceed anyway</span>
                           </label>
                         )}
                         {/* EZ mode: just show message */}
