@@ -72,6 +72,27 @@ echo "Architecture: $ARCH"
 echo ""
 
 # ============================================
+# Pre-flight: Xcode Check & License Accept
+# ============================================
+# This runs first so password prompt happens at the start
+phase "Pre-flight: Xcode Check"
+
+if ! command -v xcodebuild &> /dev/null; then
+    err "Xcode Command Line Tools are not installed."
+    echo ""
+    echo -e "Install from: \${CYAN}https://developer.apple.com/xcode/\${NC}"
+    echo -e "Or run: \${CYAN}xcode-select --install\${NC}"
+    echo ""
+    exit 1
+fi
+
+# Accept Xcode license if needed (password prompt happens here at the start)
+step "Accepting Xcode license (you may be prompted for your password)..."
+sudo xcodebuild -license accept 2>/dev/null || true
+
+success "Xcode ready"
+
+# ============================================
 # Phase 2: Git Setup
 # ============================================
 ${skipPhases.includes(2) ? '# SKIPPED: Git already configured' : `
@@ -115,30 +136,8 @@ success "Git setup complete"
 # ============================================
 phase "Phase 3: Xcode Command Line Tools Check"
 
-if ! command -v xcodebuild &> /dev/null; then
-    err "Xcode Command Line Tools are not installed."
-    echo ""
-    echo -e "\${RED}========================================\${NC}"
-    echo -e "\${RED}  PREREQUISITE MISSING\${NC}"
-    echo -e "\${RED}========================================\${NC}"
-    echo ""
-    echo -e "\${YELLOW}Please install Xcode Command Line Tools before running this script.\${NC}"
-    echo ""
-    echo "Option 1: Install from the App Store"
-    echo -e "  - Download Xcode from: \${CYAN}https://developer.apple.com/xcode/\${NC}"
-    echo ""
-    echo "Option 2: Install Command Line Tools only"
-    echo -e "  - Run: \${CYAN}xcode-select --install\${NC}"
-    echo ""
-    echo "After installation, run this script again."
-    exit 1
-fi
-
-# Accept Xcode license if needed
-step "Checking Xcode license..."
-sudo xcodebuild -license accept 2>/dev/null || true
-
-success "Xcode Command Line Tools detected"
+# Xcode was already verified and license accepted in pre-flight
+success "Xcode Command Line Tools verified"
 
 # ============================================
 # Phase 5: Faust (Optional)
