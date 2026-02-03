@@ -170,7 +170,16 @@ if [ ! -f "$FAUST_LIB" ]; then
     
     step "Extracting Faust to $HISE_PATH/tools/faust/..."
     mkdir -p "$HISE_PATH/tools/faust"
-    cp -R /tmp/faust-mount/* "$HISE_PATH/tools/faust/" || handle_error 5 "Failed to copy Faust files"
+    
+    # DMG contains a "Faust-X.X.X" subfolder - find it and copy its contents
+    FAUST_FOLDER=$(find /tmp/faust-mount -maxdepth 1 -type d -name "Faust*" | head -1)
+    if [ -n "$FAUST_FOLDER" ] && [ -d "$FAUST_FOLDER" ]; then
+        # Copy contents of the Faust folder (lib, bin, include, share)
+        cp -R "$FAUST_FOLDER"/* "$HISE_PATH/tools/faust/" || handle_error 5 "Failed to copy Faust files"
+    else
+        # Fallback: copy everything from mount root
+        cp -R /tmp/faust-mount/* "$HISE_PATH/tools/faust/" || handle_error 5 "Failed to copy Faust files"
+    fi
     
     step "Removing quarantine attributes to avoid Gatekeeper issues..."
     xattr -cr "$HISE_PATH/tools/faust"

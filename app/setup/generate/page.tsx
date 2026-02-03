@@ -19,30 +19,34 @@ import Collapsible from '@/components/ui/Collapsible';
 import { ArrowLeft, Download, RefreshCw, Terminal, Folder, Check, AlertTriangle, Code } from 'lucide-react';
 import { useExplanation } from '@/hooks/useExplanation';
 import { generatePage, alerts, regenerateInfo } from '@/lib/content/explanations';
+import DownloadLocationInput, { DEFAULT_DOWNLOAD_PATHS } from '@/components/wizard/DownloadLocationInput';
 import { downloadAsFile, generateUniqueFilename } from '@/lib/utils/download';
 import InfoPopup from '@/components/ui/InfoPopup';
 
 // Commands for running the script (simplified - no IDE installation steps)
-const runCommands: Record<Exclude<Platform, null>, { steps: { title: string; command?: string | ((filename: string) => string) }[] }> = {
-  windows: {
-    steps: [
-      { title: 'Open PowerShell as Administrator' },
-      { title: 'Allow script execution for this session', command: 'Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process' },
-      { title: 'Run this command to execute the script', command: (filename: string) => `cd $HOME\\Downloads; .\\"${filename}"` },
-    ],
-  },
-  macos: {
-    steps: [
-      { title: 'Open Terminal' },
-      { title: 'Run this command to execute the script', command: (filename: string) => `cd ~/Downloads && chmod +x "${filename}" && ./"${filename}"` },
-    ],
-  },
-  linux: {
-    steps: [
-      { title: 'Open Terminal' },
-      { title: 'Run this command to execute the script', command: (filename: string) => `cd ~/Downloads && chmod +x "${filename}" && ./"${filename}"` },
-    ],
-  },
+const getRunCommands = (platform: Exclude<Platform, null>, downloadPath: string) => {
+  const commands: Record<Exclude<Platform, null>, { steps: { title: string; command?: string | ((filename: string) => string) }[] }> = {
+    windows: {
+      steps: [
+        { title: 'Open PowerShell as Administrator' },
+        { title: 'Allow script execution for this session', command: 'Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process' },
+        { title: 'Run this command to execute the script', command: (filename: string) => `cd "${downloadPath}"; .\\"${filename}"` },
+      ],
+    },
+    macos: {
+      steps: [
+        { title: 'Open Terminal' },
+        { title: 'Run this command to execute the script', command: (filename: string) => `cd "${downloadPath}" && chmod +x "${filename}" && ./"${filename}"` },
+      ],
+    },
+    linux: {
+      steps: [
+        { title: 'Open Terminal' },
+        { title: 'Run this command to execute the script', command: (filename: string) => `cd "${downloadPath}" && chmod +x "${filename}" && ./"${filename}"` },
+      ],
+    },
+  };
+  return commands[platform];
 };
 
 interface VerificationStatus {
@@ -69,6 +73,9 @@ export default function GeneratePage() {
   
   // Faust version state
   const [faustVersion, setFaustVersion] = useState<string | null>(null);
+  
+  // Download location state
+  const [downloadLocation, setDownloadLocation] = useState<string>('');
   
   // Verification state
   const [verificationStatus, setVerificationStatus] = useState<VerificationStatus>({
@@ -131,6 +138,13 @@ export default function GeneratePage() {
     
     fetchFaustVersion();
   }, [state.includeFaust]);
+  
+  // Initialize download location when platform is available
+  useEffect(() => {
+    if (state.platform && !downloadLocation) {
+      setDownloadLocation(DEFAULT_DOWNLOAD_PATHS[state.platform]);
+    }
+  }, [state.platform, downloadLocation]);
   
   // Redirect if no platform selected, generate script when CI check completes
   useEffect(() => {
@@ -235,7 +249,7 @@ export default function GeneratePage() {
     return null;
   }
   
-  const commands = runCommands[state.platform];
+  const commands = getRunCommands(state.platform, downloadLocation || DEFAULT_DOWNLOAD_PATHS[state.platform]);
   
   return (
     <PageContainer>
@@ -429,6 +443,14 @@ export default function GeneratePage() {
                     </>
                   )}
                 </div>
+                
+                {/* Download Location */}
+                <DownloadLocationInput
+                  platform={state.platform}
+                  value={downloadLocation}
+                  onChange={setDownloadLocation}
+                  className="mb-4"
+                />
                 
                 {/* How to Run */}
                 <Collapsible

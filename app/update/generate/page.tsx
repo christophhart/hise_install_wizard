@@ -20,6 +20,7 @@ import { useExplanation } from '@/hooks/useExplanation';
 import { updateGeneratePage, updateHowToRun, updatePhases, regenerateInfo } from '@/lib/content/explanations';
 import { downloadAsFile, generateUniqueFilename } from '@/lib/utils/download';
 import InfoPopup from '@/components/ui/InfoPopup';
+import DownloadLocationInput, { DEFAULT_DOWNLOAD_PATHS } from '@/components/wizard/DownloadLocationInput';
 
 // Update summary component
 function UpdateSummary({ 
@@ -54,13 +55,14 @@ function UpdateSummary({
 }
 
 // Type for command content that can be string or function
-type CommandContent = string | ((filename: string) => string);
+type CommandContent = string | ((filename: string, downloadPath: string) => string);
 type CommandModeContent = { easy: CommandContent; dev: CommandContent };
 
 // Render how-to-run instructions
 function renderHowToRunInstructions(
   platform: Platform,
   filename: string,
+  downloadPath: string,
   get: (content: { easy: string; dev: string }) => string,
   mode: 'easy' | 'dev'
 ) {
@@ -81,7 +83,7 @@ function renderHowToRunInstructions(
         // Get the raw command value based on mode (may be string or function)
         const rawCommandValue = step.command ? (step.command as CommandModeContent)[mode] : null;
         const commandContent = typeof rawCommandValue === 'function' 
-          ? rawCommandValue(filename) 
+          ? rawCommandValue(filename, downloadPath) 
           : rawCommandValue;
         
         return (
@@ -116,6 +118,9 @@ export default function UpdateGeneratePage() {
   
   // Faust version state
   const [faustVersion, setFaustVersion] = useState<string | null>(null);
+  
+  // Download location state
+  const [downloadLocation, setDownloadLocation] = useState<string>('');
   
   // Fetch CI status on mount
   useEffect(() => {
@@ -159,6 +164,13 @@ export default function UpdateGeneratePage() {
     
     fetchFaustVersion();
   }, [state.hasFaust]);
+  
+  // Initialize download location when platform is available
+  useEffect(() => {
+    if (state.platform && !downloadLocation) {
+      setDownloadLocation(DEFAULT_DOWNLOAD_PATHS[state.platform]);
+    }
+  }, [state.platform, downloadLocation]);
   
   // Redirect if no valid detection, generate script when CI check completes
   useEffect(() => {
@@ -359,13 +371,29 @@ export default function UpdateGeneratePage() {
                 )}
               </div>
               
+              {/* Download Location */}
+              {state.platform && (
+                <DownloadLocationInput
+                  platform={state.platform}
+                  value={downloadLocation}
+                  onChange={setDownloadLocation}
+                  className="mb-4"
+                />
+              )}
+              
               {/* Instructions */}
               <Collapsible
                 title="How to run the script"
                 icon={<Terminal className="w-4 h-4 text-accent" />}
                 defaultOpen={true}
               >
-                {renderHowToRunInstructions(state.platform, uniqueFilename, get, mode)}
+                {renderHowToRunInstructions(
+                  state.platform, 
+                  uniqueFilename, 
+                  downloadLocation || (state.platform ? DEFAULT_DOWNLOAD_PATHS[state.platform] : ''),
+                  get, 
+                  mode
+                )}
               </Collapsible>
               
               {/* Script Preview - Dev mode only */}

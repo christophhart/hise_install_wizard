@@ -544,8 +544,8 @@ export const updateGeneratePage = {
 };
 
 // Simplified "How to Run" for update mode
-// Command content can be either a string or a function that takes filename
-type CommandValue = string | ((filename: string) => string);
+// Command content can be either a string or a function that takes filename and downloadPath
+type CommandValue = string | ((filename: string, downloadPath: string) => string);
 interface CommandModeContent {
   easy: CommandValue;
   dev: CommandValue;
@@ -581,8 +581,8 @@ export const updateHowToRun: Record<Exclude<Platform, null>, { steps: UpdateHowT
           dev: 'Run script',
         },
         command: {
-          easy: (filename: string) => `cd $HOME\\Downloads; .\\"${filename}"`,
-          dev: (filename: string) => `cd $HOME\\Downloads; .\\"${filename}"`,
+          easy: (filename: string, downloadPath: string) => `cd "${downloadPath}"; .\\"${filename}"`,
+          dev: (filename: string, downloadPath: string) => `cd "${downloadPath}"; .\\"${filename}"`,
         },
       },
     ],
@@ -601,8 +601,8 @@ export const updateHowToRun: Record<Exclude<Platform, null>, { steps: UpdateHowT
           dev: 'Run script',
         },
         command: {
-          easy: (filename: string) => `cd ~/Downloads && chmod +x "${filename}" && ./"${filename}"`,
-          dev: (filename: string) => `cd ~/Downloads && chmod +x "${filename}" && ./"${filename}"`,
+          easy: (filename: string, downloadPath: string) => `cd "${downloadPath}" && chmod +x "${filename}" && ./"${filename}"`,
+          dev: (filename: string, downloadPath: string) => `cd "${downloadPath}" && chmod +x "${filename}" && ./"${filename}"`,
         },
       },
     ],
@@ -621,8 +621,8 @@ export const updateHowToRun: Record<Exclude<Platform, null>, { steps: UpdateHowT
           dev: 'Run script',
         },
         command: {
-          easy: (filename: string) => `cd ~/Downloads && chmod +x "${filename}" && ./"${filename}"`,
-          dev: (filename: string) => `cd ~/Downloads && chmod +x "${filename}" && ./"${filename}"`,
+          easy: (filename: string, downloadPath: string) => `cd "${downloadPath}" && chmod +x "${filename}" && ./"${filename}"`,
+          dev: (filename: string, downloadPath: string) => `cd "${downloadPath}" && chmod +x "${filename}" && ./"${filename}"`,
         },
       },
     ],
