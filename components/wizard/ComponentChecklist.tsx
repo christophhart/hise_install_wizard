@@ -8,7 +8,7 @@ import { ChevronDown, ChevronUp, CheckCircle, Download, PlayCircle, Wand2, Clipb
 import Alert from '@/components/ui/Alert';
 import Collapsible from '@/components/ui/Collapsible';
 import { useState } from 'react';
-import { components as componentContent, autoDetect } from '@/lib/content/explanations';
+import { components as componentContent, autoDetect, setupPage } from '@/lib/content/explanations';
 
 interface ComponentChecklistProps {
   platform: Exclude<Platform, null>;
@@ -453,6 +453,93 @@ export default function ComponentChecklist({
     ? generateCombinedVerifyCommand(components, platform, installPath)
     : null;
   
+  // Helper to render a simple toggle for EZ mode optional components
+  const renderSimpleToggle = (
+    key: 'faust' | 'intelIPP',
+    checked: boolean,
+    onToggle: (value: boolean) => void,
+    label: string,
+    description: string
+  ) => (
+    <div className="flex items-start gap-3">
+      <label className="flex items-start gap-3 cursor-pointer group flex-1">
+        {/* iOS-style toggle */}
+        <div className="relative flex-shrink-0 mt-0.5">
+          <input
+            type="checkbox"
+            checked={checked}
+            onChange={(e) => onToggle(e.target.checked)}
+            className="sr-only peer"
+          />
+          <div className={`
+            w-11 h-6 rounded-full
+            transition-colors duration-200
+            ${checked 
+              ? 'bg-accent' 
+              : 'bg-gray-600'
+            }
+            peer-focus:ring-2 peer-focus:ring-accent/50
+          `}>
+            <div className={`
+              absolute top-0.5 left-0.5
+              w-5 h-5 rounded-full bg-white shadow-md
+              transition-transform duration-200
+              ${checked ? 'translate-x-5' : 'translate-x-0'}
+            `} />
+          </div>
+        </div>
+        <div className="flex-1">
+          <span className="text-sm font-medium text-white">
+            {label}
+          </span>
+          <p className="text-sm text-gray-500 mt-0.5">{description}</p>
+        </div>
+      </label>
+    </div>
+  );
+  
+  // EZ Mode: Simplified UI - just show intro text and optional component toggles
+  if (explanationMode === 'easy') {
+    const { componentsSectionEzMode, optionalToggles } = setupPage;
+    
+    return (
+      <div className="space-y-6">
+        {/* Intro text explaining script handles everything */}
+        <p className="text-sm text-gray-300">
+          {componentsSectionEzMode.intro.easy}
+        </p>
+        
+        {/* Optional Enhancements section */}
+        <div className="pt-4 border-t border-border">
+          <p className="text-xs text-gray-500 uppercase tracking-wide font-medium mb-4">
+            {componentsSectionEzMode.optionalHeader.easy}
+          </p>
+          
+          <div className="space-y-4">
+            {/* Faust toggle - all platforms */}
+            {renderSimpleToggle(
+              'faust',
+              installFaust,
+              onInstallFaustChange,
+              optionalToggles.faust.label,
+              optionalToggles.faust.description.easy
+            )}
+            
+            {/* Intel IPP toggle - Windows only */}
+            {platform === 'windows' && renderSimpleToggle(
+              'intelIPP',
+              installIPP,
+              onInstallIPPChange,
+              optionalToggles.intelIPP.label,
+              optionalToggles.intelIPP.description.easy
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+  
+  // Dev Mode: Full component detection UI
   return (
     <div className="space-y-6">
       {/* Auto-Detect Section */}
@@ -477,9 +564,7 @@ export default function ComponentChecklist({
           {/* Detection Script */}
           <div className="space-y-2">
             <p className="text-xs text-gray-500">
-              {explanationMode === 'easy' 
-                ? `1. ${getContent(autoDetect.scriptLabel)}`
-                : getContent(autoDetect.scriptLabel)}
+              {getContent(autoDetect.scriptLabel)}
             </p>
             <CodeBlock code={detectionScript} className="text-xs" />
           </div>
@@ -487,9 +572,7 @@ export default function ComponentChecklist({
           {/* Paste Input */}
           <div className="space-y-2">
             <p className="text-xs text-gray-500">
-              {explanationMode === 'easy' 
-                ? `2. ${getContent(autoDetect.pasteLabel)}`
-                : getContent(autoDetect.pasteLabel)}
+              {getContent(autoDetect.pasteLabel)}
             </p>
             <div className="flex gap-2">
               <div className="flex-1 relative">

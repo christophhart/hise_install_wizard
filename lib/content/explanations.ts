@@ -65,6 +65,36 @@ export const setupPage = {
       dev: 'Toggle off installed components to skip them. Use Auto-Detect or adjust manually. Optional components require enabling "Install during setup".',
     } as ModeContent,
   },
+  
+  // EZ Mode simplified components section
+  componentsSectionEzMode: {
+    intro: {
+      easy: 'The setup script will install all required tools: Git, your platform\'s C++ compiler, and clone the HISE repository with all dependencies.',
+      dev: '',
+    } as ModeContent,
+    optionalHeader: {
+      easy: 'Optional Enhancements',
+      dev: '',
+    } as ModeContent,
+  },
+  
+  // Optional component toggles for EZ mode
+  optionalToggles: {
+    faust: {
+      label: 'Add Faust Support',
+      description: {
+        easy: 'Enables writing DSP effects using the Faust programming language',
+        dev: '',
+      } as ModeContent,
+    },
+    intelIPP: {
+      label: 'Add Intel IPP',
+      description: {
+        easy: 'Optimizes audio processing performance (recommended)',
+        dev: '',
+      } as ModeContent,
+    },
+  },
 };
 
 // ============================================================================
