@@ -2,6 +2,7 @@
 
 import { Architecture } from '@/types/wizard';
 import RadioGroup from '@/components/ui/RadioGroup';
+import Alert from '@/components/ui/Alert';
 
 interface ArchitectureSelectorProps {
   value: Architecture;
@@ -43,6 +44,11 @@ export default function ArchitectureSelector({
         value={value}
         onChange={(v) => onChange(v as Architecture)}
       />
+      <Alert variant="info">
+        This only affects the HISE application and associated tools (Faust, etc.). 
+        You can still export Universal Binary builds of your projects and plugins 
+        that run on both architectures.
+      </Alert>
     </div>
   );
 }
