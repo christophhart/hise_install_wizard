@@ -2,6 +2,7 @@ import {
   ScriptConfig, 
   UpdateScriptConfig,
   HELP_URL, 
+  BASH_COLORS,
   generateHeader,
   generateUpdateHeader,
   generateBashUtilities,
@@ -12,6 +13,9 @@ import {
   generateGitUpdateWithCommitBash,
   generateTestProjectSectionBash,
 } from './common';
+
+// Destructure for use in template literals
+const { CYAN, NC, GREEN, YELLOW, RED } = BASH_COLORS;
 
 export function generateLinuxScript(config: ScriptConfig): string {
   const { installPath, includeFaust, skipPhases, targetCommit } = config;
@@ -42,11 +46,11 @@ CYAN='\\033[0;36m'
 NC='\\033[0m' # No Color
 BOLD='\\033[1m'
 
-phase() { echo -e "\${CYAN}[PHASE]\${NC} $1"; }
+phase() { echo -e "${CYAN}[PHASE]${NC} $1"; }
 step() { echo -e "  -> $1"; }
-success() { echo -e "\${GREEN}[OK]\${NC} $1"; }
-warn() { echo -e "\${YELLOW}[WARN]\${NC} $1"; }
-err() { echo -e "\${RED}[ERROR]\${NC} $1"; }
+success() { echo -e "${GREEN}[OK]${NC} $1"; }
+warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
+err() { echo -e "${RED}[ERROR]${NC} $1"; }
 
 # Error handler
 handle_error() {
@@ -54,7 +58,7 @@ handle_error() {
     local message=$2
     err "$message"
     echo ""
-    echo -e "\${YELLOW}Need help? Visit: ${HELP_URL}?platform=linux&phase=$phase\${NC}"
+    echo -e "${YELLOW}Need help? Visit: ${HELP_URL}?platform=linux&phase=$phase${NC}"
     echo ""
     exit 1
 }
@@ -62,9 +66,9 @@ handle_error() {
 HISE_PATH="${expandedPath}"
 
 echo ""
-echo -e "\${CYAN}========================================\${NC}"
-echo -e "\${CYAN}  HISE Setup Script for Linux\${NC}"
-echo -e "\${CYAN}========================================\${NC}"
+echo -e "${CYAN}========================================${NC}"
+echo -e "${CYAN}  HISE Setup Script for Linux${NC}"
+echo -e "${CYAN}========================================${NC}"
 echo ""
 echo "Install path: $HISE_PATH"
 echo ""
@@ -116,10 +120,10 @@ if command -v gcc &> /dev/null; then
     if [ "$GCC_VERSION" -gt 11 ]; then
         err "GCC version $GCC_VERSION detected. HISE requires GCC 11 or earlier."
         echo ""
-        echo -e "\${YELLOW}Please install GCC 11:\${NC}"
-        echo -e "\${CYAN}sudo apt-get install gcc-11 g++-11\${NC}"
-        echo -e "\${CYAN}sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-11 100\${NC}"
-        echo -e "\${CYAN}sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-11 100\${NC}"
+        echo -e "${YELLOW}Please install GCC 11:${NC}"
+        echo -e "${CYAN}sudo apt-get install gcc-11 g++-11${NC}"
+        echo -e "${CYAN}sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-11 100${NC}"
+        echo -e "${CYAN}sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-11 100${NC}"
         echo ""
         exit 1
     fi
@@ -165,16 +169,16 @@ if command -v faust &> /dev/null; then
     FAUST_INSTALLED=1
 else
     echo ""
-    echo -e "\${YELLOW}========================================\${NC}"
-    echo -e "\${YELLOW}  MANUAL STEP REQUIRED: Install Faust\${NC}"
-    echo -e "\${YELLOW}========================================\${NC}"
+    echo -e "${YELLOW}========================================${NC}"
+    echo -e "${YELLOW}  MANUAL STEP REQUIRED: Install Faust${NC}"
+    echo -e "${YELLOW}========================================${NC}"
     echo ""
     echo "Please install Faust using one of these methods:"
     echo ""
-    echo -e "\${CYAN}# Debian/Ubuntu:\${NC}"
+    echo -e "${CYAN}# Debian/Ubuntu:${NC}"
     echo "sudo apt-get install faust libfaust-dev"
     echo ""
-    echo -e "\${CYAN}# Or build from source:\${NC}"
+    echo -e "${CYAN}# Or build from source:${NC}"
     echo "git clone https://github.com/grame-cncm/faust.git"
     echo "cd faust && make && sudo make install && sudo ldconfig"
     echo ""
@@ -337,19 +341,19 @@ fi
 # Phase 11: Success
 # ============================================
 echo ""
-echo -e "\${GREEN}========================================\${NC}"
-echo -e "\${GREEN}  HISE Setup Complete!\${NC}"
-echo -e "\${GREEN}========================================\${NC}"
+echo -e "${GREEN}========================================${NC}"
+echo -e "${GREEN}  HISE Setup Complete!${NC}"
+echo -e "${GREEN}========================================${NC}"
 echo ""
 echo "HISE has been installed to: $HISE_PATH"
 echo ""
 echo "You can now:"
-echo -e "  1. Restart your terminal and run: \${CYAN}HISE --help\${NC}"
-echo -e "  2. Or source your shell config: \${CYAN}source $SHELL_CONFIG\${NC}"
+echo -e "  1. Restart your terminal and run: ${CYAN}HISE --help${NC}"
+echo -e "  2. Or source your shell config: ${CYAN}source $SHELL_CONFIG${NC}"
 echo ""
 echo "Resources:"
-echo -e "  - Documentation: \${CYAN}https://docs.hise.dev\${NC}"
-echo -e "  - Forum: \${CYAN}https://forum.hise.audio\${NC}"
+echo -e "  - Documentation: ${CYAN}https://docs.hise.dev${NC}"
+echo -e "  - Forum: ${CYAN}https://forum.hise.audio${NC}"
 echo ""
 `;
 
@@ -390,9 +394,9 @@ ${generateBashErrorHandler('update')}
 HISE_PATH="${expandedPath}"
 
 echo ""
-echo -e "\${CYAN}========================================\${NC}"
-echo -e "\${CYAN}  HISE Update Script for Linux\${NC}"
-echo -e "\${CYAN}========================================\${NC}"
+echo -e "${CYAN}========================================${NC}"
+echo -e "${CYAN}  HISE Update Script for Linux${NC}"
+echo -e "${CYAN}========================================${NC}"
 echo ""
 echo "HISE path: $HISE_PATH"
 echo "Build config: ${buildConfig}"

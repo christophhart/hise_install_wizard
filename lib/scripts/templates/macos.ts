@@ -2,6 +2,7 @@ import {
   ScriptConfig, 
   UpdateScriptConfig,
   HELP_URL, 
+  BASH_COLORS,
   generateHeader,
   generateUpdateHeader,
   generateBashUtilities,
@@ -12,6 +13,9 @@ import {
   generateGitUpdateWithCommitBash,
   generateTestProjectSectionBash,
 } from './common';
+
+// Destructure for use in template literals
+const { CYAN, NC, GREEN, YELLOW, RED } = BASH_COLORS;
 
 export function generateMacOSScript(config: ScriptConfig): string {
   const { installPath, includeFaust, architecture, skipPhases, targetCommit } = config;
@@ -42,11 +46,11 @@ CYAN='\\033[0;36m'
 NC='\\033[0m' # No Color
 BOLD='\\033[1m'
 
-phase() { echo -e "\${CYAN}[PHASE]\${NC} $1"; }
+phase() { echo -e "${CYAN}[PHASE]${NC} $1"; }
 step() { echo -e "  -> $1"; }
-success() { echo -e "\${GREEN}[OK]\${NC} $1"; }
-warn() { echo -e "\${YELLOW}[WARN]\${NC} $1"; }
-err() { echo -e "\${RED}[ERROR]\${NC} $1"; }
+success() { echo -e "${GREEN}[OK]${NC} $1"; }
+warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
+err() { echo -e "${RED}[ERROR]${NC} $1"; }
 
 # Error handler
 handle_error() {
@@ -54,7 +58,7 @@ handle_error() {
     local message=$2
     err "$message"
     echo ""
-    echo -e "\${YELLOW}Need help? Visit: ${HELP_URL}?platform=macos&phase=$phase\${NC}"
+    echo -e "${YELLOW}Need help? Visit: ${HELP_URL}?platform=macos&phase=$phase${NC}"
     echo ""
     exit 1
 }
@@ -63,9 +67,9 @@ HISE_PATH="${expandedPath}"
 ARCH="${architecture}"
 
 echo ""
-echo -e "\${CYAN}========================================\${NC}"
-echo -e "\${CYAN}  HISE Setup Script for macOS\${NC}"
-echo -e "\${CYAN}========================================\${NC}"
+echo -e "${CYAN}========================================${NC}"
+echo -e "${CYAN}  HISE Setup Script for macOS${NC}"
+echo -e "${CYAN}========================================${NC}"
 echo ""
 echo "Install path: $HISE_PATH"
 echo "Architecture: $ARCH"
@@ -80,8 +84,8 @@ phase "Pre-flight: Xcode Check"
 if ! command -v xcodebuild &> /dev/null; then
     err "Xcode Command Line Tools are not installed."
     echo ""
-    echo -e "Install from: \${CYAN}https://developer.apple.com/xcode/\${NC}"
-    echo -e "Or run: \${CYAN}xcode-select --install\${NC}"
+    echo -e "Install from: ${CYAN}https://developer.apple.com/xcode/${NC}"
+    echo -e "Or run: ${CYAN}xcode-select --install${NC}"
     echo ""
     exit 1
 fi
@@ -102,8 +106,8 @@ phase "Phase 2: Git Setup"
 if ! command -v git &> /dev/null; then
     err "Git is not installed."
     echo ""
-    echo -e "\${YELLOW}Please install Xcode Command Line Tools:\${NC}"
-    echo -e "\${CYAN}xcode-select --install\${NC}"
+    echo -e "${YELLOW}Please install Xcode Command Line Tools:${NC}"
+    echo -e "${CYAN}xcode-select --install${NC}"
     echo ""
     echo "After installation, run this script again."
     exit 1
@@ -149,12 +153,12 @@ FAUST_LIB="$HISE_PATH/tools/faust/lib/libfaust.dylib"
 
 if [ ! -f "$FAUST_LIB" ]; then
     echo ""
-    echo -e "\${YELLOW}========================================\${NC}"
-    echo -e "\${YELLOW}  MANUAL STEP REQUIRED: Install Faust\${NC}"
-    echo -e "\${YELLOW}========================================\${NC}"
+    echo -e "${YELLOW}========================================${NC}"
+    echo -e "${YELLOW}  MANUAL STEP REQUIRED: Install Faust${NC}"
+    echo -e "${YELLOW}========================================${NC}"
     echo ""
     echo "Please download Faust 2.54.0 or later:"
-    echo -e "\${CYAN}https://github.com/grame-cncm/faust/releases\${NC}"
+    echo -e "${CYAN}https://github.com/grame-cncm/faust/releases${NC}"
     echo ""
     if [ "$ARCH" = "arm64" ]; then
         echo "Download: Faust-2.XX.X-arm64.dmg (for Apple Silicon)"
@@ -163,7 +167,7 @@ if [ ! -f "$FAUST_LIB" ]; then
     fi
     echo ""
     echo "Extract ALL folders (include, lib, bin, share) to:"
-    echo -e "\${CYAN}$HISE_PATH/tools/faust/\${NC}"
+    echo -e "${CYAN}$HISE_PATH/tools/faust/${NC}"
     echo ""
     read -p "Press Enter after extraction is complete..."
     
@@ -336,19 +340,19 @@ fi
 # Phase 11: Success
 # ============================================
 echo ""
-echo -e "\${GREEN}========================================\${NC}"
-echo -e "\${GREEN}  HISE Setup Complete!\${NC}"
-echo -e "\${GREEN}========================================\${NC}"
+echo -e "${GREEN}========================================${NC}"
+echo -e "${GREEN}  HISE Setup Complete!${NC}"
+echo -e "${GREEN}========================================${NC}"
 echo ""
 echo "HISE has been installed to: $HISE_PATH"
 echo ""
 echo "You can now:"
-echo -e "  1. Restart your terminal and run: \${CYAN}HISE --help\${NC}"
-echo -e "  2. Or source your shell config: \${CYAN}source $SHELL_CONFIG\${NC}"
+echo -e "  1. Restart your terminal and run: ${CYAN}HISE --help${NC}"
+echo -e "  2. Or source your shell config: ${CYAN}source $SHELL_CONFIG${NC}"
 echo ""
 echo "Resources:"
-echo -e "  - Documentation: \${CYAN}https://docs.hise.dev\${NC}"
-echo -e "  - Forum: \${CYAN}https://forum.hise.audio\${NC}"
+echo -e "  - Documentation: ${CYAN}https://docs.hise.dev${NC}"
+echo -e "  - Forum: ${CYAN}https://forum.hise.audio${NC}"
 echo ""
 `;
 
@@ -390,9 +394,9 @@ HISE_PATH="${expandedPath}"
 ARCH="${architecture}"
 
 echo ""
-echo -e "\${CYAN}========================================\${NC}"
-echo -e "\${CYAN}  HISE Update Script for macOS\${NC}"
-echo -e "\${CYAN}========================================\${NC}"
+echo -e "${CYAN}========================================${NC}"
+echo -e "${CYAN}  HISE Update Script for macOS${NC}"
+echo -e "${CYAN}========================================${NC}"
 echo ""
 echo "HISE path: $HISE_PATH"
 echo "Architecture: $ARCH"

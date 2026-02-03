@@ -7,6 +7,22 @@ export type { ScriptConfig, UpdateScriptConfig };
 import { HELP_URL } from '@/lib/constants';
 export { HELP_URL };
 
+// Helper to create bash variable references like ${CYAN}, ${NC}, etc.
+// Using a function prevents bundler constant-folding/inlining
+export function bashVar(name: string): string {
+  return '${' + name + '}';
+}
+
+// Shorthand for common color variables
+export const BASH_COLORS = {
+  CYAN: '${CYAN}',
+  NC: '${NC}',
+  GREEN: '${GREEN}',
+  YELLOW: '${YELLOW}',
+  RED: '${RED}',
+  BOLD: '${BOLD}',
+} as const;
+
 // Color codes for terminal output
 export const colors = {
   bash: {
@@ -56,6 +72,7 @@ export function generateUpdateHeader(config: UpdateScriptConfig): string {
 // ============================================
 
 export function generateBashUtilities(): string {
+  const { CYAN, NC, GREEN, YELLOW, RED } = BASH_COLORS;
   return `# Colors for output
 RED='\\033[0;31m'
 GREEN='\\033[0;32m'
@@ -64,22 +81,23 @@ CYAN='\\033[0;36m'
 NC='\\033[0m' # No Color
 BOLD='\\033[1m'
 
-phase() { echo -e "\${CYAN}[PHASE]\${NC} $1"; }
+phase() { echo -e "${CYAN}[PHASE]${NC} $1"; }
 step() { echo -e "  -> $1"; }
-success() { echo -e "\${GREEN}[OK]\${NC} $1"; }
-warn() { echo -e "\${YELLOW}[WARN]\${NC} $1"; }
-err() { echo -e "\${RED}[ERROR]\${NC} $1"; }`;
+success() { echo -e "${GREEN}[OK]${NC} $1"; }
+warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
+err() { echo -e "${RED}[ERROR]${NC} $1"; }`;
 }
 
 export function generateBashErrorHandler(scriptType: 'setup' | 'update'): string {
   const baseUrl = scriptType === 'setup' ? HELP_URL : `${HELP_URL}?mode=update`;
+  const { YELLOW, NC } = BASH_COLORS;
   return `# Error handler
 handle_error() {
     local phase=$1
     local message=$2
     err "$message"
     echo ""
-    echo -e "\${YELLOW}Need help? Visit: ${baseUrl}&phase=$phase\${NC}"
+    echo -e "${YELLOW}Need help? Visit: ${baseUrl}&phase=$phase${NC}"
     echo ""
     exit 1
 }`;
@@ -342,18 +360,19 @@ Write-Success "Build verified"`;
 // ============================================
 
 export function generateUpdateSuccessMessageBash(hisePath: string): string {
+  const { GREEN, NC, CYAN } = BASH_COLORS;
   return `echo ""
-echo -e "\${GREEN}========================================\${NC}"
-echo -e "\${GREEN}  HISE Update Complete!\${NC}"
-echo -e "\${GREEN}========================================\${NC}"
+echo -e "${GREEN}========================================${NC}"
+echo -e "${GREEN}  HISE Update Complete!${NC}"
+echo -e "${GREEN}========================================${NC}"
 echo ""
 echo "HISE has been updated at: $HISE_PATH"
 echo ""
 echo "You can now run HISE from your terminal or restart it if it's already open."
 echo ""
 echo "Resources:"
-echo -e "  - Documentation: \${CYAN}https://docs.hise.dev\${NC}"
-echo -e "  - Forum: \${CYAN}https://forum.hise.audio\${NC}"
+echo -e "  - Documentation: ${CYAN}https://docs.hise.dev${NC}"
+echo -e "  - Forum: ${CYAN}https://forum.hise.audio${NC}"
 echo ""`;
 }
 
