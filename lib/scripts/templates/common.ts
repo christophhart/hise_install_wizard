@@ -264,6 +264,21 @@ if (-not (Test-Path $projucer)) {
 }
 
 & $projucer --resave "$HISE_PATH\\projects\\standalone\\HISE Standalone.jucer"
+if ($LASTEXITCODE -ne 0) {
+    Handle-Error 2 "Projucer failed to generate solution"
+}
+
+# Wait for solution file to be fully written
+$slnPath = "$HISE_PATH\\projects\\standalone\\Builds\\VisualStudio2026\\HISE Standalone.sln"
+$maxWait = 30
+$waited = 0
+while (-not (Test-Path $slnPath) -and $waited -lt $maxWait) {
+    Start-Sleep -Seconds 1
+    $waited++
+}
+if (-not (Test-Path $slnPath)) {
+    Handle-Error 2 "Solution file not found after Projucer: $slnPath"
+}
 
 Write-Step "Compiling HISE (this will take 5-15 minutes)..."
 $env:PreferredToolArchitecture = "x64"
@@ -598,6 +613,9 @@ if (-not $hiseCmd) {
 } else {
     Write-Step "Setting project folder..."
     & HISE set_project_folder -p:"$HISE_PATH\\extras\\demo_project"
+    if ($LASTEXITCODE -ne 0) {
+        Write-Warn "Failed to set project folder, but continuing..."
+    }
 
     Write-Step "Exporting demo project (VST3 instrument)..."
     & HISE export "$HISE_PATH\\extras\\demo_project\\XmlPresetBackups\\Demo.xml" -t:instrument -p:VST3 -a:x64 -nolto
