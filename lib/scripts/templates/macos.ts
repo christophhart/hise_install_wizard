@@ -18,7 +18,7 @@ import {
 const { CYAN, NC, GREEN, YELLOW, RED } = BASH_COLORS;
 
 export function generateMacOSScript(config: ScriptConfig): string {
-  const { installPath, includeFaust, architecture, skipPhases, targetCommit } = config;
+  const { installPath, includeFaust, architecture, skipPhases, targetCommit, faustVersion } = config;
   
   // Expand ~ for home directory
   const expandedPath = installPath.startsWith('~') 
@@ -147,39 +147,50 @@ success "Xcode Command Line Tools verified"
 # Phase 5: Faust (Optional)
 # ============================================
 ${!includeFaust || skipPhases.includes(5) ? '# SKIPPED: Faust not selected or already installed' : `
-phase "Phase 5: Faust"
+phase "Phase 5: Faust (Optional, fully automated)"
 
 FAUST_LIB="$HISE_PATH/tools/faust/lib/libfaust.dylib"
 
 if [ ! -f "$FAUST_LIB" ]; then
-    echo ""
-    echo -e "${YELLOW}========================================${NC}"
-    echo -e "${YELLOW}  MANUAL STEP REQUIRED: Install Faust${NC}"
-    echo -e "${YELLOW}========================================${NC}"
-    echo ""
-    echo "Please download Faust 2.54.0 or later:"
-    echo -e "${CYAN}https://github.com/grame-cncm/faust/releases${NC}"
-    echo ""
+    step "Downloading Faust ${faustVersion || '2.75.7'}..."
+    # Select architecture-specific DMG
     if [ "$ARCH" = "arm64" ]; then
-        echo "Download: Faust-2.XX.X-arm64.dmg (for Apple Silicon)"
+        FAUST_DMG="Faust-${faustVersion || '2.75.7'}-arm64.dmg"
     else
-        echo "Download: Faust-2.XX.X-x64.dmg (for Intel Mac)"
+        FAUST_DMG="Faust-${faustVersion || '2.75.7'}-x64.dmg"
     fi
-    echo ""
-    echo "Extract ALL folders (include, lib, bin, share) to:"
-    echo -e "${CYAN}$HISE_PATH/tools/faust/${NC}"
-    echo ""
-    read -p "Press Enter after extraction is complete..."
     
+    FAUST_URL="https://github.com/grame-cncm/faust/releases/download/${faustVersion || '2.75.7'}/$FAUST_DMG"
+    DOWNLOAD_PATH="/tmp/$FAUST_DMG"
+    
+    curl -L -o "$DOWNLOAD_PATH" "$FAUST_URL" || handle_error 5 "Failed to download Faust from GitHub"
+    
+    step "Mounting DMG..."
+    hdiutil attach "$DOWNLOAD_PATH" -readonly -nobrowse -mountpoint /tmp/faust-mount || handle_error 5 "Failed to mount DMG"
+    
+    step "Extracting Faust to $HISE_PATH/tools/faust/..."
+    mkdir -p "$HISE_PATH/tools/faust"
+    cp -R /tmp/faust-mount/* "$HISE_PATH/tools/faust/" || handle_error 5 "Failed to copy Faust files"
+    
+    step "Removing quarantine attributes to avoid Gatekeeper issues..."
+    xattr -cr "$HISE_PATH/tools/faust"
+    
+    step "Unmounting DMG..."
+    hdiutil detach /tmp/faust-mount 2>/dev/null || true
+    
+    step "Cleaning up downloaded files..."
+    rm -f "$DOWNLOAD_PATH"
+    rmdir /tmp/faust-mount 2>/dev/null || true
+    
+    # Verify installation
     if [ ! -f "$FAUST_LIB" ]; then
-        warn "Faust not detected. Build will continue without Faust support."
-        FAUST_INSTALLED=0
-    else
-        success "Faust detected"
-        FAUST_INSTALLED=1
+        handle_error 5 "Faust installation failed - libfaust.dylib not found at $FAUST_LIB"
     fi
+    
+    success "Faust ${faustVersion || '2.75.7'} installed successfully"
+    FAUST_INSTALLED=1
 else
-    success "Faust already installed"
+    success "Faust already installed at $FAUST_LIB"
     FAUST_INSTALLED=1
 fi
 `}
@@ -317,6 +328,12 @@ phase "Phase 10: Test Project"
 step "Configuring HISE compiler settings..."
 "$HISE_BIN_PATH/HISE" set_hise_settings -hisepath:"$HISE_PATH"
 
+${includeFaust ? `# Configure FaustPath if Faust was installed
+if [ "\${FAUST_INSTALLED:-0}" = "1" ]; then
+    step "Setting FaustPath to $HISE_PATH/tools/faust/..."
+    "$HISE_BIN_PATH/HISE" set_hise_settings -faustpath:"$HISE_PATH/tools/faust/" || warn "Failed to configure FaustPath"
+fi
+` : ''}
 step "Setting project folder..."
 "$HISE_BIN_PATH/HISE" set_project_folder -p:"$HISE_PATH/extras/demo_project"
 

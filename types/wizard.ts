@@ -35,6 +35,7 @@ export interface GenerateScriptRequest {
   includeIPP: boolean;
   skipPhases: number[];
   targetCommit?: string; // If provided, checkout this specific commit instead of latest
+  faustVersion?: string; // Latest Faust version for automated install
 }
 
 // Alias for internal script generation use
@@ -92,6 +93,7 @@ export interface UpdateScriptConfig {
   hisePath: string;
   hasFaust: boolean;
   targetCommit?: string; // If provided, checkout this specific commit instead of latest
+  faustVersion?: string; // Latest Faust version for automated install
 }
 
 export interface UpdateScriptResponse {

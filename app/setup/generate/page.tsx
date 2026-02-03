@@ -67,6 +67,9 @@ export default function GeneratePage() {
   const [ciError, setCiError] = useState<string | null>(null);
   const [useLatestOverride, setUseLatestOverride] = useState(false);
   
+  // Faust version state
+  const [faustVersion, setFaustVersion] = useState<string | null>(null);
+  
   // Verification state
   const [verificationStatus, setVerificationStatus] = useState<VerificationStatus>({
     ide: null,
@@ -109,6 +112,26 @@ export default function GeneratePage() {
     checkCIStatus();
   }, []);
   
+  // Fetch Faust version when Faust is selected (non-blocking)
+  useEffect(() => {
+    async function fetchFaustVersion() {
+      if (!state.includeFaust) return;
+      
+      try {
+        const response = await fetch('/api/get-latest-faust-version');
+        const data = await response.json();
+        if (data.status === 'ok' && data.version) {
+          setFaustVersion(data.version);
+        }
+      } catch (err) {
+        console.error('Failed to fetch Faust version:', err);
+        // Non-blocking - script will use fallback version
+      }
+    }
+    
+    fetchFaustVersion();
+  }, [state.includeFaust]);
+  
   // Redirect if no platform selected, generate script when CI check completes
   useEffect(() => {
     if (!state.platform) {
@@ -145,6 +168,7 @@ export default function GeneratePage() {
           includeIPP: state.includeIPP,
           skipPhases: getSkipPhases(),
           targetCommit,
+          faustVersion: faustVersion || undefined,
         }),
       });
       

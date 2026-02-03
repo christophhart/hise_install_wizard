@@ -21,10 +21,6 @@ export function generateScript(config: ScriptConfig): GenerateScriptResponse {
     case 'macos':
       script = generateMacOSScript(config);
       filename = 'hise-setup.sh';
-      
-      if (config.includeFaust && config.architecture === 'arm64') {
-        warnings.push('Make sure to download the ARM64 version of Faust for Apple Silicon.');
-      }
       break;
 
     case 'linux':
@@ -38,8 +34,14 @@ export function generateScript(config: ScriptConfig): GenerateScriptResponse {
       throw new Error(`Unsupported platform: ${config.platform}`);
   }
 
-  if (config.includeFaust) {
-    warnings.push('Faust installation requires a manual download step. The script will pause and provide instructions.');
+  if (config.includeFaust && config.platform !== 'linux') {
+    if (config.faustVersion) {
+      warnings.push(`Faust ${config.faustVersion} will be downloaded and installed automatically.`);
+    } else {
+      warnings.push('Faust will be downloaded and installed automatically.');
+    }
+  } else if (config.includeFaust && config.platform === 'linux') {
+    warnings.push('Faust installation on Linux requires a manual step. The script will pause and provide instructions.');
   }
 
   return {

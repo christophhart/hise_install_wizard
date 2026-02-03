@@ -114,6 +114,9 @@ export default function UpdateGeneratePage() {
   const [ciError, setCiError] = useState<string | null>(null);
   const [useLatestOverride, setUseLatestOverride] = useState(false);
   
+  // Faust version state
+  const [faustVersion, setFaustVersion] = useState<string | null>(null);
+  
   // Fetch CI status on mount
   useEffect(() => {
     async function checkCIStatus() {
@@ -136,6 +139,26 @@ export default function UpdateGeneratePage() {
     
     checkCIStatus();
   }, []);
+  
+  // Fetch Faust version when Faust build is detected (non-blocking)
+  useEffect(() => {
+    async function fetchFaustVersion() {
+      if (!state.hasFaust) return;
+      
+      try {
+        const response = await fetch('/api/get-latest-faust-version');
+        const data = await response.json();
+        if (data.status === 'ok' && data.version) {
+          setFaustVersion(data.version);
+        }
+      } catch (err) {
+        console.error('Failed to fetch Faust version:', err);
+        // Non-blocking - script will use fallback version
+      }
+    }
+    
+    fetchFaustVersion();
+  }, [state.hasFaust]);
   
   // Redirect if no valid detection, generate script when CI check completes
   useEffect(() => {
@@ -173,6 +196,7 @@ export default function UpdateGeneratePage() {
           hisePath: state.hisePath,
           hasFaust: state.hasFaust,
           targetCommit,
+          faustVersion: faustVersion || undefined,
         }),
       });
       

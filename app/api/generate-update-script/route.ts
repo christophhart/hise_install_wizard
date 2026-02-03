@@ -36,6 +36,7 @@ export async function POST(request: NextRequest) {
       hisePath: body.hisePath,
       hasFaust: body.hasFaust ?? false,
       targetCommit: body.targetCommit,
+      faustVersion: body.faustVersion,
     });
     
     return NextResponse.json(result);

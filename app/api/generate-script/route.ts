@@ -38,6 +38,7 @@ export async function POST(request: NextRequest) {
       includeIPP: body.includeIPP ?? false,
       skipPhases: body.skipPhases ?? [],
       targetCommit: body.targetCommit,
+      faustVersion: body.faustVersion,
     });
     
     return NextResponse.json(result);

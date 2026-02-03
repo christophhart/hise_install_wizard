@@ -87,6 +87,47 @@ function mapConclusion(
 /**
  * Fetch CI status from GitHub Actions API
  */
+// ============================================
+// Faust Version Fetching
+// ============================================
+
+export interface FaustVersionResponse {
+  status: 'ok' | 'error';
+  version?: string;
+  warning?: string;
+  message?: string;
+}
+
+const FAUST_REPO = 'grame-cncm/faust';
+
+/**
+ * Fetch the latest Faust release version from GitHub
+ */
+export async function fetchLatestFaustVersion(): Promise<string> {
+  const url = `${API_BASE}/repos/${FAUST_REPO}/releases/latest`;
+  
+  const response = await fetch(url, {
+    headers: {
+      'Accept': 'application/vnd.github.v3+json',
+      'User-Agent': 'HISE-Setup-Wizard',
+    },
+  });
+  
+  if (!response.ok) {
+    throw new Error(`GitHub API error: ${response.status} ${response.statusText}`);
+  }
+  
+  const data = await response.json();
+  
+  // Tag name is like "2.75.7" or "v2.75.7"
+  const tagName = data.tag_name as string;
+  return tagName.replace(/^v/, ''); // Remove leading 'v' if present
+}
+
+// ============================================
+// CI Status Fetching
+// ============================================
+
 export async function fetchCIStatus(): Promise<CIStatus> {
   // Fetch recent workflow runs for the develop branch (filtered to CI Build workflow only)
   const runsUrl = `${API_BASE}/repos/${HISE_REPO}/actions/workflows/${CI_WORKFLOW_ID}/runs?branch=${BRANCH}&per_page=50`;

@@ -16,7 +16,7 @@ import {
 } from './common';
 
 export function generateWindowsScript(config: ScriptConfig): string {
-  const { installPath, includeFaust, includeIPP, skipPhases, targetCommit } = config;
+  const { installPath, includeFaust, includeIPP, skipPhases, targetCommit, faustVersion } = config;
   
   // Escape backslashes for PowerShell
   const escapedPath = installPath.replace(/\\/g, '\\');
@@ -174,33 +174,41 @@ if (-not (Test-Path $ippPath)) {
 # Phase 5: Faust (Optional)
 # ============================================
 ${!includeFaust || skipPhases.includes(5) ? '# SKIPPED: Faust not selected or already installed' : `
-Write-Phase "Phase 5: Faust"
+Write-Phase "Phase 5: Faust (Optional, fully automated)"
 
-$faustPath = "C:\\Program Files\\Faust\\lib\\faust.dll"
-if (-not (Test-Path $faustPath)) {
-    Write-Host ""
-    Write-Host "========================================" -ForegroundColor Yellow
-    Write-Host "  MANUAL STEP REQUIRED: Install Faust" -ForegroundColor Yellow
-    Write-Host "========================================" -ForegroundColor Yellow
-    Write-Host ""
-    Write-Host "Please download and install Faust 2.54.0 or later:" -ForegroundColor White
-    Write-Host "https://github.com/grame-cncm/faust/releases" -ForegroundColor Cyan
-    Write-Host ""
-    Write-Host "Download: Faust-2.XX.X-win64.exe" -ForegroundColor White
-    Write-Host "Install to the DEFAULT location (C:\\Program Files\\Faust)" -ForegroundColor Yellow
-    Write-Host ""
-    Read-Host "Press Enter after Faust installation is complete..."
+$faustDll = "C:\\Program Files\\Faust\\lib\\faust.dll"
+if (-not (Test-Path $faustDll)) {
+    Write-Step "Downloading Faust ${faustVersion || '2.75.7'}..."
+    $faustInstaller = "$env:TEMP\\faust-installer.exe"
+    $faustUrl = "https://github.com/grame-cncm/faust/releases/download/${faustVersion || '2.75.7'}/Faust-${faustVersion || '2.75.7'}-win64.exe"
     
-    if (-not (Test-Path $faustPath)) {
-        Write-Warn "Faust not detected. Build will continue without Faust support."
-    } else {
-        Write-Success "Faust detected"
+    Invoke-WebRequest -Uri $faustUrl -OutFile $faustInstaller
+    
+    if (-not (Test-Path $faustInstaller)) {
+        Handle-Error 5 "Failed to download Faust installer"
     }
+    
+    Write-Step "Installing Faust ${faustVersion || '2.75.7'}..."
+    Start-Process -FilePath $faustInstaller -Args "/S /D=C:\\Program Files\\Faust" -Wait
+    
+    if ($LASTEXITCODE -ne 0) {
+        Handle-Error 5 "Faust installation failed"
+    }
+    
+    # Verify installation
+    if (-not (Test-Path $faustDll)) {
+        Handle-Error 5 "Faust installation failed - faust.dll not found"
+    }
+    
+    # Cleanup installer
+    Remove-Item $faustInstaller -Force
+    
+    Write-Success "Faust ${faustVersion || '2.75.7'} installed successfully"
 } else {
     Write-Success "Faust already installed"
 }
 
-$FAUST_INSTALLED = Test-Path $faustPath
+$FAUST_INSTALLED = Test-Path $faustDll
 `}
 
 # ============================================
