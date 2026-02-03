@@ -481,18 +481,18 @@ export const updatePage = {
     } as ModeContent,
     
     description: {
-      easy: 'Run this script in your terminal to find your HISE installation:',
-      dev: 'Run to detect HISE path:',
+      easy: 'Run this command in your terminal. HISE will detect your installation and copy the result to your clipboard:',
+      dev: 'Run command (auto-copies result to clipboard):',
     } as ModeContent,
     
     pasteLabel: {
-      easy: 'Paste the result here:',
+      easy: 'Then paste the result here:',
       dev: 'Paste output:',
     } as ModeContent,
     
     placeholder: {
       easy: 'After running the command, paste the result here',
-      dev: 'e.g., C:\\HISE,valid,faust',
+      dev: 'e.g., C:\\HISE|valid|faust|x64',
     } as ModeContent,
   },
   

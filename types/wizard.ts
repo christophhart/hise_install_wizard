@@ -78,12 +78,12 @@ export const PLATFORM_LABELS: Record<Exclude<Platform, null>, string> = {
 // Update Mode Types
 // ============================================
 
-// Detection result from the path detection script
+// Detection result from HISE get_update_info command
 export interface DetectionResult {
   path: string | null;
   status: 'valid' | 'invalid' | 'not_found';
   hasFaust: boolean;
-  architecture?: Architecture;  // Only populated for macOS
+  architecture?: Architecture;  // Populated for all platforms
 }
 
 // Config for update script generation
@@ -102,29 +102,31 @@ export interface UpdateScriptResponse {
   warnings: string[];
 }
 
-// Helper function to parse detection script output
-// Format: "<path>,<status>,<hasFaust>[,<architecture>]" or "not_found"
+// Helper function to parse HISE get_update_info output
+// Format: "<path>|<status>|<faust>|<arch>" (pipe-delimited)
+// Example: "C:\HISE|valid|faust|x64" or "~/HISE|valid|nofaust|arm64"
 export function parseDetectionResult(
   output: string, 
   platform: Exclude<Platform, null>
 ): DetectionResult {
   const trimmed = output.trim();
   
-  if (trimmed === 'not_found' || trimmed === '') {
+  // Handle empty output or obvious error messages (no pipe delimiter)
+  if (!trimmed || !trimmed.includes('|')) {
     return { path: null, status: 'not_found', hasFaust: false };
   }
   
-  const parts = trimmed.split(',');
+  const parts = trimmed.split('|');
+  
+  // Expect 4 parts: path, status, faust, arch
+  if (parts.length < 4) {
+    return { path: null, status: 'not_found', hasFaust: false };
+  }
+  
   const path = parts[0] || null;
   const status = (parts[1] as 'valid' | 'invalid') || 'invalid';
   const hasFaust = parts[2] === 'faust';
-  
-  // Architecture is only present for macOS (4th element)
-  // Convert uname -m output to our Architecture type
-  let architecture: Architecture | undefined;
-  if (platform === 'macos' && parts[3]) {
-    architecture = parts[3] === 'arm64' ? 'arm64' : 'x64';
-  }
+  const architecture: Architecture = parts[3] === 'arm64' ? 'arm64' : 'x64';
   
   return { path, status, hasFaust, architecture };
 }
