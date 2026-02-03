@@ -22,7 +22,7 @@ export default function ArchitectureSelector({
   const options = [
     {
       value: 'arm64',
-      label: 'Apple Silicon (M1/M2/M3)',
+      label: 'Apple Silicon (M-series)',
       description: 'For Macs with Apple Silicon processors',
     },
     {

@@ -133,7 +133,7 @@ const componentInfoList: ComponentInfo[] = [
   {
     key: 'compiler',
     label: 'C++ Compiler',
-    description: 'Visual Studio 2026 (Windows), Xcode (macOS), or GCC (Linux)',
+    description: '', // Platform-specific, set dynamically in render
     getVerifyCommand: (_, platform) => {
       const commands = {
         // Check for MSBuild in VS2026 installation directory (any edition)
@@ -300,9 +300,19 @@ export default function ComponentChecklist({
     
     // Get mode-aware description if available, fallback to component's default
     const content = componentContent[component.key];
-    const description = content 
+    let description = content 
       ? getContent(content.description)
       : component.description;
+    
+    // Platform-specific description for compiler
+    if (component.key === 'compiler') {
+      const compilerDescriptions = {
+        windows: 'Visual Studio 2026 with C++ workload',
+        macos: 'Xcode with Command Line Tools',
+        linux: 'GCC (GNU Compiler Collection)',
+      };
+      description = compilerDescriptions[platform];
+    }
     
     // Inverted display logic: toggle is ON when we WILL install (i.e., not installed)
     // For required components: toggle ON = will install, toggle OFF = already have it
