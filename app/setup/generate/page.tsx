@@ -27,25 +27,20 @@ const runCommands: Record<Exclude<Platform, null>, { steps: { title: string; com
   windows: {
     steps: [
       { title: 'Open PowerShell as Administrator' },
-      { title: 'Navigate to Downloads', command: 'cd $HOME\\Downloads' },
       { title: 'Allow script execution for this session', command: 'Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process' },
-      { title: 'Run the script', command: (filename: string) => `.\\"${filename}"` },
+      { title: 'Navigate to Downloads and run the script', command: (filename: string) => `cd $HOME\\Downloads; .\\"${filename}"` },
     ],
   },
   macos: {
     steps: [
       { title: 'Open Terminal' },
-      { title: 'Navigate to Downloads', command: 'cd ~/Downloads' },
-      { title: 'Make executable', command: (filename: string) => `chmod +x "${filename}"` },
-      { title: 'Run the script', command: (filename: string) => `./"${filename}"` },
+      { title: 'Navigate to Downloads, make executable, and run', command: (filename: string) => `cd ~/Downloads && chmod +x "${filename}" && ./"${filename}"` },
     ],
   },
   linux: {
     steps: [
       { title: 'Open Terminal' },
-      { title: 'Navigate to Downloads', command: 'cd ~/Downloads' },
-      { title: 'Make executable', command: (filename: string) => `chmod +x "${filename}"` },
-      { title: 'Run the script', command: (filename: string) => `./"${filename}"` },
+      { title: 'Navigate to Downloads, make executable, and run', command: (filename: string) => `cd ~/Downloads && chmod +x "${filename}" && ./"${filename}"` },
     ],
   },
 };
