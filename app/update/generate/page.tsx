@@ -344,14 +344,16 @@ export default function UpdateGeneratePage() {
                 {renderHowToRunInstructions(state.platform, uniqueFilename, get, mode)}
               </Collapsible>
               
-              {/* Script Preview */}
-              <div className="space-y-2">
-                <h4 className="font-medium text-gray-300">Script Preview</h4>
-                <ScriptPreview 
-                  script={result.script} 
-                  filename={result.filename}
-                />
-              </div>
+              {/* Script Preview - Dev mode only */}
+              {!isEasyMode && (
+                <div className="space-y-2">
+                  <h4 className="font-medium text-gray-300">Script Preview</h4>
+                  <ScriptPreview 
+                    script={result.script} 
+                    filename={result.filename}
+                  />
+                </div>
+              )}
             </>
           )}
         </CardContent>

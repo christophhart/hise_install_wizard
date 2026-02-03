@@ -430,17 +430,19 @@ export default function GeneratePage() {
                 </Collapsible>
               </div>
               
-              {/* Script Preview (collapsed) */}
-              <Collapsible
-                title="Script Preview"
-                icon={<Code className="w-4 h-4 text-accent" />}
-                defaultOpen={false}
-              >
-                <ScriptPreview 
-                  script={result.script} 
-                  filename={result.filename}
-                />
-              </Collapsible>
+              {/* Script Preview (collapsed) - Dev mode only */}
+              {!isEasyMode && (
+                <Collapsible
+                  title="Script Preview"
+                  icon={<Code className="w-4 h-4 text-accent" />}
+                  defaultOpen={false}
+                >
+                  <ScriptPreview 
+                    script={result.script} 
+                    filename={result.filename}
+                  />
+                </Collapsible>
+              )}
             </>
           )}
         </CardContent>

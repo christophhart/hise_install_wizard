@@ -216,11 +216,13 @@ export default function SetupSummary({
 
   // Determine phase status for automatic phases
   const getPhaseStatus = (phase: SetupPhase): 'run' | 'skip' | 'optional-skip' => {
+    // Check for unselected optional components first
+    if (phase.id === 4 && !includeIPP) return 'optional-skip';
+    if (phase.id === 5 && !includeFaust) return 'optional-skip';
+    // Then check if component is already installed
     if (skipPhases.includes(phase.id)) {
       return 'skip';
     }
-    if (phase.id === 4 && !includeIPP) return 'optional-skip';
-    if (phase.id === 5 && !includeFaust) return 'optional-skip';
     return 'run';
   };
 
@@ -242,7 +244,7 @@ export default function SetupSummary({
       case 'skip':
         return <span className="text-xs text-success font-medium">Already Done</span>;
       case 'optional-skip':
-        return <span className="text-xs text-gray-500">Skipped</span>;
+        return <span className="text-xs text-gray-500">Not Selected</span>;
     }
   };
   
@@ -494,7 +496,7 @@ export default function SetupSummary({
         </div>
         <div className="flex items-center gap-1">
           <SkipForward className="w-3 h-3 text-gray-500" />
-          <span>Skipped</span>
+          <span>Not Selected</span>
         </div>
       </div>
 
