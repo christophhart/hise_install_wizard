@@ -21,13 +21,17 @@ interface HisePathDetectorProps {
 // Detection scripts for each platform.
 // Windows and macOS copy output to clipboard automatically.
 // Linux shows visual markers for manual copying.
+// Faust detection uses "HISE get_build_flags" command, with fallback to path-based detection.
 const detectionScripts: Record<Exclude<Platform, null>, string> = {
   // PowerShell: copy to clipboard + show confirmation
-  windows: `$h=(Get-Command HISE -EA SilentlyContinue).Source;if($h){$p=Split-Path $h;$f=if($p -match 'Faust'){'faust'}else{'nofaust'};$r=(Get-Item $h).Directory.Parent.Parent.Parent.Parent.Parent.Parent.Parent.FullName;$out=if(Test-Path "$r\\.git"){"$r,valid,$f"}else{"$r,invalid,$f"}}else{$out="not_found"};Set-Clipboard $out;"Copied to clipboard: $out"`,
+  // Uses "HISE get_build_flags" to detect Faust support, falls back to path-based detection
+  windows: `$h=(Get-Command HISE -EA SilentlyContinue).Source;if($h){$p=Split-Path $h;$flags=(& HISE get_build_flags 2>$null) -join ' ';if($flags -match 'Faust Support: Enabled'){$f='faust'}elseif($flags){$f='nofaust'}else{$f=if($p -match 'Faust'){'faust'}else{'nofaust'}};$r=(Get-Item $h).Directory.Parent.Parent.Parent.Parent.Parent.Parent.Parent.FullName;$out=if(Test-Path "$r\\.git"){"$r,valid,$f"}else{"$r,invalid,$f"}}else{$out="not_found"};Set-Clipboard $out;"Copied to clipboard: $out"`,
   // macOS: copy to clipboard with pbcopy + show confirmation
-  macos: `h=$(which HISE 2>/dev/null);if [ -n "$h" ];then p=$(dirname "$(realpath "$h")");f=$([[ "$p" == *"Faust"* ]] && echo faust || echo nofaust);ra=$(dirname "$(dirname "$(dirname "$(dirname "$(dirname "$(dirname "$(dirname "$(dirname "$(dirname "$(dirname "$(realpath "$h")")")")")")")")")")");r=$(echo "$ra" | sed "s|^$HOME|~|");a=$(uname -m);out=$([ -d "$ra/.git" ] && echo "$r,valid,$f,$a" || echo "$r,invalid,$f,$a");else out="not_found";fi;echo "$out" | pbcopy;echo "Copied to clipboard: $out"`,
+  // Uses "HISE get_build_flags" to detect Faust support, falls back to path-based detection
+  macos: `h=$(which HISE 2>/dev/null);if [ -n "$h" ];then p=$(dirname "$(realpath "$h")");flags=$(HISE get_build_flags 2>/dev/null);if echo "$flags" | grep -q "Faust Support: Enabled";then f=faust;elif [ -n "$flags" ];then f=nofaust;else f=$([[ "$p" == *"Faust"* ]] && echo faust || echo nofaust);fi;ra=$(dirname "$(dirname "$(dirname "$(dirname "$(dirname "$(dirname "$(dirname "$(dirname "$(dirname "$(dirname "$(realpath "$h")")")")")")")")")")");r=$(echo "$ra" | sed "s|^$HOME|~|");a=$(uname -m);out=$([ -d "$ra/.git" ] && echo "$r,valid,$f,$a" || echo "$r,invalid,$f,$a");else out="not_found";fi;echo "$out" | pbcopy;echo "Copied to clipboard: $out"`,
   // Linux: show visual markers for manual copying
-  linux: `h=$(which HISE 2>/dev/null);if [ -n "$h" ];then p=$(dirname "$(realpath "$h")");f=$([[ "$p" == *"Faust"* ]] && echo faust || echo nofaust);ra=$(dirname "$(dirname "$(dirname "$(dirname "$(dirname "$(dirname "$(realpath "$h")")")")")")");r=$(echo "$ra" | sed "s|^$HOME|~|");out=$([ -d "$ra/.git" ] && echo "$r,valid,$f" || echo "$r,invalid,$f");else out="not_found";fi;echo "==== COPY BELOW ====";echo "$out";echo "==== COPY ABOVE ===="`,
+  // Uses "HISE get_build_flags" to detect Faust support, falls back to path-based detection
+  linux: `h=$(which HISE 2>/dev/null);if [ -n "$h" ];then p=$(dirname "$(realpath "$h")");flags=$(HISE get_build_flags 2>/dev/null);if echo "$flags" | grep -q "Faust Support: Enabled";then f=faust;elif [ -n "$flags" ];then f=nofaust;else f=$([[ "$p" == *"Faust"* ]] && echo faust || echo nofaust);fi;ra=$(dirname "$(dirname "$(dirname "$(dirname "$(dirname "$(dirname "$(realpath "$h")")")")")")");r=$(echo "$ra" | sed "s|^$HOME|~|");out=$([ -d "$ra/.git" ] && echo "$r,valid,$f" || echo "$r,invalid,$f");else out="not_found";fi;echo "==== COPY BELOW ====";echo "$out";echo "==== COPY ABOVE ===="`,
 };
 
 export default function HisePathDetector({
