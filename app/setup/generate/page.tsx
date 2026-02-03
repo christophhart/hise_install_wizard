@@ -21,6 +21,7 @@ import { useExplanation } from '@/hooks/useExplanation';
 import { generatePage, alerts, regenerateInfo } from '@/lib/content/explanations';
 import DownloadLocationInput, { DEFAULT_DOWNLOAD_PATHS } from '@/components/wizard/DownloadLocationInput';
 import { downloadAsFile, generateUniqueFilename } from '@/lib/utils/download';
+import { expandHomePath } from '@/lib/utils/path';
 import InfoPopup from '@/components/ui/InfoPopup';
 
 // Commands for running the script (simplified - no IDE installation steps)
@@ -249,7 +250,7 @@ export default function GeneratePage() {
     return null;
   }
   
-  const commands = getRunCommands(state.platform, downloadLocation || DEFAULT_DOWNLOAD_PATHS[state.platform]);
+  const commands = getRunCommands(state.platform, expandHomePath(downloadLocation || DEFAULT_DOWNLOAD_PATHS[state.platform]));
   
   return (
     <PageContainer>

@@ -19,6 +19,7 @@ import { ArrowLeft, Download, RefreshCw, Terminal, Check } from 'lucide-react';
 import { useExplanation } from '@/hooks/useExplanation';
 import { updateGeneratePage, updateHowToRun, updatePhases, regenerateInfo } from '@/lib/content/explanations';
 import { downloadAsFile, generateUniqueFilename } from '@/lib/utils/download';
+import { expandHomePath } from '@/lib/utils/path';
 import InfoPopup from '@/components/ui/InfoPopup';
 import DownloadLocationInput, { DEFAULT_DOWNLOAD_PATHS } from '@/components/wizard/DownloadLocationInput';
 
@@ -390,7 +391,7 @@ export default function UpdateGeneratePage() {
                 {renderHowToRunInstructions(
                   state.platform, 
                   uniqueFilename, 
-                  downloadLocation || (state.platform ? DEFAULT_DOWNLOAD_PATHS[state.platform] : ''),
+                  expandHomePath(downloadLocation || (state.platform ? DEFAULT_DOWNLOAD_PATHS[state.platform] : '')),
                   get, 
                   mode
                 )}
