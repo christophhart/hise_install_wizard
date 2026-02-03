@@ -19,6 +19,8 @@ import {
   generateBackupSectionBash,
   generateAddToPathBash,
   generateMigrationSuccessMessageBash,
+  generateFaustPreserveSectionBash,
+  generateFaustRestoreSectionBash,
 } from './common';
 
 // Destructure for use in template literals
@@ -560,12 +562,17 @@ success "Xcode ready"
 ${generateGitInstallCheckBash('macos')}
 
 # ============================================
-# Phase 2: Backup/Remove Existing Installation
+# Phase 2: Preserve Faust Installation
+# ============================================
+${generateFaustPreserveSectionBash()}
+
+# ============================================
+# Phase 3: Backup/Remove Existing Installation
 # ============================================
 ${generateBackupSectionBash(keepBackup)}
 
 # ============================================
-# Phase 3: Clone HISE Repository
+# Phase 4: Clone HISE Repository
 # ============================================
 phase "Clone HISE Repository"
 
@@ -575,22 +582,27 @@ mkdir -p "$(dirname "$HISE_PATH")"
 ${generateGitCloneWithCommitBash(expandedPath, targetCommit)}
 
 # ============================================
-# Phase 4: Compile HISE
+# Phase 5: Restore Faust Installation
+# ============================================
+${generateFaustRestoreSectionBash()}
+
+# ============================================
+# Phase 6: Compile HISE
 # ============================================
 ${generateCompileSectionMacOS(expandedPath, architecture || 'x64', hasFaust)}
 
 # ============================================
-# Phase 5: Add to PATH
+# Phase 7: Add to PATH
 # ============================================
 ${generateAddToPathBash(expandedPath, 'macos', architecture as 'x64' | 'arm64', hasFaust)}
 
 # ============================================
-# Phase 6: Verify Build
+# Phase 8: Verify Build
 # ============================================
 ${generateVerifySectionBash(expandedPath, buildConfig, 'macos')}
 
 # ============================================
-# Phase 7: Test Project
+# Phase 9: Test Project
 # ============================================
 ${generateTestProjectSectionBash(expandedPath, 'macos')}
 

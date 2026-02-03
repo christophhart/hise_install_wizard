@@ -326,6 +326,73 @@ Write-Host ""`;
 }
 
 /**
+ * Generate Faust preservation section for macOS migration (Bash)
+ * Preserves Faust-installed folders (lib, bin, include, share) to a temp location before backup/delete
+ * Only triggers if Faust is actually installed (checks for libfaust.dylib)
+ */
+export function generateFaustPreserveSectionBash(): string {
+  return `phase "Preserve Faust Installation"
+
+# Check if Faust is installed by looking for the key library file
+FAUST_PRESERVED=0
+FAUST_TEMP_DIR="/tmp/faust_preserve_$$"
+FAUST_LIB="$HISE_PATH/tools/faust/lib/libfaust.dylib"
+
+if [ -f "$FAUST_LIB" ]; then
+    step "Detected Faust installation at $HISE_PATH/tools/faust"
+    step "Preserving Faust folders (lib, bin, include, share)..."
+    
+    mkdir -p "$FAUST_TEMP_DIR"
+    
+    # Preserve only the Faust-installed folders, not the entire tools/faust directory
+    for folder in lib bin include share; do
+        if [ -d "$HISE_PATH/tools/faust/$folder" ]; then
+            cp -R "$HISE_PATH/tools/faust/$folder" "$FAUST_TEMP_DIR/" || handle_error 2 "Failed to preserve Faust $folder folder"
+        fi
+    done
+    
+    FAUST_PRESERVED=1
+    success "Faust installation preserved"
+else
+    step "No Faust installation detected"
+    success "Skipping Faust preservation"
+fi`;
+}
+
+/**
+ * Generate Faust restoration section for macOS migration (Bash)
+ * Restores preserved Faust folders after fresh clone
+ */
+export function generateFaustRestoreSectionBash(): string {
+  return `phase "Restore Faust Installation"
+
+if [ "$FAUST_PRESERVED" = "1" ] && [ -d "$FAUST_TEMP_DIR" ]; then
+    step "Restoring Faust installation to $HISE_PATH/tools/faust..."
+    
+    # Ensure the target directory exists
+    mkdir -p "$HISE_PATH/tools/faust"
+    
+    # Restore each preserved folder
+    for folder in lib bin include share; do
+        if [ -d "$FAUST_TEMP_DIR/$folder" ]; then
+            cp -R "$FAUST_TEMP_DIR/$folder" "$HISE_PATH/tools/faust/" || handle_error 5 "Failed to restore Faust $folder folder"
+        fi
+    done
+    
+    step "Removing quarantine attributes..."
+    xattr -cr "$HISE_PATH/tools/faust"
+    
+    step "Cleaning up temporary files..."
+    rm -rf "$FAUST_TEMP_DIR"
+    
+    success "Faust installation restored successfully"
+else
+    step "No Faust installation to restore"
+    success "Skipping Faust restoration"
+fi`;
+}
+
+/**
  * Generate PATH addition section for Bash (macOS/Linux)
  * Used in migration scripts since user likely doesn't have HISE in PATH
  */
