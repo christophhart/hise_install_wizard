@@ -1,17 +1,24 @@
 import { 
   ScriptConfig, 
   UpdateScriptConfig,
+  MigrationScriptConfig,
   HELP_URL, 
   BASH_COLORS,
   generateHeader,
   generateUpdateHeader,
+  generateMigrationHeader,
   generateBashUtilities,
   generateBashErrorHandler,
   generateCompileSectionMacOS,
   generateVerifySectionBash,
   generateUpdateSuccessMessageBash,
   generateGitUpdateWithCommitBash,
+  generateGitCloneWithCommitBash,
   generateTestProjectSectionBash,
+  generateGitInstallCheckBash,
+  generateBackupSectionBash,
+  generateAddToPathBash,
+  generateMigrationSuccessMessageBash,
 } from './common';
 
 // Destructure for use in template literals
@@ -458,12 +465,17 @@ ${generateGitUpdateWithCommitBash(expandedPath, targetCommit)}
 ${generateCompileSectionMacOS(expandedPath, architecture, hasFaust)}
 
 # ============================================
-# Phase 4: Verify Build
+# Phase 4: Ensure HISE is in PATH
+# ============================================
+${generateAddToPathBash(expandedPath, 'macos', architecture, hasFaust)}
+
+# ============================================
+# Phase 5: Verify Build
 # ============================================
 ${generateVerifySectionBash(expandedPath, buildConfig, 'macos')}
 
 # ============================================
-# Phase 5: Test Project
+# Phase 6: Test Project
 # ============================================
 ${generateTestProjectSectionBash(expandedPath, 'macos')}
 
@@ -475,3 +487,123 @@ ${generateUpdateSuccessMessageBash(expandedPath)}
 
   return script;
 }
+
+// ============================================
+// macOS Migration Script Generator (ZIP to Git)
+// ============================================
+
+export function generateMacOSMigrationScript(config: MigrationScriptConfig): string {
+  const { existingPath, hasFaust, keepBackup, targetCommit, architecture } = config;
+  
+  // Expand ~ for home directory
+  const expandedPath = existingPath.startsWith('~') 
+    ? existingPath.replace('~', '$HOME')
+    : existingPath;
+    
+  const buildConfig = hasFaust ? 'Release with Faust' : 'Release';
+  const keepBackupStr = keepBackup ? 'Yes (HISE_pre_git)' : 'No';
+  
+  // Generate commit note if using specific commit
+  const commitHeaderNote = targetCommit 
+    ? `\n# NOTE: Using specific commit ${targetCommit.substring(0, 7)} (CI build failing on latest)\n`
+    : '';
+  
+  // Get parent path for cloning
+  const parentPath = expandedPath.replace(/\/[^\/]+$/, '');
+  
+  const script = `#!/bin/bash
+# ${generateMigrationHeader(config).split('\n').join('\n# ')}${commitHeaderNote}
+# ============================================
+# HISE Migration Script for macOS (ZIP to Git)
+# ============================================
+
+set -e
+
+${generateBashUtilities()}
+
+${generateBashErrorHandler('migration')}
+
+HISE_PATH="${expandedPath}"
+INSTALL_PATH="${parentPath}"
+ARCH="${architecture}"
+
+echo ""
+echo -e "${CYAN}========================================${NC}"
+echo -e "${CYAN}  HISE Migration Script (ZIP to Git)${NC}"
+echo -e "${CYAN}========================================${NC}"
+echo ""
+echo "Existing HISE path: $HISE_PATH"
+echo "Architecture: $ARCH"
+echo "Build config: ${buildConfig}"
+echo "Keep backup: ${keepBackupStr}"
+echo ""
+
+# ============================================
+# Pre-flight: Xcode Check & License Accept
+# ============================================
+phase "Pre-flight: Xcode Check"
+
+if ! command -v xcodebuild &> /dev/null; then
+    err "Xcode Command Line Tools are not installed."
+    echo ""
+    echo -e "Install from: ${CYAN}https://developer.apple.com/xcode/${NC}"
+    echo -e "Or run: ${CYAN}xcode-select --install${NC}"
+    echo ""
+    exit 1
+fi
+
+# Accept Xcode license if needed (password prompt happens here at the start)
+step "Accepting Xcode license (you may be prompted for your password)..."
+sudo xcodebuild -license accept 2>/dev/null || true
+
+success "Xcode ready"
+
+# ============================================
+# Phase 1: Check Git
+# ============================================
+${generateGitInstallCheckBash('macos')}
+
+# ============================================
+# Phase 2: Backup/Remove Existing Installation
+# ============================================
+${generateBackupSectionBash(keepBackup)}
+
+# ============================================
+# Phase 3: Clone HISE Repository
+# ============================================
+phase "Clone HISE Repository"
+
+# Create parent directory if needed
+mkdir -p "$INSTALL_PATH"
+
+${generateGitCloneWithCommitBash(parentPath, targetCommit)}
+
+# ============================================
+# Phase 4: Compile HISE
+# ============================================
+${generateCompileSectionMacOS(expandedPath, architecture || 'x64', hasFaust)}
+
+# ============================================
+# Phase 5: Add to PATH
+# ============================================
+${generateAddToPathBash(expandedPath, 'macos', architecture as 'x64' | 'arm64', hasFaust)}
+
+# ============================================
+# Phase 6: Verify Build
+# ============================================
+${generateVerifySectionBash(expandedPath, buildConfig, 'macos')}
+
+# ============================================
+# Phase 7: Test Project
+# ============================================
+${generateTestProjectSectionBash(expandedPath, 'macos')}
+
+# ============================================
+# Success
+# ============================================
+${generateMigrationSuccessMessageBash(keepBackup)}
+`;
+
+  return script;
+}
+

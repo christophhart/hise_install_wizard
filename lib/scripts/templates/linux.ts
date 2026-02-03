@@ -1,17 +1,24 @@
 import { 
   ScriptConfig, 
   UpdateScriptConfig,
+  MigrationScriptConfig,
   HELP_URL, 
   BASH_COLORS,
   generateHeader,
   generateUpdateHeader,
+  generateMigrationHeader,
   generateBashUtilities,
   generateBashErrorHandler,
   generateCompileSectionLinux,
   generateVerifySectionBash,
   generateUpdateSuccessMessageBash,
   generateGitUpdateWithCommitBash,
+  generateGitCloneWithCommitBash,
   generateTestProjectSectionBash,
+  generateGitInstallCheckBash,
+  generateBackupSectionBash,
+  generateAddToPathBash,
+  generateMigrationSuccessMessageBash,
 } from './common';
 
 // Destructure for use in template literals
@@ -428,12 +435,17 @@ ${generateGitUpdateWithCommitBash(expandedPath, targetCommit)}
 ${generateCompileSectionLinux(expandedPath, hasFaust)}
 
 # ============================================
-# Phase 4: Verify Build
+# Phase 4: Ensure HISE is in PATH
+# ============================================
+${generateAddToPathBash(expandedPath, 'linux', 'x64', hasFaust)}
+
+# ============================================
+# Phase 5: Verify Build
 # ============================================
 ${generateVerifySectionBash(expandedPath, buildConfig, 'linux')}
 
 # ============================================
-# Phase 5: Test Project
+# Phase 6: Test Project
 # ============================================
 ${generateTestProjectSectionBash(expandedPath, 'linux')}
 
@@ -445,3 +457,101 @@ ${generateUpdateSuccessMessageBash(expandedPath)}
 
   return script;
 }
+
+// ============================================
+// Linux Migration Script Generator (ZIP to Git)
+// ============================================
+
+export function generateLinuxMigrationScript(config: MigrationScriptConfig): string {
+  const { existingPath, hasFaust, keepBackup, targetCommit } = config;
+  
+  // Expand ~ for home directory
+  const expandedPath = existingPath.startsWith('~') 
+    ? existingPath.replace('~', '$HOME')
+    : existingPath;
+    
+  const buildConfig = hasFaust ? 'ReleaseWithFaust' : 'Release';
+  const keepBackupStr = keepBackup ? 'Yes (HISE_pre_git)' : 'No';
+  
+  // Generate commit note if using specific commit
+  const commitHeaderNote = targetCommit 
+    ? `\n# NOTE: Using specific commit ${targetCommit.substring(0, 7)} (CI build failing on latest)\n`
+    : '';
+  
+  // Get parent path for cloning
+  const parentPath = expandedPath.replace(/\/[^\/]+$/, '');
+  
+  const script = `#!/bin/bash
+# ${generateMigrationHeader(config).split('\n').join('\n# ')}${commitHeaderNote}
+# ============================================
+# HISE Migration Script for Linux (ZIP to Git)
+# ============================================
+
+set -e
+
+${generateBashUtilities()}
+
+${generateBashErrorHandler('migration')}
+
+HISE_PATH="${expandedPath}"
+INSTALL_PATH="${parentPath}"
+
+echo ""
+echo -e "${CYAN}========================================${NC}"
+echo -e "${CYAN}  HISE Migration Script (ZIP to Git)${NC}"
+echo -e "${CYAN}========================================${NC}"
+echo ""
+echo "Existing HISE path: $HISE_PATH"
+echo "Build config: ${buildConfig}"
+echo "Keep backup: ${keepBackupStr}"
+echo ""
+
+# ============================================
+# Phase 1: Check/Install Git
+# ============================================
+${generateGitInstallCheckBash('linux')}
+
+# ============================================
+# Phase 2: Backup/Remove Existing Installation
+# ============================================
+${generateBackupSectionBash(keepBackup)}
+
+# ============================================
+# Phase 3: Clone HISE Repository
+# ============================================
+phase "Clone HISE Repository"
+
+# Create parent directory if needed
+mkdir -p "$INSTALL_PATH"
+
+${generateGitCloneWithCommitBash(parentPath, targetCommit)}
+
+# ============================================
+# Phase 4: Compile HISE
+# ============================================
+${generateCompileSectionLinux(expandedPath, hasFaust)}
+
+# ============================================
+# Phase 5: Add to PATH
+# ============================================
+${generateAddToPathBash(expandedPath, 'linux', 'x64', hasFaust)}
+
+# ============================================
+# Phase 6: Verify Build
+# ============================================
+${generateVerifySectionBash(expandedPath, buildConfig, 'linux')}
+
+# ============================================
+# Phase 7: Test Project
+# ============================================
+${generateTestProjectSectionBash(expandedPath, 'linux')}
+
+# ============================================
+# Success
+# ============================================
+${generateMigrationSuccessMessageBash(keepBackup)}
+`;
+
+  return script;
+}
+

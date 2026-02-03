@@ -88,8 +88,8 @@ warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
 err() { echo -e "${RED}[ERROR]${NC} $1"; }`;
 }
 
-export function generateBashErrorHandler(scriptType: 'setup' | 'update'): string {
-  const baseUrl = scriptType === 'setup' ? HELP_URL : `${HELP_URL}?mode=update`;
+export function generateBashErrorHandler(scriptType: 'setup' | 'update' | 'migration'): string {
+  const baseUrl = scriptType === 'setup' ? HELP_URL : `${HELP_URL}?mode=${scriptType}`;
   const { YELLOW, NC } = BASH_COLORS;
   return `# Error handler
 handle_error() {
@@ -116,8 +116,8 @@ function Write-Warn { param($msg) Write-Host "[WARN] $msg" -ForegroundColor Yell
 function Write-Err { param($msg) Write-Host "[ERROR] $msg" -ForegroundColor Red }`;
 }
 
-export function generatePowerShellErrorHandler(scriptType: 'setup' | 'update'): string {
-  const baseUrl = scriptType === 'setup' ? HELP_URL : `${HELP_URL}?mode=update`;
+export function generatePowerShellErrorHandler(scriptType: 'setup' | 'update' | 'migration'): string {
+  const baseUrl = scriptType === 'setup' ? HELP_URL : `${HELP_URL}?mode=${scriptType}`;
   return `# Error handler
 function Handle-Error {
     param($phase, $message)
@@ -126,6 +126,268 @@ function Handle-Error {
     Write-Host "Need help? Visit: ${baseUrl}&phase=$phase" -ForegroundColor Yellow
     Write-Host ""
     exit 1
+}`;
+}
+
+// ============================================
+// Migration Script Utilities (ZIP to Git)
+// ============================================
+
+import { MigrationScriptConfig } from '@/types/wizard';
+export type { MigrationScriptConfig };
+
+/**
+ * Generate migration script header
+ */
+export function generateMigrationHeader(config: MigrationScriptConfig): string {
+  const timestamp = new Date().toISOString();
+  const lines = [
+    `HISE Migration Script (ZIP to Git)`,
+    `Generated: ${timestamp}`,
+    `Platform: ${config.platform}`,
+    `Architecture: ${config.architecture}`,
+    `Existing Path: ${config.existingPath}`,
+    `Faust Build: ${config.hasFaust ? 'Yes' : 'No'}`,
+    `Keep Backup: ${config.keepBackup ? 'Yes (HISE_pre_git)' : 'No'}`,
+  ];
+  return lines.join('\n');
+}
+
+/**
+ * Generate Git installation check/install for Bash (macOS/Linux)
+ * On macOS: Git comes with Xcode CLI tools, just check it exists
+ * On Linux: Install via apt-get if missing
+ */
+export function generateGitInstallCheckBash(platform: 'macos' | 'linux'): string {
+  const { CYAN, NC, YELLOW } = BASH_COLORS;
+  
+  if (platform === 'macos') {
+    return `phase "Check/Install Git"
+
+if ! command -v git &> /dev/null; then
+    err "Git is not installed."
+    echo ""
+    echo -e "${YELLOW}Please install Xcode Command Line Tools:${NC}"
+    echo -e "${CYAN}xcode-select --install${NC}"
+    echo ""
+    echo "After installation, run this script again."
+    exit 1
+fi
+success "Git is installed"`;
+  }
+  
+  // Linux
+  return `phase "Check/Install Git"
+
+if ! command -v git &> /dev/null; then
+    step "Installing Git..."
+    sudo apt-get update
+    sudo apt-get install -y git || handle_error 1 "Failed to install Git"
+fi
+success "Git is installed"`;
+}
+
+/**
+ * Generate Git installation check/install for PowerShell (Windows)
+ * Installs via direct download if not present
+ */
+export function generateGitInstallCheckPS(): string {
+  return `Write-Phase "Check/Install Git"
+
+$gitPath = Get-Command git -ErrorAction SilentlyContinue
+if (-not $gitPath) {
+    Write-Step "Installing Git..."
+    $gitInstaller = "$env:TEMP\\git-installer.exe"
+    Invoke-WebRequest -Uri "https://github.com/git-for-windows/git/releases/download/v2.43.0.windows.1/Git-2.43.0-64-bit.exe" -OutFile $gitInstaller
+    Start-Process -FilePath $gitInstaller -Args "/VERYSILENT /NORESTART" -Wait
+    $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+    Write-Success "Git installed"
+} else {
+    Write-Success "Git is already installed"
+}`;
+}
+
+/**
+ * Generate backup/delete existing folder section for Bash
+ */
+export function generateBackupSectionBash(keepBackup: boolean): string {
+  const { CYAN, NC, GREEN, YELLOW } = BASH_COLORS;
+  
+  if (keepBackup) {
+    return `phase "Backup Existing Installation"
+
+step "Renaming existing HISE folder to HISE_pre_git..."
+BACKUP_PATH="\${HISE_PATH%/*}/HISE_pre_git"
+
+# Check if backup already exists
+if [ -d "$BACKUP_PATH" ]; then
+    err "Backup folder already exists at $BACKUP_PATH"
+    echo ""
+    echo -e "${YELLOW}Please remove or rename the existing backup folder and try again.${NC}"
+    exit 1
+fi
+
+mv "$HISE_PATH" "$BACKUP_PATH" || handle_error 2 "Failed to rename existing folder"
+success "Backup created at HISE_pre_git"
+echo -e "${YELLOW}Note: You can delete this backup after verifying the migration worked.${NC}"`;
+  }
+  
+  return `phase "Remove Existing Installation"
+
+step "Deleting existing HISE folder..."
+echo -e "${YELLOW}WARNING: This cannot be undone!${NC}"
+rm -rf "$HISE_PATH" || handle_error 2 "Failed to delete existing folder"
+success "Existing folder removed"`;
+}
+
+/**
+ * Generate backup/delete existing folder section for PowerShell
+ */
+export function generateBackupSectionPS(keepBackup: boolean): string {
+  if (keepBackup) {
+    return `Write-Phase "Backup Existing Installation"
+
+Write-Step "Renaming existing HISE folder to HISE_pre_git..."
+$backupPath = Join-Path (Split-Path $HISE_PATH -Parent) "HISE_pre_git"
+
+# Check if backup already exists
+if (Test-Path $backupPath) {
+    Write-Err "Backup folder already exists at $backupPath"
+    Write-Host ""
+    Write-Host "Please remove or rename the existing backup folder and try again." -ForegroundColor Yellow
+    exit 1
+}
+
+Rename-Item -Path $HISE_PATH -NewName "HISE_pre_git" -ErrorAction Stop
+Write-Success "Backup created at HISE_pre_git"
+Write-Host "Note: You can delete this backup after verifying the migration worked." -ForegroundColor Yellow`;
+  }
+  
+  return `Write-Phase "Remove Existing Installation"
+
+Write-Step "Deleting existing HISE folder..."
+Write-Host "WARNING: This cannot be undone!" -ForegroundColor Yellow
+Remove-Item -Path $HISE_PATH -Recurse -Force -ErrorAction Stop
+Write-Success "Existing folder removed"`;
+}
+
+/**
+ * Generate migration success message for Bash
+ */
+export function generateMigrationSuccessMessageBash(keepBackup: boolean): string {
+  const { GREEN, NC, YELLOW } = BASH_COLORS;
+  
+  const backupNote = keepBackup 
+    ? `echo ""
+echo -e "${YELLOW}Note: Your original HISE folder was saved as HISE_pre_git.${NC}"
+echo "You can delete it manually once you've verified everything works."` 
+    : '';
+    
+  return `echo ""
+echo -e "${GREEN}============================================${NC}"
+echo -e "${GREEN}  HISE MIGRATION COMPLETE!${NC}"
+echo -e "${GREEN}============================================${NC}"
+echo ""
+echo "HISE has been migrated to a Git-based workflow."
+echo "You can now use the Update flow to easily pull new changes."
+${backupNote}
+echo ""
+echo "Next steps:"
+echo "  1. Open a new terminal window"
+echo "  2. Run 'HISE --help' to verify HISE is in your PATH"
+echo "  3. Start building your projects!"
+echo ""`;
+}
+
+/**
+ * Generate migration success message for PowerShell
+ */
+export function generateMigrationSuccessMessagePS(keepBackup: boolean): string {
+  const backupNote = keepBackup 
+    ? `Write-Host ""
+Write-Host "Note: Your original HISE folder was saved as HISE_pre_git." -ForegroundColor Yellow
+Write-Host "You can delete it manually once you've verified everything works."` 
+    : '';
+    
+  return `Write-Host ""
+Write-Host "============================================" -ForegroundColor Green
+Write-Host "  HISE MIGRATION COMPLETE!" -ForegroundColor Green
+Write-Host "============================================" -ForegroundColor Green
+Write-Host ""
+Write-Host "HISE has been migrated to a Git-based workflow."
+Write-Host "You can now use the Update flow to easily pull new changes."
+${backupNote}
+Write-Host ""
+Write-Host "Next steps:"
+Write-Host "  1. Open a new PowerShell window"
+Write-Host "  2. Run 'HISE --help' to verify HISE is in your PATH"
+Write-Host "  3. Start building your projects!"
+Write-Host ""`;
+}
+
+/**
+ * Generate PATH addition section for Bash (macOS/Linux)
+ * Used in migration scripts since user likely doesn't have HISE in PATH
+ */
+export function generateAddToPathBash(hisePath: string, platform: 'macos' | 'linux', architecture: 'x64' | 'arm64', hasFaust: boolean): string {
+  const { CYAN, NC, GREEN, YELLOW } = BASH_COLORS;
+  
+  // Determine the binary path based on platform and build config
+  let binaryPath: string;
+  const buildConfig = hasFaust ? 'Release with Faust' : 'Release';
+  
+  if (platform === 'macos') {
+    binaryPath = `$HISE_PATH/projects/standalone/Builds/MacOSX/build/${buildConfig}/HISE.app/Contents/MacOS`;
+  } else {
+    // Linux - Faust config uses different folder name
+    const linuxBuildConfig = hasFaust ? 'ReleaseWithFaust' : 'Release';
+    binaryPath = `$HISE_PATH/projects/standalone/Builds/LinuxMakefile/build/${linuxBuildConfig}`;
+  }
+  
+  const shellConfig = platform === 'macos' ? '$HOME/.zshrc' : '$HOME/.bashrc';
+  
+  return `phase "Add HISE to PATH"
+
+HISE_BIN="${binaryPath}"
+
+# Check if already in PATH
+if [[ ":$PATH:" != *":$HISE_BIN:"* ]]; then
+    step "Adding HISE to PATH in ${shellConfig}..."
+    echo "" >> ${shellConfig}
+    echo "# HISE" >> ${shellConfig}
+    echo "export PATH=\\"\\$PATH:$HISE_BIN\\"" >> ${shellConfig}
+    export PATH="$PATH:$HISE_BIN"
+    success "HISE added to PATH"
+    echo -e "${YELLOW}Note: Run 'source ${shellConfig}' or open a new terminal to use HISE.${NC}"
+else
+    success "HISE already in PATH"
+fi`;
+}
+
+/**
+ * Generate PATH addition section for PowerShell (Windows)
+ * Used in migration scripts since user likely doesn't have HISE in PATH
+ */
+export function generateAddToPathPS(hisePath: string, hasFaust: boolean): string {
+  // Determine the binary path based on build config
+  const buildConfig = hasFaust ? 'Release with Faust' : 'Release';
+  const binaryPath = `$HISE_PATH\\projects\\standalone\\Builds\\VisualStudio2022\\x64\\${buildConfig}\\App`;
+  
+  return `Write-Phase "Add HISE to PATH"
+
+$HISE_BIN = "${binaryPath}"
+
+# Check if already in PATH
+$currentPath = [Environment]::GetEnvironmentVariable("Path", "User")
+if ($currentPath -notlike "*$HISE_BIN*") {
+    Write-Step "Adding HISE to user PATH..."
+    $newPath = $currentPath + ";" + $HISE_BIN
+    [Environment]::SetEnvironmentVariable("Path", $newPath, "User")
+    $env:Path = $env:Path + ";" + $HISE_BIN
+    Write-Success "HISE added to PATH"
+    Write-Host "Note: You may need to restart your terminal for PATH changes to take effect." -ForegroundColor Yellow
+} else {
+    Write-Success "HISE already in PATH"
 }`;
 }
 
@@ -328,6 +590,8 @@ Write-Success "HISE compiled successfully"`;
 // ============================================
 
 export function generateVerifySectionBash(hisePath: string, buildConfig: string, platform: 'macos' | 'linux'): string {
+  const { YELLOW, NC } = BASH_COLORS;
+  
   let binPath: string;
   if (platform === 'macos') {
     binPath = `$HISE_PATH/projects/standalone/Builds/MacOSX/build/${buildConfig}/HISE.app/Contents/MacOS/HISE`;
@@ -339,9 +603,18 @@ export function generateVerifySectionBash(hisePath: string, buildConfig: string,
   return `phase "Verifying Build"
 
 step "Checking build flags..."
-"${binPath}" get_build_flags || warn "Could not verify build flags"
 
-success "Build verified"`;
+# Try using HISE from PATH first to verify PATH is working
+if command -v HISE &> /dev/null; then
+    HISE get_build_flags || warn "Could not verify build flags"
+    success "Build verified (HISE found in PATH)"
+else
+    warn "HISE not found in PATH - this may be a temporary issue"
+    echo -e "${YELLOW}Your terminal session may need to be restarted for PATH changes to take effect.${NC}"
+    warn "Falling back to direct binary path..."
+    "${binPath}" get_build_flags || warn "Could not verify build flags"
+    success "Build verified (using direct path)"
+fi`;
 }
 
 export function generateVerifySectionPS(hisePath: string, buildConfig: string): string {
@@ -350,9 +623,19 @@ export function generateVerifySectionPS(hisePath: string, buildConfig: string): 
 $hiseBinPath = "$HISE_PATH\\projects\\standalone\\Builds\\VisualStudio2026\\x64\\${buildConfig}\\App"
 
 Write-Step "Checking build flags..."
-& "$hiseBinPath\\HISE.exe" get_build_flags
 
-Write-Success "Build verified"`;
+# Try using HISE from PATH first to verify PATH is working
+$hiseCmd = Get-Command HISE -ErrorAction SilentlyContinue
+if ($hiseCmd) {
+    & HISE get_build_flags
+    Write-Success "Build verified (HISE found in PATH)"
+} else {
+    Write-Warn "HISE not found in PATH - this may be a temporary issue"
+    Write-Host "Your terminal session may need to be restarted for PATH changes to take effect." -ForegroundColor Yellow
+    Write-Warn "Falling back to direct binary path..."
+    & "$hiseBinPath\\HISE.exe" get_build_flags
+    Write-Success "Build verified (using direct path)"
+}`;
 }
 
 // ============================================

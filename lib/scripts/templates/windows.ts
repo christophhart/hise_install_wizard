@@ -1,9 +1,11 @@
 import { 
   ScriptConfig, 
   UpdateScriptConfig,
+  MigrationScriptConfig,
   HELP_URL, 
   generateHeader,
   generateUpdateHeader,
+  generateMigrationHeader,
   generatePowerShellUtilities,
   generatePowerShellErrorHandler,
   generateCompileSectionWindows,
@@ -13,6 +15,10 @@ import {
   generateGitUpdateWithCommitPS,
   generateCommitNotePS,
   generateTestProjectSectionPS,
+  generateGitInstallCheckPS,
+  generateBackupSectionPS,
+  generateAddToPathPS,
+  generateMigrationSuccessMessagePS,
 } from './common';
 
 export function generateWindowsScript(config: ScriptConfig): string {
@@ -482,12 +488,17 @@ ${generateGitUpdateWithCommitPS(escapedPath, targetCommit)}
 ${generateCompileSectionWindows(escapedPath, hasFaust)}
 
 # ============================================
-# Phase 4: Verify Build
+# Phase 4: Ensure HISE is in PATH
+# ============================================
+${generateAddToPathPS(escapedPath, hasFaust)}
+
+# ============================================
+# Phase 5: Verify Build
 # ============================================
 ${generateVerifySectionPS(escapedPath, buildConfig)}
 
 # ============================================
-# Phase 5: Test Project
+# Phase 6: Test Project
 # ============================================
 ${generateTestProjectSectionPS(escapedPath)}
 
@@ -499,3 +510,103 @@ ${generateUpdateSuccessMessagePS(escapedPath)}
 
   return script;
 }
+
+// ============================================
+// Windows Migration Script Generator (ZIP to Git)
+// ============================================
+
+export function generateWindowsMigrationScript(config: MigrationScriptConfig): string {
+  const { existingPath, hasFaust, keepBackup, targetCommit } = config;
+  
+  // Escape backslashes for PowerShell
+  const escapedPath = existingPath.replace(/\\/g, '\\');
+  const buildConfig = hasFaust ? 'Release with Faust' : 'Release';
+  const keepBackupStr = keepBackup ? 'Yes (HISE_pre_git)' : 'No';
+  
+  // Generate commit note if using specific commit
+  const commitHeaderNote = targetCommit 
+    ? `\n# NOTE: Using specific commit ${targetCommit.substring(0, 7)} (CI build failing on latest)\n`
+    : '';
+  
+  // Get parent path for cloning
+  const parentPath = escapedPath.replace(/\\[^\\]+$/, '');
+  
+  const script = `# ${generateMigrationHeader(config).split('\n').join('\n# ')}${commitHeaderNote}
+# ============================================
+# HISE Migration Script for Windows (ZIP to Git)
+# ============================================
+
+$ErrorActionPreference = "Stop"
+$ProgressPreference = "SilentlyContinue"
+
+${generatePowerShellUtilities()}
+
+${generatePowerShellErrorHandler('migration')}
+
+# Check admin privileges
+$isAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+if (-not $isAdmin) {
+    Write-Err "This script requires Administrator privileges."
+    Write-Host "Please right-click PowerShell and select 'Run as Administrator'" -ForegroundColor Yellow
+    exit 1
+}
+
+$HISE_PATH = "${escapedPath}"
+$INSTALL_PATH = "${parentPath}"
+
+Write-Host ""
+Write-Host "========================================" -ForegroundColor Cyan
+Write-Host "  HISE Migration Script (ZIP to Git)" -ForegroundColor Cyan
+Write-Host "========================================" -ForegroundColor Cyan
+Write-Host ""
+Write-Host "Existing HISE path: $HISE_PATH" -ForegroundColor White
+Write-Host "Build config: ${buildConfig}" -ForegroundColor White
+Write-Host "Keep backup: ${keepBackupStr}" -ForegroundColor White
+Write-Host ""
+
+# ============================================
+# Phase 1: Check/Install Git
+# ============================================
+${generateGitInstallCheckPS()}
+
+# ============================================
+# Phase 2: Backup/Remove Existing Installation
+# ============================================
+${generateBackupSectionPS(keepBackup)}
+
+# ============================================
+# Phase 3: Clone HISE Repository
+# ============================================
+Write-Phase "Clone HISE Repository"
+
+${generateGitCloneWithCommitPS(parentPath, targetCommit)}
+
+# ============================================
+# Phase 4: Compile HISE
+# ============================================
+${generateCompileSectionWindows(escapedPath, hasFaust)}
+
+# ============================================
+# Phase 5: Add to PATH
+# ============================================
+${generateAddToPathPS(escapedPath, hasFaust)}
+
+# ============================================
+# Phase 6: Verify Build
+# ============================================
+${generateVerifySectionPS(escapedPath, buildConfig)}
+
+# ============================================
+# Phase 7: Test Project
+# ============================================
+${generateTestProjectSectionPS(escapedPath)}
+
+# ============================================
+# Success
+# ============================================
+${generateMigrationSuccessMessagePS(keepBackup)}
+`;
+
+  return script;
+}
+

@@ -102,6 +102,17 @@ export interface UpdateScriptResponse {
   warnings: string[];
 }
 
+// Config for migration script generation (ZIP to Git workflow)
+export interface MigrationScriptConfig {
+  platform: Exclude<Platform, null>;
+  architecture: Exclude<Architecture, null>;
+  existingPath: string;          // Current HISE source folder path
+  hasFaust: boolean;             // Detected from existing build
+  keepBackup: boolean;           // If true, rename to HISE_pre_git; if false, delete
+  targetCommit?: string;         // From CI status check - checkout specific commit
+  faustVersion?: string;         // For Faust install if needed
+}
+
 // Helper function to parse HISE get_update_info output
 // Format: "<path>|<status>|<faust>|<arch>" (pipe-delimited)
 // Example: "C:\HISE|valid|faust|x64" or "~/HISE|valid|nofaust|arm64"

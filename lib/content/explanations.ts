@@ -526,6 +526,62 @@ export const updatePage = {
   },
 };
 
+// Path detection content (for "HISE not in PATH" flow)
+export const pathDetection = {
+  commandNotWorking: {
+    easy: 'Command not working? This usually means HISE is not in your system PATH.',
+    dev: 'HISE not in PATH?',
+  } as ModeContent,
+  
+  locateFolder: {
+    easy: 'Locate HISE folder...',
+    dev: 'Browse...',
+  } as ModeContent,
+  
+  useSimpleCommand: {
+    easy: 'Use simple command instead',
+    dev: 'Simple command',
+  } as ModeContent,
+};
+
+// Migration content (for ZIP to Git workflow)
+export const migrationPage = {
+  title: {
+    easy: 'Migrate to Git Workflow',
+    dev: 'Git Migration',
+  } as ModeContent,
+  
+  description: {
+    easy: 'Your HISE installation was downloaded as a ZIP file. To enable easy updates, we\'ll migrate you to a Git-based workflow by cloning a fresh copy of the HISE repository.',
+    dev: 'No .git folder found. Will clone fresh repo to enable git-based updates.',
+  } as ModeContent,
+  
+  warning: {
+    easy: 'WARNING: This will replace your entire HISE source folder. Any custom modifications you\'ve made to the HISE source code will be LOST. If you\'ve made changes, back them up manually before proceeding.',
+    dev: 'Warning: Existing HISE folder will be replaced. Back up any local modifications first.',
+  } as ModeContent,
+  
+  detectedConfig: {
+    easy: 'We detected the following from your current installation:',
+    dev: 'Detected configuration:',
+  } as ModeContent,
+  
+  backupOption: {
+    easy: 'Keep existing folder as backup (renamed to HISE_pre_git)',
+    dev: 'Keep backup as HISE_pre_git',
+  } as ModeContent,
+  
+  deleteOption: {
+    easy: 'Delete existing folder (saves disk space but cannot be undone)',
+    dev: 'Delete existing folder',
+  } as ModeContent,
+  
+  proceedButton: {
+    easy: 'Generate Migration Script',
+    dev: 'Generate Script',
+  } as ModeContent,
+};
+
 export const updateGeneratePage = {
   title: {
     easy: 'Your Update Script',
@@ -667,16 +723,27 @@ export const updatePhases = [
   {
     id: 4,
     name: {
-      easy: 'Verify Build',
-      dev: 'Verify',
+      easy: 'Ensure HISE in PATH',
+      dev: 'PATH',
     } as ModeContent,
     description: {
-      easy: 'Check that the build completed successfully',
-      dev: 'get_build_flags',
+      easy: 'Add HISE to system PATH if not already present',
+      dev: 'Check/add to PATH',
     } as ModeContent,
   },
   {
     id: 5,
+    name: {
+      easy: 'Verify Build',
+      dev: 'Verify',
+    } as ModeContent,
+    description: {
+      easy: 'Check that the build completed successfully and PATH works',
+      dev: 'get_build_flags (tests PATH)',
+    } as ModeContent,
+  },
+  {
+    id: 6,
     name: {
       easy: 'Test Project',
       dev: 'Test',

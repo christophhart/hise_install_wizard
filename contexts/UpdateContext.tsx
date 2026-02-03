@@ -17,6 +17,10 @@ interface UpdateState {
   hasFaust: boolean;
   detectionStatus: 'valid' | 'invalid' | 'not_found' | null;
   explanationMode: ExplanationMode;
+  // Migration mode state (for ZIP to Git workflow)
+  migrationMode: boolean;         // true when detectionStatus === 'invalid' and user proceeds
+  keepBackup: boolean;            // default: true - rename to HISE_pre_git vs delete
+  customBinaryFolder: string | null; // User-provided folder path when HISE not in PATH
 }
 
 const initialState: UpdateState = {
@@ -26,6 +30,9 @@ const initialState: UpdateState = {
   hasFaust: false,
   detectionStatus: null,
   explanationMode: 'easy',
+  migrationMode: false,
+  keepBackup: true,
+  customBinaryFolder: null,
 };
 
 interface UpdateContextType {
@@ -34,6 +41,9 @@ interface UpdateContextType {
   setArchitecture: (arch: Architecture) => void;
   applyDetectionResult: (result: DetectionResult) => void;
   setExplanationMode: (mode: ExplanationMode) => void;
+  setMigrationMode: (mode: boolean) => void;
+  setKeepBackup: (keep: boolean) => void;
+  setCustomBinaryFolder: (path: string | null) => void;
   reset: () => void;
   canGenerate: boolean;
 }
@@ -88,7 +98,7 @@ export function UpdateProvider({ children }: { children: ReactNode }) {
     setState(prev => ({ ...prev, architecture }));
   }, []);
 
-  const applyDetectionResult = useCallback((result: DetectionResult) => {
+const applyDetectionResult = useCallback((result: DetectionResult) => {
     setState(prev => ({
       ...prev,
       hisePath: result.path || '',
@@ -96,7 +106,21 @@ export function UpdateProvider({ children }: { children: ReactNode }) {
       detectionStatus: result.status,
       // Update architecture if provided (macOS)
       architecture: result.architecture || prev.architecture,
+      // Auto-enable migration mode when status is invalid (no .git folder)
+      migrationMode: result.status === 'invalid',
     }));
+  }, []);
+
+  const setMigrationMode = useCallback((migrationMode: boolean) => {
+    setState(prev => ({ ...prev, migrationMode }));
+  }, []);
+
+  const setKeepBackup = useCallback((keepBackup: boolean) => {
+    setState(prev => ({ ...prev, keepBackup }));
+  }, []);
+
+  const setCustomBinaryFolder = useCallback((customBinaryFolder: string | null) => {
+    setState(prev => ({ ...prev, customBinaryFolder }));
   }, []);
 
   const setExplanationMode = useCallback((explanationMode: ExplanationMode) => {
@@ -114,11 +138,11 @@ export function UpdateProvider({ children }: { children: ReactNode }) {
     }));
   }, []);
 
-  // Can generate update script when we have a valid detection
+// Can generate script when we have valid detection OR when in migration mode with invalid status
   const canGenerate = state.platform !== null && 
-    state.detectionStatus === 'valid' && 
     state.hisePath !== '' &&
-    (state.platform !== 'macos' || state.architecture !== null);
+    (state.platform !== 'macos' || state.architecture !== null) &&
+    (state.detectionStatus === 'valid' || (state.detectionStatus === 'invalid' && state.migrationMode));
 
   return (
     <UpdateContext.Provider
@@ -128,6 +152,9 @@ export function UpdateProvider({ children }: { children: ReactNode }) {
         setArchitecture,
         applyDetectionResult,
         setExplanationMode,
+        setMigrationMode,
+        setKeepBackup,
+        setCustomBinaryFolder,
         reset,
         canGenerate,
       }}

@@ -1,7 +1,7 @@
-import { ScriptConfig, GenerateScriptResponse, UpdateScriptConfig, UpdateScriptResponse } from '@/types/wizard';
-import { generateWindowsScript, generateWindowsUpdateScript } from './templates/windows';
-import { generateMacOSScript, generateMacOSUpdateScript } from './templates/macos';
-import { generateLinuxScript, generateLinuxUpdateScript } from './templates/linux';
+import { ScriptConfig, GenerateScriptResponse, UpdateScriptConfig, UpdateScriptResponse, MigrationScriptConfig } from '@/types/wizard';
+import { generateWindowsScript, generateWindowsUpdateScript, generateWindowsMigrationScript } from './templates/windows';
+import { generateMacOSScript, generateMacOSUpdateScript, generateMacOSMigrationScript } from './templates/macos';
+import { generateLinuxScript, generateLinuxUpdateScript, generateLinuxMigrationScript } from './templates/linux';
 
 export function generateScript(config: ScriptConfig): GenerateScriptResponse {
   const warnings: string[] = [];
@@ -87,3 +87,50 @@ export function generateUpdateScript(config: UpdateScriptConfig): UpdateScriptRe
     warnings,
   };
 }
+
+export function generateMigrationScript(config: MigrationScriptConfig): UpdateScriptResponse {
+  const warnings: string[] = [];
+  let script: string;
+  let filename: string;
+
+  // Add migration-specific warning
+  warnings.push('This will replace your existing HISE folder. Make sure you have backed up any local modifications.');
+
+  switch (config.platform) {
+    case 'windows':
+      script = generateWindowsMigrationScript(config);
+      filename = 'hise-migration.ps1';
+      break;
+
+    case 'macos':
+      script = generateMacOSMigrationScript(config);
+      filename = 'hise-migration.sh';
+      break;
+
+    case 'linux':
+      script = generateLinuxMigrationScript(config);
+      filename = 'hise-migration.sh';
+      warnings.push('This script requires sudo privileges for Git installation and some operations.');
+      break;
+
+    default:
+      throw new Error(`Unsupported platform: ${config.platform}`);
+  }
+
+  if (config.keepBackup) {
+    warnings.push('Your existing HISE folder will be renamed to HISE_pre_git as a backup.');
+  } else {
+    warnings.push('Your existing HISE folder will be permanently deleted.');
+  }
+
+  if (config.hasFaust) {
+    warnings.push('Building with Faust support. Make sure Faust is installed on your system.');
+  }
+
+  return {
+    script,
+    filename,
+    warnings,
+  };
+}
+

@@ -1,10 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { UpdateScriptConfig, UpdateScriptResponse } from '@/types/wizard';
-import { generateUpdateScript } from '@/lib/scripts/generator';
+import { UpdateScriptConfig, UpdateScriptResponse, MigrationScriptConfig } from '@/types/wizard';
+import { generateUpdateScript, generateMigrationScript } from '@/lib/scripts/generator';
+
+// Extended request type to include migration mode options
+interface UpdateOrMigrationRequest extends UpdateScriptConfig {
+  migrationMode?: boolean;
+  keepBackup?: boolean;
+}
 
 export async function POST(request: NextRequest) {
   try {
-    const body: UpdateScriptConfig = await request.json();
+    const body: UpdateOrMigrationRequest = await request.json();
     
     // Validate required fields
     if (!body.platform || !body.architecture || !body.hisePath) {
@@ -30,14 +36,31 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    const result: UpdateScriptResponse = generateUpdateScript({
-      platform: body.platform,
-      architecture: body.architecture,
-      hisePath: body.hisePath,
-      hasFaust: body.hasFaust ?? false,
-      targetCommit: body.targetCommit,
-      faustVersion: body.faustVersion,
-    });
+    let result: UpdateScriptResponse;
+    
+    // Check if this is a migration request
+    if (body.migrationMode) {
+      const migrationConfig: MigrationScriptConfig = {
+        platform: body.platform,
+        architecture: body.architecture,
+        existingPath: body.hisePath,
+        hasFaust: body.hasFaust ?? false,
+        keepBackup: body.keepBackup ?? true,
+        targetCommit: body.targetCommit,
+        faustVersion: body.faustVersion,
+      };
+      
+      result = generateMigrationScript(migrationConfig);
+    } else {
+      result = generateUpdateScript({
+        platform: body.platform,
+        architecture: body.architecture,
+        hisePath: body.hisePath,
+        hasFaust: body.hasFaust ?? false,
+        targetCommit: body.targetCommit,
+        faustVersion: body.faustVersion,
+      });
+    }
     
     return NextResponse.json(result);
   } catch (error) {
