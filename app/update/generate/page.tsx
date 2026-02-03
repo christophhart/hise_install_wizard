@@ -73,10 +73,10 @@ function renderHowToRunInstructions(
       )}
       
       {steps.map((step, index) => {
-        const commandFunc = step.command ? get(step.command) : null;
-        const commandContent = typeof commandFunc === 'function' && commandFunc.name === '' 
-          ? commandFunc(filename) 
-          : null;
+        const commandValue = step.command ? get(step.command) : null;
+        const commandContent = typeof commandValue === 'function' 
+          ? commandValue(filename) 
+          : commandValue;
         
         return (
           <div key={index}>
