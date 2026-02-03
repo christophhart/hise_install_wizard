@@ -541,8 +541,8 @@ export const updateHowToRun: Record<Exclude<Platform, null>, { steps: UpdateHowT
       },
       {
         title: {
-          easy: 'Navigate to Downloads and run the script',
-          dev: 'Navigate and run',
+          easy: 'Run this command to execute the script',
+          dev: 'Run script',
         },
         command: {
           easy: 'cd $HOME\\Downloads; .\\"hise-update.ps1"',
@@ -561,7 +561,7 @@ export const updateHowToRun: Record<Exclude<Platform, null>, { steps: UpdateHowT
       },
       {
         title: {
-          easy: 'Navigate to Downloads, make executable, and run',
+          easy: 'Run this command to execute the script',
           dev: 'Run script',
         },
         command: {
@@ -581,7 +581,7 @@ export const updateHowToRun: Record<Exclude<Platform, null>, { steps: UpdateHowT
       },
       {
         title: {
-          easy: 'Navigate to Downloads, make executable, and run',
+          easy: 'Run this command to execute the script',
           dev: 'Run script',
         },
         command: {

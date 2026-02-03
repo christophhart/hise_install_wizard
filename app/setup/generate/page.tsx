@@ -28,19 +28,19 @@ const runCommands: Record<Exclude<Platform, null>, { steps: { title: string; com
     steps: [
       { title: 'Open PowerShell as Administrator' },
       { title: 'Allow script execution for this session', command: 'Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process' },
-      { title: 'Navigate to Downloads and run the script', command: (filename: string) => `cd $HOME\\Downloads; .\\"${filename}"` },
+      { title: 'Run this command to execute the script', command: (filename: string) => `cd $HOME\\Downloads; .\\"${filename}"` },
     ],
   },
   macos: {
     steps: [
       { title: 'Open Terminal' },
-      { title: 'Navigate to Downloads, make executable, and run', command: (filename: string) => `cd ~/Downloads && chmod +x "${filename}" && ./"${filename}"` },
+      { title: 'Run this command to execute the script', command: (filename: string) => `cd ~/Downloads && chmod +x "${filename}" && ./"${filename}"` },
     ],
   },
   linux: {
     steps: [
       { title: 'Open Terminal' },
-      { title: 'Navigate to Downloads, make executable, and run', command: (filename: string) => `cd ~/Downloads && chmod +x "${filename}" && ./"${filename}"` },
+      { title: 'Run this command to execute the script', command: (filename: string) => `cd ~/Downloads && chmod +x "${filename}" && ./"${filename}"` },
     ],
   },
 };
