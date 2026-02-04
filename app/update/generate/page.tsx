@@ -15,9 +15,9 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import Alert from '@/components/ui/Alert';
 import InlineCopy from '@/components/ui/InlineCopy';
 import Collapsible from '@/components/ui/Collapsible';
-import { ArrowLeft, Download, RefreshCw, Terminal, Check } from 'lucide-react';
+import { ArrowLeft, Download, RefreshCw, Terminal, Check, CheckCircle2, Home, ArrowUpCircle } from 'lucide-react';
 import { useExplanation } from '@/hooks/useExplanation';
-import { updateGeneratePage, updateHowToRun, updatePhases, regenerateInfo, migrationPage } from '@/lib/content/explanations';
+import { updateGeneratePage, updateHowToRun, updatePhases, regenerateInfo, migrationPage, upToDate, updateAvailable } from '@/lib/content/explanations';
 import { downloadAsFile, generateUniqueFilename } from '@/lib/utils/download';
 import { expandHomePath } from '@/lib/utils/path';
 import InfoPopup from '@/components/ui/InfoPopup';
@@ -148,6 +148,24 @@ function renderHowToRunInstructions(
       })}
     </div>
   );
+}
+
+// Helper function to format relative dates
+function formatRelativeDate(dateString: string): string {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  
+  if (diffDays === 0) return 'today';
+  if (diffDays === 1) return 'yesterday';
+  if (diffDays < 7) return `${diffDays} days ago`;
+  if (diffDays < 30) {
+    const weeks = Math.floor(diffDays / 7);
+    return weeks === 1 ? '1 week ago' : `${weeks} weeks ago`;
+  }
+  const months = Math.floor(diffDays / 30);
+  return months === 1 ? '1 month ago' : `${months} months ago`;
 }
 
 export default function UpdateGeneratePage() {
@@ -289,20 +307,26 @@ export default function UpdateGeneratePage() {
   };
   
   // Calculate completed phase IDs based on detection state
-  // For update flow: if customBinaryFolder is null, HISE was found in PATH (phase 4 done)
-  // For migration flow: PATH is always "Will Run" (users don't have HISE in PATH)
+  // PATH phase always runs now (it's idempotent - skips if already in PATH)
   const getCompletedPhaseIds = (): number[] => {
-    if (state.migrationMode) {
-      // Migration users never have HISE in PATH already
-      return [];
-    }
-    // For update flow: PATH phase is id 4
-    // If customBinaryFolder is null, HISE was detected via PATH environment variable
-    if (state.customBinaryFolder === null) {
-      return [4]; // PATH phase is already done
-    }
     return [];
   };
+  
+  // Check if user is already on the latest passing commit
+  // User's baked hash is HEAD~1 of their build, so compare against parent of target commit
+  const isUpToDate = (() => {
+    if (!state.commitHash || !ciStatus) return false;
+    
+    // Determine the target commit (last passing, or latest if latest is passing)
+    const targetCommit = ciStatus.isLatestPassing 
+      ? ciStatus.latestCommit 
+      : ciStatus.lastPassingCommit;
+    
+    if (!targetCommit?.parentSha) return false;
+    
+    // User's baked hash matches parent of target = they're on the target commit
+    return state.commitHash === targetCommit.parentSha;
+  })();
   
   const handleDownload = () => {
     if (!result) return;
@@ -331,10 +355,20 @@ export default function UpdateGeneratePage() {
       <Card>
         <CardHeader>
           <CardTitle>
-            {state.migrationMode ? get(migrationPage.title) : get(updateGeneratePage.title)}
+            {state.migrationMode 
+              ? get(migrationPage.title) 
+              : isUpToDate 
+                ? get(upToDate.title)
+                : get(updateGeneratePage.title)
+            }
           </CardTitle>
           <CardDescription>
-            {state.migrationMode ? get(migrationPage.description) : get(updateGeneratePage.description)}
+            {state.migrationMode 
+              ? get(migrationPage.description) 
+              : isUpToDate
+                ? get(upToDate.description)
+                : get(updateGeneratePage.description)
+            }
           </CardDescription>
         </CardHeader>
         
@@ -363,7 +397,31 @@ export default function UpdateGeneratePage() {
             </Alert>
           )}
           
-          {result && !loading && (
+          {/* Up-to-date state - show when user is already on latest */}
+          {!loading && !ciLoading && isUpToDate && (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <div className="w-16 h-16 rounded-full bg-success/20 flex items-center justify-center mb-4">
+                <CheckCircle2 className="w-8 h-8 text-success" />
+              </div>
+              <h3 className="text-xl font-semibold text-success mb-2">
+                {get(upToDate.title)}
+              </h3>
+              <p className="text-gray-400 mb-4 max-w-md">
+                {get(upToDate.description)}
+              </p>
+
+              <Button 
+                onClick={() => router.push('/')}
+                variant="secondary"
+                size="lg"
+              >
+                <Home className="w-4 h-4" />
+                {get(upToDate.backButton)}
+              </Button>
+            </div>
+          )}
+          
+          {result && !loading && !isUpToDate && (
             <>
               {/* CI Status Alert */}
               {ciStatus && !ciStatus.isLatestPassing && (
@@ -380,6 +438,48 @@ export default function UpdateGeneratePage() {
                 <Alert variant="info">
                   Could not check CI status: {ciError}. Proceeding with latest commit.
                 </Alert>
+              )}
+              
+              {/* Version Comparison - Update Available */}
+              {ciStatus && (
+                <div className="border border-accent/50 bg-accent/10 rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <ArrowUpCircle className="w-5 h-5 text-accent" />
+                    <h3 className="font-semibold text-accent">{get(updateAvailable.title)}</h3>
+                  </div>
+                  
+                  <div className="space-y-2 text-sm">
+                    {/* Your build */}
+                    {state.commitHash && (
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-gray-400 w-28">{get(updateAvailable.yourBuild)}</span>
+                        <span className="font-mono text-gray-300">{state.commitHash.substring(0, 7)}</span>
+                      </div>
+                    )}
+                    
+                    {/* Latest version */}
+                    {(() => {
+                      const targetCommit = ciStatus.isLatestPassing 
+                        ? ciStatus.latestCommit 
+                        : ciStatus.lastPassingCommit;
+                      
+                      if (!targetCommit) return null;
+                      
+                      return (
+                        <>
+                          <div className="flex items-baseline gap-2">
+                            <span className="text-gray-400 w-28">{get(updateAvailable.latestVersion)}</span>
+                            <span className="font-mono text-gray-300">{targetCommit.shortSha}</span>
+                            <span className="text-gray-500">({formatRelativeDate(targetCommit.date)})</span>
+                          </div>
+                          
+                          {/* Commit message */}
+                          <p className="text-gray-500 italic mt-1">&quot;{targetCommit.message}&quot;</p>
+                        </>
+                      );
+                    })()}
+                  </div>
+                </div>
               )}
               
               {/* HISE Path Display */}

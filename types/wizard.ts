@@ -78,12 +78,13 @@ export const PLATFORM_LABELS: Record<Exclude<Platform, null>, string> = {
 // Update Mode Types
 // ============================================
 
-// Detection result from HISE get_update_info command
+// Detection result from HISE get_update_info command or Help → Update HISE menu
 export interface DetectionResult {
   path: string | null;
   status: 'valid' | 'invalid' | 'not_found';
   hasFaust: boolean;
   architecture?: Architecture;  // Populated for all platforms
+  commitHash?: string;          // The baked commit hash (HEAD~1 at build time)
 }
 
 // Config for update script generation
@@ -113,9 +114,10 @@ export interface MigrationScriptConfig {
   faustVersion?: string;         // For Faust install if needed
 }
 
-// Helper function to parse HISE get_update_info output
-// Format: "<path>|<status>|<faust>|<arch>" (pipe-delimited)
-// Example: "C:\HISE|valid|faust|x64" or "~/HISE|valid|nofaust|arm64"
+// Helper function to parse HISE get_update_info output or Help → Update HISE menu output
+// Format: "<path>|<status>|<faust>|<arch>|<commitHash>" (pipe-delimited)
+// Example: "C:\HISE|valid|faust|x64|d385f6a01ca50ef673c1ff0021e9d486a06816c7"
+// Note: commitHash is the commit BEFORE the one HISE was built from (HEAD~1 at build time)
 export function parseDetectionResult(
   output: string, 
   platform: Exclude<Platform, null>
@@ -129,7 +131,7 @@ export function parseDetectionResult(
   
   const parts = trimmed.split('|');
   
-  // Expect 4 parts: path, status, faust, arch
+  // Expect at least 4 parts: path, status, faust, arch (commitHash is 5th, optional for backwards compat)
   if (parts.length < 4) {
     return { path: null, status: 'not_found', hasFaust: false };
   }
@@ -138,6 +140,7 @@ export function parseDetectionResult(
   const status = (parts[1] as 'valid' | 'invalid') || 'invalid';
   const hasFaust = parts[2] === 'faust';
   const architecture: Architecture = parts[3] === 'arm64' ? 'arm64' : 'x64';
+  const commitHash = parts[4] || undefined;
   
-  return { path, status, hasFaust, architecture };
+  return { path, status, hasFaust, architecture, commitHash };
 }

@@ -13,8 +13,8 @@ const defaultPhases: Phase[] = [
 ];
 
 const updatePhases: Phase[] = [
-  { id: 0, name: 'Configure' },
-  { id: 1, name: 'Generate Script' },
+  { id: 0, name: 'Paste Info' },
+  { id: 1, name: 'Check Updates' },
 ];
 
 interface PhaseStepperProps {

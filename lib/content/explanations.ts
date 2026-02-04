@@ -465,34 +465,39 @@ export function getContentForPlatform(
 
 export const updatePage = {
   title: {
-    easy: 'Update HISE',
-    dev: 'Update HISE',
+    easy: 'Check for Updates',
+    dev: 'Check for Updates',
   } as ModeContent,
   
   description: {
-    easy: 'Already have HISE installed? This will detect your installation and generate a script to pull the latest changes and recompile.',
-    dev: 'Generate update script to pull latest and recompile.',
+    easy: 'Paste your HISE update info to check if a new version is available.',
+    dev: 'Paste update info to check for new versions.',
+  } as ModeContent,
+  
+  checkButton: {
+    easy: 'Check for Updates',
+    dev: 'Check Updates',
   } as ModeContent,
   
   detectSection: {
     title: {
-      easy: 'Detect HISE Installation',
-      dev: 'Detect Installation',
+      easy: 'Paste Update Info',
+      dev: 'Paste Info',
     } as ModeContent,
     
     description: {
-      easy: 'Run this command in your terminal. HISE will detect your installation and copy the result to your clipboard:',
-      dev: 'Run command (auto-copies result to clipboard):',
+      easy: 'In HISE, go to Help → Update HISE, then click the button below.',
+      dev: 'HISE: Help → Update HISE, then paste.',
     } as ModeContent,
     
     pasteLabel: {
-      easy: 'Then paste the result here:',
-      dev: 'Paste output:',
+      easy: 'Paste the update info here:',
+      dev: 'Paste here:',
     } as ModeContent,
     
     placeholder: {
-      easy: 'After running the command, paste the result here',
-      dev: 'e.g., C:\\HISE|valid|faust|x64',
+      easy: 'Paste the update info here',
+      dev: 'e.g., C:\\HISE|valid|faust|x64|abc123...',
     } as ModeContent,
   },
   
@@ -526,21 +531,26 @@ export const updatePage = {
   },
 };
 
-// Path detection content (for "HISE not in PATH" flow)
-export const pathDetection = {
-  commandNotWorking: {
-    easy: 'Command not working? This usually means HISE is not in your system PATH.',
-    dev: 'HISE not in PATH?',
+// Up-to-date content (shown when no update is available)
+export const upToDate = {
+  title: {
+    easy: 'Everything is up to date!',
+    dev: 'Up to date',
   } as ModeContent,
   
-  locateFolder: {
-    easy: 'Locate HISE folder...',
-    dev: 'Browse...',
+  description: {
+    easy: 'Your HISE installation is already running the latest version. No update needed.',
+    dev: 'Already on latest passing commit.',
   } as ModeContent,
   
-  useSimpleCommand: {
-    easy: 'Use simple command instead',
-    dev: 'Simple command',
+  currentVersion: {
+    easy: 'Your current build:',
+    dev: 'Build:',
+  } as ModeContent,
+  
+  backButton: {
+    easy: 'Back to Home',
+    dev: 'Home',
   } as ModeContent,
 };
 
@@ -584,18 +594,36 @@ export const migrationPage = {
 
 export const updateGeneratePage = {
   title: {
-    easy: 'Your Update Script',
-    dev: 'Update Script',
+    easy: 'Update Available',
+    dev: 'Update Available',
   } as ModeContent,
   
   description: {
-    easy: 'Your update script is ready. It will pull the latest HISE changes and recompile.',
-    dev: 'Script will pull and recompile.',
+    easy: 'A new version of HISE is available. Download and run the script to update.',
+    dev: 'Download and run the update script.',
   } as ModeContent,
   
   stepsExplanation: {
     easy: 'The script will perform these steps:',
     dev: 'Update phases:',
+  } as ModeContent,
+};
+
+// Update available version comparison content
+export const updateAvailable = {
+  title: {
+    easy: 'Update Available',
+    dev: 'Update Available',
+  } as ModeContent,
+  
+  yourBuild: {
+    easy: 'Your build:',
+    dev: 'Current:',
+  } as ModeContent,
+  
+  latestVersion: {
+    easy: 'Latest version:',
+    dev: 'Latest:',
   } as ModeContent,
 };
 

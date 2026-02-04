@@ -20,7 +20,7 @@ interface UpdateState {
   // Migration mode state (for ZIP to Git workflow)
   migrationMode: boolean;         // true when detectionStatus === 'invalid' and user proceeds
   keepBackup: boolean;            // default: true - rename to HISE_pre_git vs delete
-  customBinaryFolder: string | null; // User-provided folder path when HISE not in PATH
+  commitHash: string | null;      // User's current HISE build commit (HEAD~1 at build time)
 }
 
 const initialState: UpdateState = {
@@ -32,7 +32,7 @@ const initialState: UpdateState = {
   explanationMode: 'easy',
   migrationMode: false,
   keepBackup: true,
-  customBinaryFolder: null,
+  commitHash: null,
 };
 
 interface UpdateContextType {
@@ -43,7 +43,6 @@ interface UpdateContextType {
   setExplanationMode: (mode: ExplanationMode) => void;
   setMigrationMode: (mode: boolean) => void;
   setKeepBackup: (keep: boolean) => void;
-  setCustomBinaryFolder: (path: string | null) => void;
   reset: () => void;
   canGenerate: boolean;
 }
@@ -108,6 +107,8 @@ const applyDetectionResult = useCallback((result: DetectionResult) => {
       architecture: result.architecture || prev.architecture,
       // Auto-enable migration mode when status is invalid (no .git folder)
       migrationMode: result.status === 'invalid',
+      // Store the commit hash for update-available check
+      commitHash: result.commitHash || null,
     }));
   }, []);
 
@@ -117,10 +118,6 @@ const applyDetectionResult = useCallback((result: DetectionResult) => {
 
   const setKeepBackup = useCallback((keepBackup: boolean) => {
     setState(prev => ({ ...prev, keepBackup }));
-  }, []);
-
-  const setCustomBinaryFolder = useCallback((customBinaryFolder: string | null) => {
-    setState(prev => ({ ...prev, customBinaryFolder }));
   }, []);
 
   const setExplanationMode = useCallback((explanationMode: ExplanationMode) => {
@@ -154,7 +151,6 @@ const applyDetectionResult = useCallback((result: DetectionResult) => {
         setExplanationMode,
         setMigrationMode,
         setKeepBackup,
-        setCustomBinaryFolder,
         reset,
         canGenerate,
       }}

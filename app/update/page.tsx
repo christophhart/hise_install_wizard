@@ -34,7 +34,6 @@ export default function UpdatePage() {
     state, 
     applyDetectionResult,
     setKeepBackup,
-    setCustomBinaryFolder,
     canGenerate,
   } = useUpdate();
   const { get } = useExplanation();
@@ -111,11 +110,10 @@ export default function UpdatePage() {
             <HisePathDetector
               platform={state.platform}
               onDetectionResult={applyDetectionResult}
-              onCustomBinaryFolderChange={setCustomBinaryFolder}
               detectionStatus={state.detectionStatus}
               detectedPath={state.hisePath}
               hasFaust={state.hasFaust}
-              customBinaryFolder={state.customBinaryFolder}
+              commitHash={state.commitHash}
             />
           </div>
           
@@ -242,7 +240,7 @@ export default function UpdatePage() {
           disabled={!canGenerate}
           size="lg"
         >
-          {isMigrationMode ? get(migrationPage.proceedButton) : 'Generate Update Script'}
+          {isMigrationMode ? get(migrationPage.proceedButton) : get(updatePage.checkButton)}
           <ArrowRight className="w-4 h-4" />
         </Button>
       </div>

@@ -3,81 +3,32 @@
 import { useState } from 'react';
 import { Platform, DetectionResult, parseDetectionResult } from '@/types/wizard';
 import { useExplanation } from '@/hooks/useExplanation';
-import { updatePage, pathDetection } from '@/lib/content/explanations';
-import Collapsible from '@/components/ui/Collapsible';
+import { updatePage } from '@/lib/content/explanations';
 import Button from '@/components/ui/Button';
 import Textarea from '@/components/ui/Textarea';
-import Input from '@/components/ui/Input';
-import CodeBlock from '@/components/ui/CodeBlock';
-import { Search, CheckCircle2, AlertCircle, XCircle, ClipboardPaste, FolderOpen, ArrowLeft, Info } from 'lucide-react';
+import { CheckCircle2, AlertCircle, XCircle, ClipboardPaste, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface HisePathDetectorProps {
   platform: Exclude<Platform, null>;
   onDetectionResult: (result: DetectionResult) => void;
-  onCustomBinaryFolderChange?: (folder: string | null) => void;
   detectionStatus: 'valid' | 'invalid' | 'not_found' | null;
   detectedPath: string;
   hasFaust: boolean;
-  customBinaryFolder?: string | null;
-}
-
-// Build detection command based on platform and optional custom folder path
-function buildDetectionCommand(platform: Exclude<Platform, null>, folderPath?: string | null): string {
-  if (!folderPath) {
-    return 'HISE get_update_info';
-  }
-  
-  // Remove trailing slash/backslash
-  const trimmed = folderPath.trim().replace(/[\/\\]$/, '');
-  
-  switch (platform) {
-    case 'windows':
-      return `"${trimmed}\\HISE.exe" get_update_info`;
-    case 'macos':
-    case 'linux':
-      return `"${trimmed}/HISE" get_update_info`;
-  }
-}
-
-// Platform-specific instructions for finding the HISE binary folder
-function getFolderInstructions(platform: Exclude<Platform, null>): { easy: string; dev: string } {
-  switch (platform) {
-    case 'windows':
-      return {
-        easy: 'Navigate to the folder containing HISE.exe in File Explorer (usually ends with ...\\Builds\\VisualStudio2022\\x64\\Release\\App or ...\\Release with Faust\\App), then copy the path from the address bar.',
-        dev: 'Copy path to folder containing HISE.exe',
-      };
-    case 'macos':
-      return {
-        easy: 'In Finder, navigate to HISE.app, right-click and select "Show Package Contents", then go to Contents/MacOS. Copy the folder path.',
-        dev: 'Path to HISE.app/Contents/MacOS',
-      };
-    case 'linux':
-      return {
-        easy: 'Navigate to the folder containing the HISE binary (usually ends with .../Builds/LinuxMakefile/build), then copy the path.',
-        dev: 'Copy path to folder containing HISE binary',
-      };
-  }
+  commitHash?: string | null;
 }
 
 export default function HisePathDetector({
   platform,
   onDetectionResult,
-  onCustomBinaryFolderChange,
   detectionStatus,
   detectedPath,
   hasFaust,
-  customBinaryFolder,
+  commitHash,
 }: HisePathDetectorProps) {
-  const { get, mode } = useExplanation();
+  const { get } = useExplanation();
   const [pasteValue, setPasteValue] = useState('');
   const [clipboardError, setClipboardError] = useState<string | null>(null);
-  const [showCustomPath, setShowCustomPath] = useState(false);
-  const [localCustomFolder, setLocalCustomFolder] = useState(customBinaryFolder || '');
-  
-  // Get the current detection command based on whether custom folder is set
-  const detectionCommand = buildDetectionCommand(platform, showCustomPath ? localCustomFolder : null);
-  const folderInstructions = getFolderInstructions(platform);
+  const [showManualPaste, setShowManualPaste] = useState(false);
   
   // Handle paste from clipboard and apply
   const handlePasteAndApply = async () => {
@@ -90,11 +41,12 @@ export default function HisePathDetector({
         const result = parseDetectionResult(text, platform);
         onDetectionResult(result);
       } else {
-        setClipboardError('Clipboard is empty. Copy the script output first.');
+        setClipboardError('Clipboard is empty. Use Help → Update HISE in HISE first.');
       }
     } catch {
       // Clipboard API failed - likely permission denied or not supported
-      setClipboardError('Could not access clipboard. Please paste manually below.');
+      setClipboardError('Could not access clipboard. Please use manual paste below.');
+      setShowManualPaste(true);
     }
   };
   
@@ -105,23 +57,6 @@ export default function HisePathDetector({
     
     const result = parseDetectionResult(pasteValue, platform);
     onDetectionResult(result);
-  };
-  
-  // Handle custom folder path change
-  const handleCustomFolderChange = (value: string) => {
-    setLocalCustomFolder(value);
-    onCustomBinaryFolderChange?.(value || null);
-  };
-  
-  // Toggle custom path mode
-  const handleToggleCustomPath = () => {
-    const newShowCustomPath = !showCustomPath;
-    setShowCustomPath(newShowCustomPath);
-    if (!newShowCustomPath) {
-      // Reset custom folder when going back to simple mode
-      setLocalCustomFolder('');
-      onCustomBinaryFolderChange?.(null);
-    }
   };
   
   const renderStatusIcon = () => {
@@ -158,122 +93,59 @@ export default function HisePathDetector({
 
   return (
     <div className="space-y-4">
-      <Collapsible
-        title={get(updatePage.detectSection.title)}
-        icon={<Search className="w-4 h-4 text-accent" />}
-        defaultOpen={detectionStatus === null}
+      {/* Instructions */}
+      <p className="text-sm text-gray-400">
+        {get(updatePage.detectSection.description)}
+      </p>
+      
+      {/* Main Paste Button */}
+      <Button 
+        onClick={handlePasteAndApply}
+        variant="secondary"
+        className="w-full"
       >
-        <div className="space-y-4">
-          {/* Custom Path Mode */}
-          {showCustomPath ? (
-            <div className="space-y-4">
-              {/* Back button */}
-              <button
-                onClick={handleToggleCustomPath}
-                className="flex items-center gap-2 text-sm text-accent hover:text-accent/80 transition-colors"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                {get(pathDetection.useSimpleCommand)}
-              </button>
-              
-              {/* Folder path input */}
-              <div>
-                <label className="block text-sm text-gray-400 mb-2">
-                  {mode === 'easy' ? folderInstructions.easy : folderInstructions.dev}
-                </label>
-                <Input
-                  value={localCustomFolder}
-                  onChange={(e) => handleCustomFolderChange(e.target.value)}
-                  placeholder={platform === 'windows' 
-                    ? 'C:\\Development\\HISE\\projects\\standalone\\Builds\\...' 
-                    : '~/HISE/projects/standalone/Builds/...'}
-                  className="font-mono text-sm"
-                />
-              </div>
-              
-              {/* Updated detection command */}
-              <div>
-                <p className="text-sm text-gray-400 mb-2">
-                  Now run this command:
-                </p>
-                <CodeBlock code={detectionCommand} />
-              </div>
-            </div>
-          ) : (
-            <>
-              {/* Default: Simple Detection Command */}
-              <div>
-                <p className="text-sm text-gray-400 mb-2">
-                  {get(updatePage.detectSection.description)}
-                </p>
-                <CodeBlock code={detectionCommand} />
-              </div>
-              
-              {/* "Command not working?" hint */}
-              <div className="border border-border rounded-lg p-3 bg-surface/50">
-                <div className="flex items-start gap-2">
-                  <Info className="w-4 h-4 text-gray-500 mt-0.5 flex-shrink-0" />
-                  <div className="text-sm">
-                    <p className="text-gray-400 mb-2">
-                      {get(pathDetection.commandNotWorking)}
-                    </p>
-                    <Button
-                      onClick={handleToggleCustomPath}
-                      variant="ghost"
-                      size="sm"
-                      className="text-accent hover:text-accent/80"
-                    >
-                      <FolderOpen className="w-4 h-4" />
-                      {get(pathDetection.locateFolder)}
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </>
-          )}
-          
-          {/* Paste & Apply Button */}
-          <div className="space-y-3">
-            <Button 
-              onClick={handlePasteAndApply}
-              variant="secondary"
-              className="w-full"
-            >
-              <ClipboardPaste className="w-4 h-4" />
-              Paste & Apply
-            </Button>
-            
-            {/* Error message */}
-            {clipboardError && (
-              <p className="text-sm text-warning">{clipboardError}</p>
-            )}
-            
-            {/* Manual paste fallback */}
-            <div>
-              <label className="block text-sm text-gray-400 mb-2">
-                {get(updatePage.detectSection.pasteLabel)}
-              </label>
-              <div className="flex gap-2">
-                <Textarea
-                  value={pasteValue}
-                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setPasteValue(e.target.value)}
-                  placeholder={get(updatePage.detectSection.placeholder)}
-                  className="flex-1 font-mono text-sm"
-                  rows={1}
-                />
-                <Button 
-                  onClick={handleManualApply}
-                  disabled={!pasteValue.trim()}
-                  variant="ghost"
-                  title="Apply manually pasted text"
-                >
-                  Apply
-                </Button>
-              </div>
-            </div>
-          </div>
+        <ClipboardPaste className="w-4 h-4" />
+        Paste Update Info
+      </Button>
+      
+      {/* Error message */}
+      {clipboardError && (
+        <p className="text-sm text-warning">{clipboardError}</p>
+      )}
+      
+      {/* Manual paste toggle */}
+      <button 
+        onClick={() => setShowManualPaste(!showManualPaste)}
+        className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-400 transition-colors"
+      >
+        Manual paste
+        {showManualPaste ? (
+          <ChevronUp className="w-4 h-4" />
+        ) : (
+          <ChevronDown className="w-4 h-4" />
+        )}
+      </button>
+      
+      {/* Manual paste (hidden by default) */}
+      {showManualPaste && (
+        <div className="flex gap-2">
+          <Textarea
+            value={pasteValue}
+            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setPasteValue(e.target.value)}
+            placeholder={get(updatePage.detectSection.placeholder)}
+            className="flex-1 font-mono text-sm"
+            rows={1}
+          />
+          <Button 
+            onClick={handleManualApply}
+            disabled={!pasteValue.trim()}
+            variant="ghost"
+            title="Apply manually pasted text"
+          >
+            Apply
+          </Button>
         </div>
-      </Collapsible>
+      )}
       
       {/* Detection Result */}
       {detectionStatus && (
@@ -295,12 +167,19 @@ export default function HisePathDetector({
                   <p className="text-sm text-gray-400 font-mono truncate" title={detectedPath}>
                     {detectedPath}
                   </p>
-                  <p className="text-xs text-gray-500 mt-2">
-                    {hasFaust 
-                      ? get(updatePage.faustStatus.enabled)
-                      : get(updatePage.faustStatus.disabled)
-                    }
-                  </p>
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500 mt-2">
+                    <span>
+                      {hasFaust 
+                        ? get(updatePage.faustStatus.enabled)
+                        : get(updatePage.faustStatus.disabled)
+                      }
+                    </span>
+                    {commitHash && (
+                      <span className="font-mono" title={commitHash}>
+                        Build: {commitHash.substring(0, 7)}
+                      </span>
+                    )}
+                  </div>
                 </>
               )}
               

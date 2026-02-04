@@ -34,6 +34,8 @@ export interface CICommitInfo {
   shortSha: string;
   message: string;
   date: string;
+  parentSha?: string;      // Parent commit SHA (for update-available check)
+  parentShortSha?: string; // Parent commit short SHA
 }
 
 export interface CIStatus {
@@ -82,6 +84,43 @@ function mapConclusion(
   if (conclusion === 'success') return 'success';
   if (conclusion === 'failure') return 'failure';
   return 'unknown';
+}
+
+/**
+ * Fetch the parent commit SHA for a given commit
+ * This is used to check if a user's HISE build is up-to-date.
+ * HISE bakes in the commit hash of HEAD~1 at build time, so we compare
+ * the user's hash against the parent of the latest passing commit.
+ */
+async function fetchCommitParentSha(commitSha: string): Promise<string | null> {
+  const url = `${API_BASE}/repos/${HISE_REPO}/commits/${commitSha}`;
+  
+  try {
+    const response = await fetch(url, {
+      headers: {
+        'Accept': 'application/vnd.github.v3+json',
+        'User-Agent': 'HISE-Setup-Wizard',
+      },
+      cache: 'no-store', // Disable Next.js fetch caching
+    });
+    
+    if (!response.ok) {
+      console.error(`Failed to fetch commit ${commitSha}: ${response.status}`);
+      return null;
+    }
+    
+    const data = await response.json();
+    
+    // Get the first parent (for linear history)
+    if (data.parents && data.parents.length > 0) {
+      return data.parents[0].sha;
+    }
+    
+    return null;
+  } catch (error) {
+    console.error(`Error fetching commit parent for ${commitSha}:`, error);
+    return null;
+  }
 }
 
 /**
@@ -137,6 +176,7 @@ export async function fetchCIStatus(): Promise<CIStatus> {
       'Accept': 'application/vnd.github.v3+json',
       'User-Agent': 'HISE-Setup-Wizard',
     },
+    cache: 'no-store', // Disable Next.js fetch caching
   });
   
   if (!response.ok) {
@@ -161,8 +201,15 @@ export async function fetchCIStatus(): Promise<CIStatus> {
     conclusion: latestConclusion,
   };
   
-  // If latest is passing, we're done
+  // If latest is passing, fetch its parent SHA and we're done
   if (latestConclusion === 'success') {
+    // Fetch parent SHA for update-available check
+    const parentSha = await fetchCommitParentSha(latestRun.head_sha);
+    if (parentSha) {
+      latestCommit.parentSha = parentSha;
+      latestCommit.parentShortSha = parentSha.substring(0, 7);
+    }
+    
     return {
       latestCommit,
       lastPassingCommit: null,
@@ -190,11 +237,16 @@ export async function fetchCIStatus(): Promise<CIStatus> {
     };
   }
   
+  // Fetch parent SHA for the passing commit (for update-available check)
+  const passingParentSha = await fetchCommitParentSha(passingRun.head_sha);
+  
   const lastPassingCommit: CICommitInfo = {
     sha: passingRun.head_sha,
     shortSha: passingRun.head_sha.substring(0, 7),
     message: truncateMessage(passingRun.head_commit.message),
     date: passingRun.created_at,
+    parentSha: passingParentSha || undefined,
+    parentShortSha: passingParentSha ? passingParentSha.substring(0, 7) : undefined,
   };
   
   const daysBehind = daysBetween(
