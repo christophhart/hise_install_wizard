@@ -12,7 +12,8 @@ import {
   PackagePlus,
   Shield,
   SearchCheck,
-  ArrowRightLeft
+  ArrowRightLeft,
+  Trash2
 } from 'lucide-react';
 
 export default function HomePage() {
@@ -38,7 +39,7 @@ export default function HomePage() {
         </p>
         <div className="flex gap-6 justify-center flex-wrap">
           <Link href="/setup" className="flex flex-col items-center gap-2 group">
-            <Button size="lg">
+            <Button size="lg" className="bg-success hover:bg-success/90 border-white/30 text-white">
               New Installation
               <PackagePlus className="w-5 h-5" />
             </Button>
@@ -47,12 +48,21 @@ export default function HomePage() {
             </p>
           </Link>
           <Link href="/update" className="flex flex-col items-center gap-2 group">
-            <Button size="lg">
+            <Button size="lg" className="bg-warning hover:bg-warning/90 border-white/30 text-black">
               Update HISE
               <RefreshCw className="w-5 h-5" />
             </Button>
             <p className="text-xs text-gray-500 max-w-[180px] text-center group-hover:text-gray-400 transition-colors">
               Pull latest working changes and recompile existing installation
+            </p>
+          </Link>
+          <Link href="/nuke" className="flex flex-col items-center gap-2 group">
+            <Button size="lg" className="bg-error hover:bg-error/90 border-white/30 text-white">
+              Nuke HISE
+              <Trash2 className="w-5 h-5" />
+            </Button>
+            <p className="text-xs text-gray-500 max-w-[180px] text-center group-hover:text-gray-400 transition-colors">
+              Completely remove HISE from your system to start fresh
             </p>
           </Link>
         </div>

@@ -128,12 +128,12 @@ export default function HisePathDetector({
       
       {/* Manual paste (hidden by default) */}
       {showManualPaste && (
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-start">
           <Textarea
             value={pasteValue}
             onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setPasteValue(e.target.value)}
             placeholder={get(updatePage.detectSection.placeholder)}
-            className="flex-1 font-mono text-sm"
+            className="flex-1 min-w-0 font-mono text-sm"
             rows={1}
           />
           <Button 

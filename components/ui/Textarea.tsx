@@ -14,8 +14,18 @@ export default function Textarea({
 }: TextareaProps) {
   const textareaId = id || label?.toLowerCase().replace(/\s+/g, '-');
   
+  // Extract flex-related classes for the wrapper div
+  const flexClasses = className.split(' ').filter(c => 
+    c.startsWith('flex-') || c === 'flex' || c.startsWith('min-w-') || c.startsWith('w-')
+  ).join(' ');
+  
+  // Keep remaining classes for the textarea
+  const textareaClasses = className.split(' ').filter(c => 
+    !c.startsWith('flex-') && c !== 'flex' && !c.startsWith('min-w-') && !c.startsWith('w-')
+  ).join(' ');
+  
   return (
-    <div className="space-y-1">
+    <div className={`space-y-1 ${flexClasses}`}>
       {label && (
         <label htmlFor={textareaId} className="block text-sm font-medium text-gray-300">
           {label}
@@ -32,7 +42,7 @@ export default function Textarea({
           font-mono text-sm
           resize-y min-h-[120px]
           ${error ? 'border-error' : ''}
-          ${className}
+          ${textareaClasses}
         `}
         {...props}
       />

@@ -17,14 +17,19 @@ const updatePhases: Phase[] = [
   { id: 1, name: 'Check Updates' },
 ];
 
+const nukePhases: Phase[] = [
+  { id: 0, name: 'Configure' },
+  { id: 1, name: 'Remove' },
+];
+
 interface PhaseStepperProps {
   currentPhase: number;
   className?: string;
-  mode?: 'setup' | 'update';
+  mode?: 'setup' | 'update' | 'nuke';
 }
 
 export default function PhaseStepper({ currentPhase, className = '', mode = 'setup' }: PhaseStepperProps) {
-  const phases = mode === 'update' ? updatePhases : defaultPhases;
+  const phases = mode === 'update' ? updatePhases : mode === 'nuke' ? nukePhases : defaultPhases;
   return (
     <div className={`flex items-center justify-center ${className}`}>
       {phases.map((phase, index) => (

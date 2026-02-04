@@ -144,3 +144,65 @@ export function parseDetectionResult(
   
   return { path, status, hasFaust, architecture, commitHash };
 }
+
+// ============================================
+// Nuke Mode Types
+// ============================================
+
+// Represents a found HISE installation
+export interface HiseInstallation {
+  path: string;
+  hasFaust: boolean;  // macOS only - Faust is in tools/faust
+  selected: boolean;  // Whether user wants to remove this installation
+}
+
+// State for nuke wizard
+export interface NukeState {
+  platform: Platform;
+  architecture: Architecture;
+  installations: HiseInstallation[];
+  removeSettings: boolean;  // Remove app data/settings folder
+  removePathEntries: boolean;  // Clean PATH from shell configs
+  explanationMode: ExplanationMode;
+}
+
+// Config for nuke script generation
+export interface NukeScriptConfig {
+  platform: Exclude<Platform, null>;
+  installationPaths: string[];  // Paths to remove
+  removeSettings: boolean;
+  removePathEntries: boolean;
+}
+
+export interface NukeScriptResponse {
+  script: string;
+  filename: string;
+  warnings: string[];
+}
+
+// Settings folder paths per platform
+export const SETTINGS_PATHS: Record<Exclude<Platform, null>, string> = {
+  windows: '%APPDATA%\\HISE',
+  macos: '~/Library/Application Support/HISE',
+  linux: '~/.config/HISE',
+};
+
+// Shell config files per platform (for PATH cleanup)
+export const SHELL_CONFIG_FILES: Record<Exclude<Platform, null>, string[]> = {
+  windows: [], // Windows uses environment variable, not shell config
+  macos: ['~/.zshrc', '~/.bash_profile'],
+  linux: ['~/.bashrc', '~/.zshrc'],
+};
+
+// ============================================
+// Detection Script Types
+// ============================================
+
+export interface DetectScriptConfig {
+  platform: Exclude<Platform, null>;
+}
+
+export interface DetectScriptResponse {
+  script: string;
+  filename: string;
+}

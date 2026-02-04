@@ -1,7 +1,13 @@
-import { ScriptConfig, GenerateScriptResponse, UpdateScriptConfig, UpdateScriptResponse, MigrationScriptConfig } from '@/types/wizard';
+import { ScriptConfig, GenerateScriptResponse, UpdateScriptConfig, UpdateScriptResponse, MigrationScriptConfig, NukeScriptConfig, NukeScriptResponse, DetectScriptConfig, DetectScriptResponse } from '@/types/wizard';
 import { generateWindowsScript, generateWindowsUpdateScript, generateWindowsMigrationScript } from './templates/windows';
 import { generateMacOSScript, generateMacOSUpdateScript, generateMacOSMigrationScript } from './templates/macos';
 import { generateLinuxScript, generateLinuxUpdateScript, generateLinuxMigrationScript } from './templates/linux';
+import { generateWindowsNukeScript } from './templates/nuke/windows';
+import { generateMacOSNukeScript } from './templates/nuke/macos';
+import { generateLinuxNukeScript } from './templates/nuke/linux';
+import { generateWindowsDetectScript } from './templates/detect/windows';
+import { generateMacOSDetectScript } from './templates/detect/macos';
+import { generateLinuxDetectScript } from './templates/detect/linux';
 
 export function generateScript(config: ScriptConfig): GenerateScriptResponse {
   const warnings: string[] = [];
@@ -134,3 +140,77 @@ export function generateMigrationScript(config: MigrationScriptConfig): UpdateSc
   };
 }
 
+export function generateNukeScript(config: NukeScriptConfig): NukeScriptResponse {
+  const warnings: string[] = [];
+  let script: string;
+  let filename: string;
+
+  // Add universal warning
+  warnings.push('This script will PERMANENTLY DELETE all specified HISE files. This cannot be undone.');
+
+  switch (config.platform) {
+    case 'windows':
+      script = generateWindowsNukeScript(config);
+      filename = 'hise-nuke.ps1';
+      break;
+
+    case 'macos':
+      script = generateMacOSNukeScript(config);
+      filename = 'hise-nuke.sh';
+      // On macOS, Faust is in the HISE folder so it will be removed
+      warnings.push('Faust (if installed in tools/faust) will also be removed.');
+      break;
+
+    case 'linux':
+      script = generateLinuxNukeScript(config);
+      filename = 'hise-nuke.sh';
+      break;
+
+    default:
+      throw new Error(`Unsupported platform: ${config.platform}`);
+  }
+
+  if (config.removeSettings) {
+    warnings.push('HISE settings and compiler configuration will be deleted.');
+  }
+
+  if (config.removePathEntries) {
+    warnings.push('HISE entries will be removed from your PATH.');
+  }
+
+  return {
+    script,
+    filename,
+    warnings,
+  };
+}
+
+export function generateDetectScript(config: DetectScriptConfig): DetectScriptResponse {
+  let script: string;
+  let filename: string;
+
+  switch (config.platform) {
+    case 'windows':
+      script = generateWindowsDetectScript();
+      filename = 'hise-detect.ps1';
+      break;
+
+    case 'macos':
+      script = generateMacOSDetectScript();
+      filename = 'hise-detect.sh';
+      break;
+
+    case 'linux':
+      script = generateLinuxDetectScript();
+      filename = 'hise-detect.sh';
+      break;
+
+    default:
+      throw new Error(`Unsupported platform: ${config.platform}`);
+  }
+
+  return {
+    script,
+    filename,
+  };
+}
