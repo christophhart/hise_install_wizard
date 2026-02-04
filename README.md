@@ -65,6 +65,8 @@ Toggle between two explanation styles:
 
 ## Getting Started
 
+
+
 ### Using the Hosted Version
 
 Visit the deployed wizard at [your-deployment-url] and follow the on-screen instructions.
