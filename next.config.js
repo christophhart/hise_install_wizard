@@ -10,6 +10,7 @@ const getGitCommitMessage = () => {
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: 'standalone', // Creates self-contained production build
   env: {
     NEXT_PUBLIC_COMMIT_MESSAGE: getGitCommitMessage(),
   },
