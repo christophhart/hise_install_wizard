@@ -192,6 +192,21 @@ export default function UpdateGeneratePage() {
   // Download location state
   const [downloadLocation, setDownloadLocation] = useState<string>('');
   
+  // Target commit from /update/auto (if coming from HISE's check-update API)
+  const [autoTargetCommit, setAutoTargetCommit] = useState<string | null>(null);
+  
+  // Check for target commit from /update/auto on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const storedTarget = sessionStorage.getItem('hise_update_target_commit');
+      if (storedTarget) {
+        setAutoTargetCommit(storedTarget);
+        // Clear it after reading
+        sessionStorage.removeItem('hise_update_target_commit');
+      }
+    }
+  }, []);
+  
   // Fetch CI status on mount
   useEffect(() => {
     async function checkCIStatus() {
@@ -270,9 +285,15 @@ export default function UpdateGeneratePage() {
     setError(null);
     
     // Determine which commit to use
+    // Priority: 1) User override (use latest), 2) Auto target from /update/auto, 3) CI status last passing
     let targetCommit: string | undefined;
-    if (ciStatus && !ciStatus.isLatestPassing && !useLatestOverride && ciStatus.lastPassingCommit) {
-      targetCommit = ciStatus.lastPassingCommit.sha;
+    if (!useLatestOverride) {
+      if (autoTargetCommit) {
+        // Use the target commit passed from /update/auto (pre-determined by check-update API)
+        targetCommit = autoTargetCommit;
+      } else if (ciStatus && !ciStatus.isLatestPassing && ciStatus.lastPassingCommit) {
+        targetCommit = ciStatus.lastPassingCommit.sha;
+      }
     }
     
     try {
