@@ -184,9 +184,9 @@ Write-Phase "Phase 5: Faust (Optional, fully automated)"
 
 $faustDll = "C:\\Program Files\\Faust\\lib\\faust.dll"
 if (-not (Test-Path $faustDll)) {
-    Write-Step "Downloading Faust ${faustVersion || '2.75.7'}..."
+    Write-Step "Downloading Faust ${faustVersion || '2.83.1'}..."
     $faustInstaller = "$env:TEMP\\faust-installer.exe"
-    $faustUrl = "https://github.com/grame-cncm/faust/releases/download/${faustVersion || '2.75.7'}/Faust-${faustVersion || '2.75.7'}-win64.exe"
+    $faustUrl = "https://github.com/grame-cncm/faust/releases/download/${faustVersion || '2.83.1'}/Faust-${faustVersion || '2.83.1'}-win64.exe"
     
     Invoke-WebRequest -Uri $faustUrl -OutFile $faustInstaller
     
@@ -194,7 +194,7 @@ if (-not (Test-Path $faustDll)) {
         Handle-Error 5 "Failed to download Faust installer"
     }
     
-    Write-Step "Installing Faust ${faustVersion || '2.75.7'}..."
+    Write-Step "Installing Faust ${faustVersion || '2.83.1'}..."
     Start-Process -FilePath $faustInstaller -Args "/S /D=C:\\Program Files\\Faust" -Wait
     
     if ($LASTEXITCODE -ne 0) {
@@ -209,7 +209,7 @@ if (-not (Test-Path $faustDll)) {
     # Cleanup installer
     Remove-Item $faustInstaller -Force
     
-    Write-Success "Faust ${faustVersion || '2.75.7'} installed successfully"
+    Write-Success "Faust ${faustVersion || '2.83.1'} installed successfully"
 } else {
     Write-Success "Faust already installed"
 }

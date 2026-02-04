@@ -203,14 +203,18 @@ const componentInfoList: ComponentInfo[] = [
     key: 'faust',
     label: 'Faust DSP Compiler',
     description: 'Optional: Enables Faust JIT compilation for DSP development',
-    getVerifyCommand: (_, platform) => {
-      const commands = {
-        // Check default Faust installation locations
-        windows: 'Test-Path "C:\\Program Files\\Faust\\bin\\faust.exe"',
-        macos: 'test -f /usr/local/bin/faust && echo "True" || echo "False"',
-        linux: 'test -f /usr/local/bin/faust && echo "True" || echo "False"',
-      };
-      return commands[platform];
+    getVerifyCommand: (path, platform) => {
+      if (platform === 'windows') {
+        // Windows uses global Faust installation
+        return 'Test-Path "C:\\Program Files\\Faust\\bin\\faust.exe"';
+      }
+      if (platform === 'macos') {
+        // macOS: Check HISE-local Faust installation (where setup script installs it)
+        const faustLib = formatPath(path, '/tools/faust/lib/libfaust.dylib', platform);
+        return `test -f "${faustLib}" && echo "True" || echo "False"`;
+      }
+      // Linux uses system-wide installation via apt-get or make install
+      return 'test -f /usr/local/bin/faust && echo "True" || echo "False"';
     },
     platforms: ['windows', 'macos', 'linux'],
     isOptional: true,

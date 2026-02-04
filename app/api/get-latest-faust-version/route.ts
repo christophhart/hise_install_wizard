@@ -11,7 +11,8 @@ let cache: {
 const CACHE_TTL_MS = 5 * 60 * 1000;
 
 // Hardcoded fallback if GitHub is unreachable
-const FALLBACK_VERSION = '2.75.7';
+// NOTE: Update this periodically when testing the wizard
+const FALLBACK_VERSION = '2.83.1';
 
 export async function GET(): Promise<NextResponse<FaustVersionResponse>> {
   const now = Date.now();

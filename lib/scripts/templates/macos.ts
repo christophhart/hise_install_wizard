@@ -132,15 +132,15 @@ phase "Phase 2: Faust (Optional, fully automated)"
 FAUST_LIB="$HISE_PATH/tools/faust/lib/libfaust.dylib"
 
 if [ ! -f "$FAUST_LIB" ]; then
-    step "Downloading Faust ${faustVersion || '2.75.7'}..."
+    step "Downloading Faust ${faustVersion || '2.83.1'}..."
     # Select architecture-specific DMG
     if [ "$ARCH" = "arm64" ]; then
-        FAUST_DMG="Faust-${faustVersion || '2.75.7'}-arm64.dmg"
+        FAUST_DMG="Faust-${faustVersion || '2.83.1'}-arm64.dmg"
     else
-        FAUST_DMG="Faust-${faustVersion || '2.75.7'}-x64.dmg"
+        FAUST_DMG="Faust-${faustVersion || '2.83.1'}-x64.dmg"
     fi
     
-    FAUST_URL="https://github.com/grame-cncm/faust/releases/download/${faustVersion || '2.75.7'}/$FAUST_DMG"
+    FAUST_URL="https://github.com/grame-cncm/faust/releases/download/${faustVersion || '2.83.1'}/$FAUST_DMG"
     DOWNLOAD_PATH="/tmp/$FAUST_DMG"
     
     curl -L -o "$DOWNLOAD_PATH" "$FAUST_URL" || handle_error 2 "Failed to download Faust from GitHub"
@@ -176,7 +176,7 @@ if [ ! -f "$FAUST_LIB" ]; then
         handle_error 2 "Faust installation failed - libfaust.dylib not found at $FAUST_LIB"
     fi
     
-    success "Faust ${faustVersion || '2.75.7'} installed successfully"
+    success "Faust ${faustVersion || '2.83.1'} installed successfully"
     FAUST_INSTALLED=1
 else
     success "Faust already installed at $FAUST_LIB"

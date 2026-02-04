@@ -74,6 +74,7 @@ export default function GeneratePage() {
   
   // Faust version state
   const [faustVersion, setFaustVersion] = useState<string | null>(null);
+  const [faustVersionLoading, setFaustVersionLoading] = useState(false);
   
   // Download location state
   const [downloadLocation, setDownloadLocation] = useState<string>('');
@@ -120,11 +121,15 @@ export default function GeneratePage() {
     checkCIStatus();
   }, []);
   
-  // Fetch Faust version when Faust is selected (non-blocking)
+  // Fetch Faust version when Faust is selected
   useEffect(() => {
     async function fetchFaustVersion() {
-      if (!state.includeFaust) return;
+      if (!state.includeFaust) {
+        setFaustVersionLoading(false);
+        return;
+      }
       
+      setFaustVersionLoading(true);
       try {
         const response = await fetch('/api/get-latest-faust-version');
         const data = await response.json();
@@ -133,7 +138,9 @@ export default function GeneratePage() {
         }
       } catch (err) {
         console.error('Failed to fetch Faust version:', err);
-        // Non-blocking - script will use fallback version
+        // Will use fallback version from API/templates
+      } finally {
+        setFaustVersionLoading(false);
       }
     }
     
@@ -147,18 +154,20 @@ export default function GeneratePage() {
     }
   }, [state.platform, downloadLocation]);
   
-  // Redirect if no platform selected, generate script when CI check completes
+  // Redirect if no platform selected, generate script when CI check and Faust version fetch complete
   useEffect(() => {
     if (!state.platform) {
       router.push('/setup');
       return;
     }
     
-    if (!ciLoading) {
+    // Wait for both CI status and Faust version (if Faust is selected) before generating
+    const readyToGenerate = !ciLoading && !faustVersionLoading;
+    if (readyToGenerate) {
       generateScript();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.platform, ciLoading, useLatestOverride]);
+  }, [state.platform, ciLoading, faustVersionLoading, useLatestOverride]);
   
   const generateScript = async () => {
     if (!state.platform) return;
@@ -293,11 +302,15 @@ export default function GeneratePage() {
         
         <CardContent className="space-y-6">
           {/* Loading state */}
-          {(loading || ciLoading) && (
+          {(loading || ciLoading || faustVersionLoading) && (
             <div className="flex items-center justify-center py-12">
               <RefreshCw className="w-8 h-8 text-accent animate-spin" />
               <span className="ml-3 text-gray-400">
-                {ciLoading ? 'Checking CI status...' : 'Generating script...'}
+                {ciLoading 
+                  ? 'Checking CI status...' 
+                  : faustVersionLoading 
+                    ? 'Fetching latest Faust version...'
+                    : 'Generating script...'}
               </span>
             </div>
           )}
