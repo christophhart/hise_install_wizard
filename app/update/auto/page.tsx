@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useUpdate } from '@/contexts/UpdateContext';
 import { DetectionResult, Architecture } from '@/types/wizard';
@@ -21,7 +21,21 @@ import PageContainer from '@/components/layout/PageContainer';
  * - commit: Current build's commit hash
  * - target: Target commit SHA to update to (from CI status check)
  */
-export default function UpdateAutoPage() {
+
+// Loading fallback for Suspense
+function LoadingFallback() {
+  return (
+    <PageContainer>
+      <div className="flex flex-col items-center justify-center py-12 space-y-4">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent"></div>
+        <p className="text-gray-400">Loading...</p>
+      </div>
+    </PageContainer>
+  );
+}
+
+// Inner component that uses useSearchParams
+function UpdateAutoContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { applyDetectionResult } = useUpdate();
@@ -95,5 +109,14 @@ export default function UpdateAutoPage() {
         <p className="text-gray-400">Preparing update wizard...</p>
       </div>
     </PageContainer>
+  );
+}
+
+// Main page component with Suspense boundary
+export default function UpdateAutoPage() {
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <UpdateAutoContent />
+    </Suspense>
   );
 }
