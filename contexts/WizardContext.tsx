@@ -125,9 +125,9 @@ export function WizardProvider({ children }: { children: ReactNode }) {
     const skip: number[] = [];
     const { detectedComponents } = state;
     
-    if (detectedComponents.git && detectedComponents.hiseRepo) {
-      skip.push(2); // Git setup
-    }
+    // Phase 2 (Git setup) always runs - it handles both clone and update cases
+    // When hiseRepo exists, the script skips cloning but still pulls latest changes
+    
     if (detectedComponents.compiler) {
       skip.push(3); // Compiler installation
     }
